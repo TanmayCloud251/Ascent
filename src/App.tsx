@@ -1,21 +1,53 @@
 import React from 'react'
+import { AppProvider, useApp } from './context/AppContext'
+import { Header } from './components/Header'
+
+const MainContent: React.FC = () => {
+  const { currentScreen } = useApp()
+
+  return (
+    <div className="min-h-screen flex flex-col bg-[#0A0A0F]">
+      <Header />
+      <main className="flex-1 flex flex-col">
+        {currentScreen === 1 && (
+          <div className="p-8 text-center">
+            <h2 className="text-2xl font-bold text-white font-display">Screen 1: Prompt Engine Placeholder</h2>
+          </div>
+        )}
+        {currentScreen === 2 && (
+          <div className="p-8 text-center">
+            <h2 className="text-2xl font-bold text-white font-display">Screen 2: Scope Confirmation Placeholder</h2>
+          </div>
+        )}
+        {currentScreen === 3 && (
+          <div className="p-8 text-center">
+            <h2 className="text-2xl font-bold text-white font-display">Screen 3: Calibration Placeholder</h2>
+          </div>
+        )}
+        {currentScreen === 4 && (
+          <div className="p-8 text-center">
+            <h2 className="text-2xl font-bold text-white font-display">Screen 4: IDE Workspace Placeholder</h2>
+          </div>
+        )}
+        {currentScreen === 5 && (
+          <div className="p-8 text-center">
+            <h2 className="text-2xl font-bold text-white font-display">Screen 5: Projects Picker Placeholder</h2>
+          </div>
+        )}
+        {currentScreen === 6 && (
+          <div className="p-8 text-center">
+            <h2 className="text-2xl font-bold text-white font-display">Screen 6: Full Roadmap Placeholder</h2>
+          </div>
+        )}
+      </main>
+    </div>
+  )
+}
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-[#0A0A0F] text-slate-100 p-8 flex flex-col items-center justify-center">
-      <div className="cyber-card-glow p-8 max-w-xl text-center space-y-4">
-        <h1 className="text-3xl font-display font-bold text-white tracking-tight">
-          Ascent <span className="text-[#00F0FF]">AI Academy</span>
-        </h1>
-        <p className="text-slate-400 text-sm">
-          Project-based developer education engine initialized successfully.
-        </p>
-        <div className="inline-flex gap-2">
-          <span className="badge-cyan">Vite 6</span>
-          <span className="badge-pass">React 19</span>
-          <span className="badge-active">Cyberfunk UI</span>
-        </div>
-      </div>
-    </div>
+    <AppProvider>
+      <MainContent />
+    </AppProvider>
   )
 }
