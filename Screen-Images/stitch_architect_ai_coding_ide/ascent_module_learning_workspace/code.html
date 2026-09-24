@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=JetBrains+Mono:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config={darkMode:"class",theme:{extend:{colors:{"secondary-fixed-dim":"#00e0b3","on-tertiary-fixed":"#2a1700","secondary":"#5dffd2","primary":"#dbfcff","on-secondary-container":"#00604b","on-secondary-fixed":"#002118","on-secondary":"#00382b","on-secondary-fixed-variant":"#00513f","surface-container-high":"#292932","tertiary":"#fff3ea","surface-container-highest":"#34343d","secondary-container":"#00e3b6","secondary-fixed":"#43fece","error-container":"#93000a","on-tertiary-fixed-variant":"#653e00","surface-container":"#1f1f27","surface":"#13131b","inverse-on-surface":"#303038","surface-bright":"#393841","on-tertiary-container":"#855300","on-primary-fixed":"#002022","surface-container-lowest":"#0d0d15","tertiary-fixed-dim":"#ffb95f","tertiary-container":"#ffd19c","error":"#ffb4ab","on-primary-container":"#006970","on-primary":"#00363a","on-tertiary":"#472a00","outline-variant":"#3b494b","on-background":"#e4e1ed","on-surface":"#e4e1ed","surface-variant":"#34343d","surface-dim":"#13131b","tertiary-fixed":"#ffddb8","surface-tint":"#00dbe9","inverse-primary":"#006970","background":"#13131b","surface-container-low":"#1b1b23","on-surface-variant":"#b9cacb","primary-container":"#00f0ff","primary-fixed":"#7df4ff","on-primary-fixed-variant":"#004f54","on-error":"#690005","outline":"#849495","primary-fixed-dim":"#00dbe9","on-error-container":"#ffdad6","inverse-surface":"#e4e1ed"},borderRadius:{DEFAULT:"0.125rem",lg:"0.25rem",xl:"0.5rem",full:"0.75rem"},spacing:{"gutter-mobile":"0.75rem","gutter-desktop":"1rem","sidebar-width":"16rem","space-3xl":"3rem","space-xs":"0.25rem","terminal-height-collapsed":"2.25rem","space-lg":"1rem","space-md":"0.75rem","space-2xs":"0.125rem","space-xl":"1.5rem","space-2xl":"2rem","space-sm":"0.5rem"},fontFamily:{"headline-md":["Geist"],"label-md":["JetBrains Mono"],"headline-sm":["Geist"],"headline-lg":["Geist"],"headline-lg-mobile":["Geist"],"body-lg":["Geist"],"label-sm":["JetBrains Mono"],"body-md":["Geist"],"code-lg":["JetBrains Mono"],"body-sm":["Geist"],"headline-xl":["Geist"],"headline-xl-mobile":["Geist"],"code-sm":["JetBrains Mono"],"code-md":["JetBrains Mono"]},fontSize:{"headline-md":["20px",{lineHeight:"28px",letterSpacing:"-0.01em",fontWeight:"500"}],"label-md":["12px",{lineHeight:"16px",letterSpacing:"0.04em",fontWeight:"500"}],"headline-sm":["16px",{lineHeight:"24px",letterSpacing:"0em",fontWeight:"500"}],"headline-lg":["30px",{lineHeight:"38px",letterSpacing:"-0.02em",fontWeight:"600"}],"headline-lg-mobile":["22px",{lineHeight:"30px",letterSpacing:"-0.01em",fontWeight:"600"}],"body-lg":["16px",{lineHeight:"26px",fontWeight:"400"}],"label-sm":["10px",{lineHeight:"14px",letterSpacing:"0.06em",fontWeight:"500"}],"body-md":["14px",{lineHeight:"22px",fontWeight:"400"}],"code-lg":["14px",{lineHeight:"22px",fontWeight:"400"}],"body-sm":["12px",{lineHeight:"18px",fontWeight:"400"}],"headline-xl":["40px",{lineHeight:"48px",letterSpacing:"-0.02em",fontWeight:"600"}],"headline-xl-mobile":["28px",{lineHeight:"36px",letterSpacing:"-0.01em",fontWeight:"600"}],"code-sm":["11px",{lineHeight:"16px",fontWeight:"400"}],"code-md":["13px",{lineHeight:"20px",fontWeight:"400"}]}}}};</script><meta content="web_dashboard" name="shell-type"/></head><body class="bg-surface-container-lowest font-body-md text-body-md text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-sidebar-width bg-surface-container-low z-50 flex flex-col pt-space-xl pb-space-lg shadow-[0_1px_8px_rgba(0,0,0,0.25)]"><div class="px-space-lg mb-space-xl flex items-center justify-between"><span class="font-label-sm text-label-sm uppercase tracking-wider text-outline">Workspace Rail</span><span class="font-code-sm text-code-sm text-secondary bg-surface-container px-space-xs py-space-2xs rounded">ACTIVE</span></div><nav class="flex-1 px-space-sm space-y-space-xs flex flex-col" data-active-classes="bg-surface-container-highest text-primary-container font-bold rounded-lg"><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="editor" href="#"><span class="material-symbols-outlined text-outline">terminal</span>Interactive Editor</a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="dashboard" href="#"><span class="material-symbols-outlined text-outline">dashboard</span>Telemetry Dashboard</a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="modules" href="#"><span class="material-symbols-outlined text-outline">code_blocks</span>Module Registry</a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all font-body-md text-body-md" data-path="ci-runner" href="#"><span class="material-symbols-outlined text-outline">play_circle</span>CI Runner Suite</a></nav><div class="px-space-md pt-space-md bg-surface-container-lowest mx-space-sm rounded-lg flex items-center justify-between p-space-sm"><div class="flex flex-col"><span class="font-label-sm text-label-sm text-outline uppercase">Kernel</span><span class="font-code-sm text-code-sm text-on-surface">v8-isolated</span></div><span class="h-2 w-2 rounded-full bg-secondary-fixed-dim"></span></div></aside><div class="pl-sidebar-width"><header class="fixed top-0 left-sidebar-width right-0 z-40 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.3)]"><div class="h-14 w-full px-gutter-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><img alt="Ascent Brand Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1XvYHDxtFixkUwJSm_XnPdZDoL1HX9TO_eBXyp5PVWSZq3sy5p0pUhBFW63HgZsypSjsxTrp5DjS-pkBiRv-oq8kRKeIPtOZxnQGcecBa_GjFbV6glfV2n_4NpFAat68rwnmyEf8tw9C1pubj-_We0rTrF8ZFr7CZh6iBWmLkz1I2_AgNtr25qmQy8yAjQMtELftgZIYjH1ZjRmqwoMm1hBV--AIFOqEfe3oGcZj6O11SyhRs-BwalAWfo"/><span class="font-headline-sm text-headline-sm font-semibold tracking-tight text-on-surface">ASCENT</span></div><nav class="hidden lg:flex items-center gap-space-lg" data-active-classes="text-primary-container font-bold shadow-[0_2px_0_0_#00f0ff]"><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors py-space-xs" data-path="explore" href="#">Explore</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors py-space-xs" data-path="roadmap" href="#">Roadmap</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors py-space-xs" data-path="editor" href="#">Editor</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors py-space-xs" data-path="dashboard" href="#">Dashboard</a><a class="font-body-sm text-body-sm text-on-surface-variant hover:text-on-surface transition-colors py-space-xs" data-path="showcase" href="#">Showcase</a></nav></div><div class="flex-1 max-w-md hidden md:flex items-center"><div class="w-full flex items-center gap-space-sm bg-surface-container px-space-md py-space-xs rounded-lg text-on-surface-variant"><span class="material-symbols-outlined text-outline text-[18px]">search</span><span class="font-code-sm text-code-sm flex-1 text-outline">⌘K Quick jump...</span><kbd class="font-code-sm text-code-sm bg-surface-container-high px-space-xs py-space-2xs rounded text-on-surface-variant">⌘K</kbd></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-xs text-outline font-code-sm text-code-sm"><span class="h-2 w-2 rounded-full bg-secondary"></span><span class="">Connected</span></div><button class="p-space-xs text-on-surface-variant hover:text-on-surface transition-colors flex items-center"><span class="material-symbols-outlined text-[20px]">notifications</span></button><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-primary-container/40" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7oYNHPlCSdhuH1VXVUCzRrykojDvSESwG6hW65CXJzLT2YFZ6jgq0quWCggvvPoTRdBNZxbfKozLQfEDekujEV1RrQjpSGO7M5c5pDN_fyxqM6cl5pNm0vK7CS5tl0qnaV7WPwr8R2N9fQFRMt5hSDxjbuB29Y5gTi7YsYCGf58NhODffNA9PgD82PxpAWEVL5NUCUUK6c4KX5VkOUKHs1nHe-w89E1d_Qx76sXLUV_ADVz7fkEyN"/></div></div></header><main class="relative pt-14 w-full bg-surface-container-lowest min-h-screen"><div class="flex flex-col w-full h-[calc(100vh-3.5rem)] overflow-hidden bg-[#0a0a0f] text-on-surface select-none font-body-md">
+<!-- TOP BREADCRUMB / REPO CONTEXT BAR -->
+<div class="h-9 w-full bg-[#0d0d15] flex items-center justify-between px-space-md shadow-sm shrink-0">
+<div class="flex items-center gap-space-sm font-code-sm text-code-sm">
+<span class="flex items-center gap-1 text-on-surface-variant font-medium">
+<span class="material-symbols-outlined text-[16px] text-primary-container">account_tree</span>
+<span>apps</span>
+<span class="text-outline-variant">/</span>
+<span>storefront</span>
+<span class="text-outline-variant">/</span>
+<span class="text-on-surface font-semibold">src/components/cart/CartDrawer.tsx</span>
+</span>
+<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] uppercase font-bold tracking-wider bg-surface-container-high text-primary-container">MOD 02 · In Progress</span>
+</div>
+<!-- Center/Right Micro Controls -->
+<div class="flex items-center gap-space-md text-on-surface-variant font-code-sm text-code-sm">
+<div class="hidden md:flex items-center gap-2 bg-[#12121a] px-2 py-0.5 rounded">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+<span class="text-outline">HMR: Active</span>
+<span class="text-outline-variant">|</span>
+<span class="text-on-surface-variant">Port :3000</span>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1 hover:text-primary transition-colors text-outline" title="Toggle Layout Split">
+<span class="material-symbols-outlined text-[18px]">splitscreen</span>
+</button>
+<button class="p-1 hover:text-primary transition-colors text-outline" title="Reset Step">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+</button>
+<button class="p-1 hover:text-primary transition-colors text-outline" title="Diff View">
+<span class="material-symbols-outlined text-[18px]">difference</span>
+</button>
+</div>
+</div>
+</div>
+<!-- WORKSPACE TRIPLE-PANE CONTAINER -->
+<div class="flex flex-1 w-full overflow-hidden">
+<!-- 1. SLIM ACTIVITY BAR (Far Left, ~48px) -->
+<div class="w-12 bg-[#09090e] flex flex-col items-center justify-between py-space-sm shrink-0 shadow-md z-20">
+<div class="flex flex-col items-center gap-space-xs w-full">
+<!-- Curriculum hierarchy icon (Active) -->
+<button class="w-full h-10 flex items-center justify-center relative text-primary-container group" title="Curriculum &amp; Modules">
+<div class="absolute left-0 top-1 bottom-1 w-[2px] bg-primary-container shadow-[0_0_8px_#00f0ff]"></div>
+<span class="material-symbols-outlined text-[20px] drop-shadow-[0_0_6px_rgba(0,240,255,0.4)]">account_tree</span>
+</button>
+<!-- File Explorer -->
+<button class="w-full h-10 flex items-center justify-center relative text-outline hover:text-on-surface transition-colors" title="Workspace Explorer">
+<span class="material-symbols-outlined text-[20px]">folder_open</span>
+</button>
+<!-- AI Hints & Calibration -->
+<button class="w-full h-10 flex items-center justify-center relative text-outline hover:text-on-surface transition-colors group" title="AI Architect Hints">
+<span class="material-symbols-outlined text-[20px]">psychology</span>
+<span class="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-secondary-fixed-dim"></span>
+</button>
+<!-- Theory / Doc toggle -->
+<button class="w-full h-10 flex items-center justify-center relative text-outline hover:text-on-surface transition-colors" title="Concept Lesson Guide">
+<span class="material-symbols-outlined text-[20px]">menu_book</span>
+</button>
+<!-- CI Run Inspector -->
+<button class="w-full h-10 flex items-center justify-center relative text-outline hover:text-on-surface transition-colors" title="Automated Verification Suite">
+<span class="material-symbols-outlined text-[20px]">playlist_add_check_circle</span>
+</button>
+</div>
+<!-- Bottom icons -->
+<div class="flex flex-col items-center gap-space-xs w-full pb-1">
+<!-- AI Copilot Status -->
+<div class="w-full h-9 flex items-center justify-center relative group cursor-pointer" title="Ascent Kernel AI Copilot: Ready">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-container opacity-60"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary-container"></span>
+</span>
+</div>
+<!-- Settings Gear -->
+<button class="w-full h-9 flex items-center justify-center text-outline hover:text-on-surface transition-colors" title="IDE Preferences">
+<span class="material-symbols-outlined text-[19px]">settings</span>
+</button>
+</div>
+</div>
+<!-- 2. COLLAPSIBLE SIDEBAR PANEL (Modules / Tasks Tree, ~260px) -->
+<div class="w-64 bg-[#0e0e16] flex flex-col justify-between shrink-0 shadow-inner z-10 overflow-hidden">
+<div class="flex flex-col h-full overflow-hidden">
+<!-- Context Header -->
+<div class="h-10 px-3 bg-[#13131d] flex items-center justify-between shrink-0">
+<div class="flex items-center gap-1.5 truncate">
+<span class="material-symbols-outlined text-primary-container text-[16px]">shopping_bag</span>
+<span class="font-code-sm text-code-sm font-semibold tracking-wide text-on-surface truncate">STOREFRONT // WEB</span>
+</div>
+<button class="text-outline hover:text-on-surface text-[14px] p-1" title="Switch Module Target">
+<span class="material-symbols-outlined text-[16px]">unfold_more</span>
+</button>
+</div>
+<!-- Modules Accordion Header -->
+<div class="px-3 py-2 flex items-center justify-between text-outline uppercase font-label-sm text-label-sm tracking-widest bg-[#0a0a10]">
+<span>Build Objectives</span>
+<span class="font-code-sm text-[10px] text-secondary font-semibold">1/4 DONE</span>
+</div>
+<!-- Scrollable Steps Tree -->
+<div class="flex-1 overflow-y-auto p-2 space-y-1 font-body-sm text-body-sm">
+<!-- Step 1 (Completed) -->
+<div class="rounded p-2 bg-[#12121c] flex items-start gap-2 text-outline-variant hover:text-on-surface-variant transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-emerald-400 text-[18px] shrink-0 mt-0.5">check_circle</span>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-code-sm text-[11px] text-outline">01. SHELL &amp; LAYOUT</span>
+<span class="text-[9px] font-code-sm px-1 rounded bg-[#16231d] text-emerald-400 font-medium">PASSED</span>
+</div>
+<p class="text-xs text-outline line-clamp-1 mt-0.5">Next.js App Router root layout &amp; dynamic routes</p>
+</div>
+</div>
+<!-- Step 2 (Active / In Progress) -->
+<div class="rounded-md p-2.5 bg-[#171724] shadow-[0_0_12px_rgba(0,240,255,0.08)] flex flex-col gap-1.5">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-primary-container text-[18px] shrink-0 mt-0.5">radio_button_checked</span>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-code-sm text-[11px] font-bold text-primary-container">02. CART DRAWER &amp; STATE</span>
+<span class="text-[9px] font-code-sm px-1 rounded bg-[#00f0ff]/10 text-primary-container font-semibold">ACTIVE</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-0.5">Zustand global store with optimistic cart badge</p>
+</div>
+</div>
+<!-- Subtask checklist -->
+<div class="pl-6 space-y-1.5 mt-1 font-code-sm text-[11px]">
+<div class="flex items-center gap-2 text-emerald-400">
+<span class="material-symbols-outlined text-[14px]">done</span>
+<span class="line-through opacity-70">a. Zustand store setup</span>
+</div>
+<div class="flex items-center gap-2 text-primary-container font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+<span>b. Slide-over drawer component</span>
+</div>
+<div class="flex items-center gap-2 text-outline">
+<span class="w-1.5 h-1.5 rounded-full bg-surface-container-high"></span>
+<span>c. Optimistic quantity badge</span>
+</div>
+</div>
+</div>
+<!-- Step 3 (Upcoming) -->
+<div class="rounded p-2 bg-[#101018] flex items-start gap-2 opacity-50 cursor-not-allowed">
+<span class="material-symbols-outlined text-outline text-[18px] shrink-0 mt-0.5">lock</span>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-code-sm text-[11px] text-outline">03. STRIPE INTENT HANDLER</span>
+</div>
+<p class="text-xs text-outline line-clamp-1 mt-0.5">Payment gateway client &amp; token exchange</p>
+</div>
+</div>
+<!-- Step 4 (Upcoming) -->
+<div class="rounded p-2 bg-[#101018] flex items-start gap-2 opacity-50 cursor-not-allowed">
+<span class="material-symbols-outlined text-outline text-[18px] shrink-0 mt-0.5">lock</span>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between">
+<span class="font-code-sm text-[11px] text-outline">04. WEBHOOK &amp; PERSISTENCE</span>
+</div>
+<p class="text-xs text-outline line-clamp-1 mt-0.5">Stripe signature verification &amp; Postgres sync</p>
+</div>
+</div>
+</div>
+<!-- Sidebar Footer Link -->
+<div class="p-3 bg-[#0a0a10] shrink-0 flex items-center justify-between">
+<a class="font-code-sm text-[11px] text-outline hover:text-primary-container transition-colors flex items-center gap-1.5" href="#">
+<span class="material-symbols-outlined text-[14px]">arrow_back</span>
+<span>View full roadmap &amp; syllabus</span>
+</a>
+</div>
+</div>
+</div>
+<!-- 3. THEORY / CONCEPT LESSON PANEL (~340px) -->
+<div class="w-80 bg-[#11111b] flex flex-col shrink-0 overflow-hidden shadow-md">
+<!-- Lesson Pane Header -->
+<div class="h-10 px-3 bg-[#151522] flex items-center justify-between shrink-0">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary-fixed-dim text-[16px]">lightbulb</span>
+<span class="font-code-sm text-[11px] uppercase tracking-wider font-semibold text-tertiary-fixed-dim">LESSON // STATE ARCHITECTURE</span>
+</div>
+<span class="text-[10px] font-code-sm text-outline bg-surface-container px-1.5 py-0.5 rounded">2 of 5</span>
+</div>
+<!-- Lesson Content Body -->
+<div class="flex-1 overflow-y-auto p-4 space-y-4 font-body-sm text-on-surface-variant leading-relaxed">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">Zustand vs React Context</h3>
+<p class="mt-2 text-xs text-on-surface-variant">
+            In high-frequency e-commerce UI (like cart drawer increments), Context triggers full subtree re-renders whenever <code class="font-code-sm text-secondary bg-[#181826] px-1 py-0.5 rounded">items[]</code> updates. Zustand allows selective subscription via atom slices.
+          </p>
+</div>
+<!-- Quick Code Snip -->
+<div class="rounded-md bg-[#0a0a10] p-3 space-y-1.5 font-code-sm text-[11px]">
+<div class="flex items-center justify-between text-outline text-[10px]">
+<span>src/store/useCartStore.ts</span>
+<button class="hover:text-primary-container flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">content_copy</span>
+<span>copy</span>
+</button>
+</div>
+<div class="text-[#849495] pt-1">
+<span class="text-primary-container">const</span> total = <span class="text-secondary-fixed">useCartStore</span>(
+            <br/>  (state) =&gt; state.<span class="text-tertiary-fixed-dim">itemCount</span>
+<br/>); <span class="text-[#555f69]">// Isolated selector re-render</span>
+</div>
+</div>
+<!-- Concept Reference Table -->
+<div class="space-y-1.5">
+<div class="text-[10px] font-code-sm uppercase tracking-wider text-outline font-semibold">Core Interfaces In Scope</div>
+<div class="bg-[#161622] rounded p-2 space-y-2 text-xs">
+<div class="flex items-center justify-between font-code-sm text-[11px]">
+<span class="text-primary font-medium">useCartStore()</span>
+<span class="text-outline">Hook</span>
+</div>
+<div class="flex items-center justify-between font-code-sm text-[11px]">
+<span class="text-secondary font-medium">addItem(sku, qty)</span>
+<span class="text-outline">Action</span>
+</div>
+<div class="flex items-center justify-between font-code-sm text-[11px]">
+<span class="text-tertiary-fixed-dim font-medium">optimisticQty</span>
+<span class="text-outline">Derived state</span>
+</div>
+</div>
+</div>
+<!-- AI Hint Drawer Collapsible -->
+<div class="rounded-md bg-[#161626] p-3 space-y-2">
+<div class="flex items-center justify-between cursor-pointer">
+<div class="flex items-center gap-1.5 text-secondary-fixed-dim font-code-sm text-xs font-semibold">
+<span class="material-symbols-outlined text-[16px]">neurology</span>
+<span>AI Architectural Hint</span>
+</div>
+<span class="text-[10px] font-code-sm text-outline bg-[#0f0f18] px-1.5 py-0.5 rounded">0 pts</span>
+</div>
+<p class="text-[11px] text-on-surface-variant">
+            Make sure to apply <code class="font-code-sm text-primary bg-[#0f0f18] px-1 rounded">aria-expanded</code> and <code class="font-code-sm text-primary bg-[#0f0f18] px-1 rounded">role="dialog"</code> on your overlay wrapper. The test runner checks accessibility tags before snapshot matching!
+          </p>
+</div>
+<div class="p-3 rounded bg-[#13131e] text-[11px] text-outline flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container text-[18px]">verified</span>
+<span>Target completion time for Module 2: ~15 mins</span>
+</div>
+</div>
+</div>
+<!-- 4. DOMINANT MAIN EDITOR + LOWER TERMINAL AREA (Central Bulk) -->
+<div class="flex-1 flex flex-col min-w-0 bg-[#0c0c14] overflow-hidden">
+<!-- Editor Tab Bar -->
+<div class="h-9 bg-[#11111b] flex items-center justify-between px-2 shrink-0 overflow-x-auto">
+<div class="flex items-center h-full space-x-1">
+<!-- Tab 1: CartDrawer.tsx (ACTIVE) -->
+<div class="h-full px-3 bg-[#0c0c14] flex items-center gap-2 font-code-sm text-code-sm text-on-surface font-medium relative group cursor-pointer">
+<span class="material-symbols-outlined text-[15px] text-primary-container">code</span>
+<span>CartDrawer.tsx</span>
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container/80" title="Unsaved changes"></span>
+<span class="material-symbols-outlined text-[13px] text-outline group-hover:text-on-surface ml-1">close</span>
+<div class="absolute bottom-0 left-0 right-0 h-[2px] bg-primary-container shadow-[0_0_8px_#00f0ff]"></div>
+</div>
+<!-- Tab 2: cartStore.ts -->
+<div class="h-full px-3 flex items-center gap-2 font-code-sm text-code-sm text-outline hover:text-on-surface-variant transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-[15px] text-secondary">data_object</span>
+<span>cartStore.ts</span>
+<span class="material-symbols-outlined text-[13px] text-transparent group-hover:text-outline ml-1">close</span>
+</div>
+<!-- Tab 3: Terminal Tab -->
+<div class="h-full px-3 flex items-center gap-2 font-code-sm text-code-sm text-outline hover:text-on-surface-variant transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[15px]">terminal</span>
+<span>Shell</span>
+</div>
+<!-- Tab 4: Live Preview -->
+<div class="h-full px-3 flex items-center gap-2 font-code-sm text-code-sm text-outline hover:text-on-surface-variant transition-colors cursor-pointer">
+<span class="material-symbols-outlined text-[15px] text-emerald-400">captive_portal</span>
+<span>Preview:3000</span>
+</div>
+</div>
+<!-- Right tab bar actions -->
+<div class="flex items-center gap-1 text-outline">
+<button class="p-1 hover:text-on-surface" title="Format Document (Prettier)">
+<span class="material-symbols-outlined text-[16px]">format_align_left</span>
+</button>
+<button class="p-1 hover:text-on-surface" title="Open AI Code Assistant">
+<span class="material-symbols-outlined text-[16px]">smart_toy</span>
+</button>
+</div>
+</div>
+<!-- Code Editor Canvas (Realistic React 19 + TypeScript + Zustand) -->
+<div class="flex-1 overflow-y-auto flex font-code-md text-code-md leading-[22px] bg-[#0b0b12] relative">
+<!-- Line Numbers Column -->
+<div class="w-12 py-3 px-2 select-none text-right font-code-sm text-code-sm text-outline-variant/60 flex flex-col space-y-[2px] bg-[#09090f] shrink-0">
+<span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+<span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+<span>11</span><span class="text-primary-container font-semibold">12</span><span>13</span><span>14</span><span>15</span>
+<span>16</span><span>17</span><span>18</span><span>19</span><span>20</span>
+<span>21</span><span>22</span><span>23</span><span>24</span><span>25</span>
+<span>26</span><span>27</span><span>28</span>
+</div>
+<!-- Code Content Area -->
+<div class="flex-1 py-3 px-4 overflow-x-auto whitespace-pre font-code-md text-[#d1d5db]">
+<div><span class="text-[#555f69]">// Ascent Education Engine · Module 02 Target</span></div>
+<div><span class="text-primary-container">import</span> { <span class="text-secondary-fixed">Fragment</span>, <span class="text-secondary-fixed">useTransition</span> } <span class="text-primary-container">from</span> <span class="text-secondary">'react'</span>;</div>
+<div><span class="text-primary-container">import</span> { <span class="text-secondary-fixed">Dialog</span>, <span class="text-secondary-fixed">Transition</span> } <span class="text-primary-container">from</span> <span class="text-secondary">'@headlessui/react'</span>;</div>
+<div><span class="text-primary-container">import</span> { <span class="text-secondary-fixed">useCartStore</span> } <span class="text-primary-container">from</span> <span class="text-secondary">'@/store/cartStore'</span>;</div>
+<div><span class="text-primary-container">import</span> { <span class="text-secondary-fixed">CartItemRow</span> } <span class="text-primary-container">from</span> <span class="text-secondary">'./CartItemRow'</span>;</div>
+<div class="text-[#555f69]"> </div>
+<div><span class="text-primary-container">export function</span> <span class="text-tertiary-fixed font-semibold">CartDrawer</span>() {</div>
+<div> <span class="text-primary-container">const</span> isOpen = <span class="text-secondary-fixed">useCartStore</span>((s) =&gt; s.<span class="text-tertiary-fixed-dim">isDrawerOpen</span>);</div>
+<div> <span class="text-primary-container">const</span> closeDrawer = <span class="text-secondary-fixed">useCartStore</span>((s) =&gt; s.<span class="text-tertiary-fixed-dim">closeDrawer</span>);</div>
+<div> <span class="text-primary-container">const</span> items = <span class="text-secondary-fixed">useCartStore</span>((s) =&gt; s.<span class="text-tertiary-fixed-dim">items</span>);</div>
+<div> <span class="text-primary-container">const</span> updateQty = <span class="text-secondary-fixed">useCartStore</span>((s) =&gt; s.<span class="text-tertiary-fixed-dim">updateQuantity</span>);</div>
+<!-- Active Line Highlight (Line 12) -->
+<div class="bg-[#161b2a] -mx-4 px-4 flex items-center relative">
+<span class="text-primary-container">  const</span> [isPending, startTransition] = <span class="text-secondary-fixed">useTransition</span>();<span class="inline-block w-[2px] h-4 bg-primary-container ml-0.5 animate-pulse shadow-[0_0_8px_#00f0ff]"></span>
+</div>
+<div> </div>
+<div> <span class="text-primary-container">const</span> handleQuantityChange = (id: <span class="text-primary-container">string</span>, delta: <span class="text-primary-container">number</span>) =&gt; {</div>
+<div> <span class="text-secondary-fixed">startTransition</span>(<span class="text-primary-container">async</span> () =&gt; {</div>
+<div> <span class="text-[#555f69]">// Optimistically dispatch local store update before server roundtrip</span></div>
+<div> <span class="text-secondary-fixed">updateQty</span>(id, delta);</div>
+<div>    });</div>
+<div>  };</div>
+<div> </div>
+<div> <span class="text-primary-container">return</span> (</div>
+<div>    &lt;<span class="text-primary-container">Transition.Root</span> show={isOpen} as={<span class="text-secondary-fixed">Fragment</span>}&gt;</div>
+<div>      &lt;<span class="text-primary-container">Dialog</span> as=<span class="text-secondary">"div"</span> className=<span class="text-secondary">"relative z-50"</span> onClose={closeDrawer}&gt;</div>
+<div>        &lt;<span class="text-primary-container">div</span> className=<span class="text-secondary">"fixed inset-0 bg-black/60 backdrop-blur-sm"</span> /&gt;</div>
+<div>        &lt;<span class="text-primary-container">div</span> className=<span class="text-secondary">"fixed inset-y-0 right-0 flex max-w-full pl-10"</span>&gt;</div>
+<div>          &lt;<span class="text-primary-container">div</span> className=<span class="text-secondary">"w-screen max-w-md bg-[#13131b] p-6 shadow-2xl"</span>&gt;</div>
+<div>            {<span 30="" absolute="" bg-[#1a1a26]="" border="" border-outline-variant="" class="text-[#555f69]/* Drawer item list rendering pipeline */&lt;/span&gt;}&lt;/div&gt; &lt;/div&gt; &lt;!-- Floating Autocomplete / LSP Hover Diagnostics Tooltip --&gt; &lt;div class=" font-code-sm="" left-[280px]="" max-w-sm="" p-2.5="" pointer-events-none"="" rounded-md="" shadow-2xl="" text-[12px]="" top-[270px]="" z-30="">
+<div class="flex items-center gap-1.5 text-primary-container pb-1 border-b border-surface-container-high">
+<span class="material-symbols-outlined text-[14px]">info</span>
+<span class="font-semibold">useCartStore: (selector) =&gt; State</span>
+</div>
+<p class="text-on-surface-variant text-[11px] pt-1">
+            Bound Zustand subscriber selector. Triggers re-render strictly when resolved value changes by shallow equality.
+          </p>
+</span></div>
+</div>
+<!-- 5. LOWER TERMINAL & TEST VERIFICATION CONSOLE (~190px) -->
+<div class="h-48 bg-[#09090f] flex flex-col shrink-0">
+<!-- Terminal Header Tabs -->
+<div class="h-8 bg-[#101018] flex items-center justify-between px-3 shrink-0">
+<div class="flex items-center space-x-4 h-full font-code-sm text-code-sm">
+<!-- Tests Tab Active -->
+<button class="h-full flex items-center gap-1.5 text-primary-container font-semibold relative">
+<span class="material-symbols-outlined text-[15px]">fact_check</span>
+<span>Automated Tests (Vitest)</span>
+<div class="absolute bottom-0 left-0 right-0 h-[2px] bg-primary-container"></div>
+</button>
+<!-- Dev Server Tab -->
+<button class="h-full flex items-center gap-1.5 text-outline hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[15px]">router</span>
+<span>Dev Server (Next.js)</span>
+</button>
+<!-- AI Diagnostics Tab -->
+<button class="h-full flex items-center gap-1.5 text-outline hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[15px]">auto_fix_high</span>
+<span>AI Diagnostics</span>
+</button>
+</div>
+<!-- Terminal Telemetry Details -->
+<div class="flex items-center gap-3 font-code-sm text-[11px] text-outline">
+<span>Node v22.4.0</span>
+<span>·</span>
+<span>Runner active</span>
+<span>·</span>
+<span class="text-secondary">14ms latency</span>
+<button class="hover:text-on-surface ml-1"><span class="material-symbols-outlined text-[15px]">clear_all</span></button>
+</div>
+</div>
+<!-- Terminal Output Stream -->
+<div class="flex-1 p-3 overflow-y-auto font-code-sm text-[12px] space-y-1.5 text-on-surface-variant select-text">
+<!-- Passed Test -->
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.2 rounded bg-emerald-950/60 text-emerald-400 font-bold text-[10px]">PASS</span>
+<span class="text-on-surface font-medium">test/cartStore.test.ts</span>
+<span class="text-outline text-[11px]">(3 tests passed, 180ms)</span>
+</div>
+<div class="pl-7 text-[11px] text-outline space-y-0.5">
+<div class="flex items-center gap-1.5 text-emerald-400/90">
+<span class="material-symbols-outlined text-[13px]">check</span>
+<span>initializes with empty drawer payload</span>
+</div>
+<div class="flex items-center gap-1.5 text-emerald-400/90">
+<span class="material-symbols-outlined text-[13px]">check</span>
+<span>persists token session correctly across reload</span>
+</div>
+</div>
+<!-- Running Test -->
+<div class="flex items-center gap-2 pt-1">
+<span class="px-1.5 py-0.2 rounded bg-amber-950/60 text-amber-300 font-bold text-[10px] animate-pulse">RUNS</span>
+<span class="text-on-surface font-medium">test/CartDrawer.test.tsx</span>
+<span class="text-amber-300/80 text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] animate-spin">sync</span>
+<span>evaluating optimistic badge update mutation...</span>
+</span>
+</div>
+<div class="text-[11px] text-outline pl-7">
+            &gt; checking headless dialog accessibility roles: <span class="text-secondary">role="dialog" verified</span>.
+          </div>
+</div>
+</div>
+</div>
+</div>
+<!-- 6. PERSISTENT BOTTOM STATUS STRIP (VS Code style, ~28px) -->
+<div class="h-7 w-full bg-[#08080d] flex items-center justify-between px-3 text-[11px] font-code-sm text-outline shrink-0 shadow-lg z-30">
+<!-- Left Status Metadata -->
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-1 text-on-surface hover:text-primary-container cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[14px]">fork_right</span>
+<span>main*</span>
+</div>
+<div class="flex items-center gap-1 hover:text-on-surface cursor-pointer">
+<span class="material-symbols-outlined text-[14px] text-secondary">check_circle</span>
+<span>0 errors</span>
+</div>
+<div class="flex items-center gap-1 hover:text-on-surface cursor-pointer">
+<span class="material-symbols-outlined text-[14px] text-tertiary-fixed-dim">warning</span>
+<span>0 warnings</span>
+</div>
+<span class="hidden md:inline text-outline-variant">|</span>
+<span class="hidden md:inline">TypeScript 5.6.2</span>
+<span class="hidden md:inline">UTF-8</span>
+</div>
+<!-- Center Verification Progress -->
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed animate-pulse"></span>
+<span class="text-on-surface font-medium">4/5 Tests Verified · Ready for automated evaluation</span>
+</div>
+<!-- Right Primary CTA: Solid Electric Cyan Button -->
+<div class="flex items-center gap-2">
+<button class="bg-primary-container text-on-primary-fixed hover:bg-[#33f3ff] transition-all duration-150 px-3 py-0.5 rounded flex items-center gap-1.5 font-bold tracking-wide shadow-[0_0_12px_rgba(0,240,255,0.35)] cursor-pointer active:scale-95">
+<span class="material-symbols-outlined text-[14px]">play_arrow</span>
+<span>RUN TESTS &amp; VERIFY</span>
+<kbd class="text-[9px] bg-black/20 px-1 rounded ml-0.5 text-on-primary-fixed">⌘↵</kbd>
+</button>
+</div>
+</div>
+</div></div></main></div>
+</body></html>
