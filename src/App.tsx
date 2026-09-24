@@ -2,6 +2,7 @@ import React from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import { Header } from './components/Header'
 import { Screen1Prompt } from './screens/Screen1Prompt'
+import { Screen2Scope } from './screens/Screen2Scope'
 
 const MainContent: React.FC = () => {
   const { currentScreen } = useApp()
@@ -11,11 +12,7 @@ const MainContent: React.FC = () => {
       <Header />
       <main className="flex-1 flex flex-col">
         {currentScreen === 1 && <Screen1Prompt />}
-        {currentScreen === 2 && (
-          <div className="p-8 text-center">
-            <h2 className="text-2xl font-bold text-white font-display">Screen 2: Scope Confirmation Placeholder</h2>
-          </div>
-        )}
+        {currentScreen === 2 && <Screen2Scope />}
         {currentScreen === 3 && (
           <div className="p-8 text-center">
             <h2 className="text-2xl font-bold text-white font-display">Screen 3: Calibration Placeholder</h2>
