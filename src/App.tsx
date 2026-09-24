@@ -6,6 +6,7 @@ import { Screen2Scope } from './screens/Screen2Scope'
 import { Screen3Calibration } from './screens/Screen3Calibration'
 import { Screen4Workspace } from './screens/Screen4Workspace'
 import { Screen5Projects } from './screens/Screen5Projects'
+import { Screen6Roadmap } from './screens/Screen6Roadmap'
 
 const MainContent: React.FC = () => {
   const { currentScreen } = useApp()
@@ -19,11 +20,7 @@ const MainContent: React.FC = () => {
         {currentScreen === 3 && <Screen3Calibration />}
         {currentScreen === 4 && <Screen4Workspace />}
         {currentScreen === 5 && <Screen5Projects />}
-        {currentScreen === 6 && (
-          <div className="p-8 text-center">
-            <h2 className="text-2xl font-bold text-white font-display">Screen 6: Full Roadmap Placeholder</h2>
-          </div>
-        )}
+        {currentScreen === 6 && <Screen6Roadmap />}
       </main>
     </div>
   )
