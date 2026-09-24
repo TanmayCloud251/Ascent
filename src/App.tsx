@@ -3,6 +3,7 @@ import { AppProvider, useApp } from './context/AppContext'
 import { Header } from './components/Header'
 import { Screen1Prompt } from './screens/Screen1Prompt'
 import { Screen2Scope } from './screens/Screen2Scope'
+import { Screen5Projects } from './screens/Screen5Projects'
 
 const MainContent: React.FC = () => {
   const { currentScreen } = useApp()
@@ -23,11 +24,7 @@ const MainContent: React.FC = () => {
             <h2 className="text-2xl font-bold text-white font-display">Screen 4: IDE Workspace Placeholder</h2>
           </div>
         )}
-        {currentScreen === 5 && (
-          <div className="p-8 text-center">
-            <h2 className="text-2xl font-bold text-white font-display">Screen 5: Projects Picker Placeholder</h2>
-          </div>
-        )}
+        {currentScreen === 5 && <Screen5Projects />}
         {currentScreen === 6 && (
           <div className="p-8 text-center">
             <h2 className="text-2xl font-bold text-white font-display">Screen 6: Full Roadmap Placeholder</h2>
