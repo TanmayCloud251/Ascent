@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ascent — Projects (Empty State)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              cyan: '#00f0ff',
+              cyanGlow: 'rgba(0, 240, 255, 0.15)',
+              cyanBorder: 'rgba(0, 240, 255, 0.4)',
+            },
+          },
+          fontFamily: {
+            sans: ['Geist', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0a0a0f;
+      color: #e2e8f0;
+      font-family: 'Geist', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .grid-bg {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0a0a0f] text-slate-100 flex flex-col justify-between selection:bg-brand-cyan/20 selection:text-brand-cyan">
+
+  <!-- Atmospheric subtle radial glow -->
+  <div class="fixed inset-0 grid-bg pointer-events-none opacity-40"></div>
+  <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-brand-cyan/5 blur-[130px] pointer-events-none rounded-full"></div>
+
+  <!-- Unified Top Navbar (consistent with Clarifying Question screen) -->
+  <header class="relative z-20 border-b border-white/[0.06] bg-[#0a0a0f]/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <!-- Left: Ascent Brand Wordmark -->
+      <a href="#" class="flex items-center gap-2 group">
+        <span class="text-base font-medium tracking-tight text-white group-hover:text-white/90">Ascent</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-brand-cyan shadow-[0_0_8px_#00f0ff]"></span>
+      </a>
+
+      <!-- Middle/Right Text Links -->
+      <nav class="flex items-center gap-7">
+        <a href="#" class="text-xs text-slate-400 hover:text-white transition-colors">Overview</a>
+        <a href="#" class="text-xs text-slate-400 hover:text-white transition-colors">How it works</a>
+        <a href="#" class="text-xs text-white font-medium flex items-center gap-1.5">
+          Projects
+          <span class="w-1 h-1 rounded-full bg-brand-cyan"></span>
+        </a>
+        <a href="#" class="text-xs text-slate-400 hover:text-white transition-colors">Scope</a>
+        <a href="#" class="text-xs text-slate-400 hover:text-white transition-colors">Docs</a>
+
+        <!-- Divider -->
+        <div class="h-3.5 w-[1px] bg-white/10 mx-1"></div>
+
+        <!-- User / Sign in -->
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-400 hover:text-slate-200 cursor-pointer">Sign in</span>
+          <div class="w-7 h-7 rounded-full overflow-hidden border border-white/10 ring-1 ring-brand-cyan/30">
+            <img src="https://lh3.googleusercontent.com/aida/AEtjO1VZ8EOIVot3JNU6jhz8vyuVn3RmvADnUO3opHcbU-drwSYoUtxTLgv0lLq90gKFaYYwiGmQVGFq7ZS7Y3txu76whMpr1l4WWiPrCzxFGawpm8NgKZDHngVstZF66JkgGWZVnsK79ardIQcoHV9BMC6jLqForAxZ2vTARg1fPI1mDX11M56eTP9W1EgRRgEu3ADld4lDvlOCtmtyGPdXN2CqbYKBwz12eM-mg-eUDzm4cmzWIcYNxZwMPA" alt="Avatar" class="w-full h-full object-cover">
+          </div>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content: Empty State (Calm, Centered, Zero Noise) -->
+  <main class="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-16 text-center">
+    
+    <div class="max-w-md w-full flex flex-col items-center">
+      
+      <!-- Monospace kicker -->
+      <div class="inline-flex items-center gap-2 mb-4 px-2.5 py-1 rounded-full bg-white/[0.03] border border-white/[0.07]">
+        <span class="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+        <span class="text-[11px] font-mono text-slate-400 tracking-wider uppercase">WORKSPACE EMPTY // 0 ACTIVE</span>
+      </div>
+
+      <!-- Headline -->
+      <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-white mb-2">
+        You haven’t started a project yet
+      </h1>
+
+      <!-- Short quiet explanation -->
+      <p class="text-sm text-slate-400 leading-relaxed max-w-sm mb-8">
+        Describe any web app, microservice, or tool. Ascent will architect an interactive curriculum from scratch.
+      </p>
+
+      <!-- Clear Primary Action: Start New Project -->
+      <a href="#" class="group relative inline-flex items-center justify-center gap-2.5 px-6 py-3 rounded bg-brand-cyan text-black font-semibold text-xs tracking-wide uppercase hover:bg-[#38f4ff] hover:shadow-[0_0_24px_rgba(0,240,255,0.4)] transition-all">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M12 4v16m8-8H4" />
+        </svg>
+        <span>Start your first project</span>
+        <svg class="w-3.5 h-3.5 transform group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </a>
+
+      <!-- Quick blueprint suggestions below (matching Screen 1's quiet chips) -->
+      <div class="mt-10 pt-8 border-t border-white/[0.05] w-full">
+        <span class="text-[11px] font-mono text-slate-400 block mb-3 uppercase tracking-wider">Popular starter tracks</span>
+        <div class="flex flex-wrap justify-center gap-2">
+          <button class="text-xs px-3 py-1.5 rounded bg-white/[0.02] border border-white/[0.08] hover:border-brand-cyan/40 hover:text-white text-slate-400 font-mono transition-colors">
+            e-commerce store
+          </button>
+          <button class="text-xs px-3 py-1.5 rounded bg-white/[0.02] border border-white/[0.08] hover:border-brand-cyan/40 hover:text-white text-slate-400 font-mono transition-colors">
+            ai agent cockpit
+          </button>
+          <button class="text-xs px-3 py-1.5 rounded bg-white/[0.02] border border-white/[0.08] hover:border-brand-cyan/40 hover:text-white text-slate-400 font-mono transition-colors">
+            realtime telemetry
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer (Quiet, Minimal) -->
+  <footer class="relative z-10 border-t border-white/[0.04] py-5 text-center text-xs text-slate-600">
+    <div class="max-w-6xl mx-auto px-6 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500/80"></span>
+        <span>NODES ONLINE</span>
+      </div>
+      <span>© 2025 Ascent Engineering Lab. AI-Native Curriculum.</span>
+      <span class="font-mono text-[11px] text-slate-600">v1.4.0-sys</span>
+    </div>
+  </footer>
+
+</body>
+</html>

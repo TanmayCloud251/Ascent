@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ascent — Projects</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              cyan: '#00f0ff',
+              cyanGlow: 'rgba(0, 240, 255, 0.15)',
+              cyanBorder: 'rgba(0, 240, 255, 0.4)',
+            },
+            surface: {
+              950: '#07070a',
+              900: '#0a0a0f',
+              850: '#0f0f16',
+              800: '#14141e',
+              700: '#1d1d2b',
+              600: '#2b2b3d',
+            }
+          },
+          fontFamily: {
+            sans: ['Geist', 'sans-serif'],
+            mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #0a0a0f;
+      color: #e2e8f0;
+      font-family: 'Geist', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .grid-bg {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .project-card {
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .project-card:hover {
+      border-color: rgba(0, 240, 255, 0.45);
+      background: #11111a;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 30px -10px rgba(0, 240, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0a0a0f] text-slate-100 flex flex-col justify-between selection:bg-brand-cyan/20 selection:text-brand-cyan">
+
+  <!-- Atmospheric subtle radial glow -->
+  <div class="fixed inset-0 grid-bg pointer-events-none opacity-40"></div>
+  <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[700px] h-[320px] bg-brand-cyan/5 blur-[120px] pointer-events-none rounded-full"></div>
+
+  <!-- Unified Top Navbar (identical to Clarifying Question screen) -->
+  <header class="relative z-20 border-b border-white/[0.06] bg-[#0a0a0f]/80 backdrop-blur-md">
+    <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+      <!-- Left: Ascent Brand Wordmark -->
+      <a href="#" class="flex items-center gap-2 group">
+        <span class="text-base font-medium tracking-tight text-white group-hover:text-white/90">Ascent</span>
+        <span class="w-1.5 h-1.5 rounded-full bg-brand-cyan shadow-[0_0_8px_#00f0ff]"></span>
+      </a>
+
+      <!-- Middle/Right Text Links -->
+      <nav class="flex items-center gap-7">
+        <a href="#" class="text-xs text-slate-400 hover:text-white transition-colors">Overview</a>
+        <a href="#" class="text-xs text-slate-400 hover:text-white transition-colors">How it works</a>
+        <a href="#" class="text-xs text-white font-medium flex items-center gap-1.5">
+          Projects
+          <span class="w-1 h-1 rounded-full bg-brand-cyan"></span>
+        </a>
+        <a href="#" class="text-xs text-slate-400 hover:text-white transition-colors">Scope</a>
+        <a href="#" class="text-xs text-slate-400 hover:text-white transition-colors">Docs</a>
+
+        <!-- Divider -->
+        <div class="h-3.5 w-[1px] bg-white/10 mx-1"></div>
+
+        <!-- User / Sign in -->
+        <div class="flex items-center gap-3">
+          <span class="text-xs text-slate-400 hover:text-slate-200 cursor-pointer">Sign in</span>
+          <div class="w-7 h-7 rounded-full overflow-hidden border border-white/10 ring-1 ring-brand-cyan/30">
+            <img src="https://lh3.googleusercontent.com/aida/AEtjO1VZ8EOIVot3JNU6jhz8vyuVn3RmvADnUO3opHcbU-drwSYoUtxTLgv0lLq90gKFaYYwiGmQVGFq7ZS7Y3txu76whMpr1l4WWiPrCzxFGawpm8NgKZDHngVstZF66JkgGWZVnsK79ardIQcoHV9BMC6jLqForAxZ2vTARg1fPI1mDX11M56eTP9W1EgRRgEu3ADld4lDvlOCtmtyGPdXN2CqbYKBwz12eM-mg-eUDzm4cmzWIcYNxZwMPA" alt="Avatar" class="w-full h-full object-cover">
+          </div>
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content: Project Picker -->
+  <main class="relative z-10 max-w-5xl w-full mx-auto px-6 py-14 flex-1">
+    
+    <!-- Header Section -->
+    <div class="flex items-center justify-between mb-8 pb-3 border-b border-white/[0.04]">
+      <div>
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="text-[10px] font-mono uppercase tracking-widest text-brand-cyan">WORKSPACE REPOSITORY</span>
+          <span class="text-slate-600 text-xs">/</span>
+          <span class="text-[10px] font-mono text-slate-400 tracking-wider">3 ACTIVE</span>
+        </div>
+        <h1 class="text-2xl font-semibold tracking-tight text-white">Your projects</h1>
+      </div>
+
+      <!-- Quick action or mode toggle (clean, subtle) -->
+      <div class="flex items-center gap-3">
+        <span class="text-xs text-slate-500 font-mono">RETURNING LEARNER</span>
+      </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+      <!-- Project Card 1 (Active in-progress) -->
+      <a href="#" class="project-card group relative flex flex-col justify-between p-5 rounded-lg bg-[#0e0e15] border border-white/[0.08] cursor-pointer">
+        <div>
+          <!-- Status Tag & Last Active -->
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wide bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20">
+              <span class="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse"></span>
+              In Progress
+            </span>
+            <span class="text-[11px] font-mono text-slate-400">active 24m ago</span>
+          </div>
+
+          <!-- Project Title & Description -->
+          <h2 class="text-base font-medium text-white group-hover:text-brand-cyan transition-colors mb-1.5">
+            E-Commerce Storefront & Cart
+          </h2>
+          <p class="text-xs text-slate-400 font-normal leading-relaxed line-clamp-2 mb-4">
+            Next.js App Router, Zustand reactive cart drawer, and Stripe Checkout webhooks integration.
+          </p>
+        </div>
+
+        <!-- Card Footer: Tech Stack & Progress -->
+        <div class="pt-4 border-t border-white/[0.05] flex flex-col gap-3">
+          <!-- Stack Monospace Tags -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.08] text-slate-300">Next.js 15</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.08] text-slate-300">Zustand</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.08] text-slate-300">Stripe</span>
+          </div>
+
+          <!-- Simple Progress line + text fraction -->
+          <div>
+            <div class="flex justify-between items-center text-[11px] font-mono mb-1.5">
+              <span class="text-slate-400">Progress</span>
+              <span class="text-brand-cyan font-medium">5 of 8 screens</span>
+            </div>
+            <div class="w-full h-1 bg-white/[0.06] rounded-full overflow-hidden">
+              <div class="h-full bg-brand-cyan rounded-full" style="width: 62.5%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Open Arrow icon subtle affordance in corner -->
+        <div class="absolute top-4 right-4 text-slate-600 group-hover:text-brand-cyan transition-colors">
+          <svg class="w-4 h-4 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 17L17 7M17 7H9M17 7V15" />
+          </svg>
+        </div>
+      </a>
+
+      <!-- Project Card 2 (Active in-progress) -->
+      <a href="#" class="project-card group relative flex flex-col justify-between p-5 rounded-lg bg-[#0e0e15] border border-white/[0.08] cursor-pointer">
+        <div>
+          <!-- Status Tag & Last Active -->
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wide bg-white/[0.05] text-slate-300 border border-white/[0.08]">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400/80"></span>
+              In Progress
+            </span>
+            <span class="text-[11px] font-mono text-slate-400">active 2d ago</span>
+          </div>
+
+          <!-- Project Title & Description -->
+          <h2 class="text-base font-medium text-white group-hover:text-brand-cyan transition-colors mb-1.5">
+            Realtime AI Agent Cockpit
+          </h2>
+          <p class="text-xs text-slate-400 font-normal leading-relaxed line-clamp-2 mb-4">
+            Multi-agent orchestrator with WebSocket streaming, token usage telemetry, and prompt workbench.
+          </p>
+        </div>
+
+        <!-- Card Footer: Tech Stack & Progress -->
+        <div class="pt-4 border-t border-white/[0.05] flex flex-col gap-3">
+          <!-- Stack Monospace Tags -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.08] text-slate-300">FastAPI</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.08] text-slate-300">WebSockets</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.08] text-slate-300">Redis</span>
+          </div>
+
+          <!-- Simple Progress line + text fraction -->
+          <div>
+            <div class="flex justify-between items-center text-[11px] font-mono mb-1.5">
+              <span class="text-slate-400">Progress</span>
+              <span class="text-slate-300">2 of 6 screens</span>
+            </div>
+            <div class="w-full h-1 bg-white/[0.06] rounded-full overflow-hidden">
+              <div class="h-full bg-slate-300 rounded-full" style="width: 33.3%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="absolute top-4 right-4 text-slate-600 group-hover:text-brand-cyan transition-colors">
+          <svg class="w-4 h-4 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 17L17 7M17 7H9M17 7V15" />
+          </svg>
+        </div>
+      </a>
+
+      <!-- Project Card 3 (Completed) -->
+      <a href="#" class="project-card group relative flex flex-col justify-between p-5 rounded-lg bg-[#0e0e15] border border-white/[0.08] cursor-pointer">
+        <div>
+          <!-- Status Tag & Last Active -->
+          <div class="flex items-center justify-between gap-2 mb-3">
+            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono uppercase tracking-wide bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <svg class="w-3 h-3 text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              </svg>
+              Completed
+            </span>
+            <span class="text-[11px] font-mono text-slate-400">active 1w ago</span>
+          </div>
+
+          <!-- Project Title & Description -->
+          <h2 class="text-base font-medium text-white group-hover:text-brand-cyan transition-colors mb-1.5">
+            Distributed Telemetry Dashboard
+          </h2>
+          <p class="text-xs text-slate-400 font-normal leading-relaxed line-clamp-2 mb-4">
+            ClickHouse metrics ingest pipeline with live sparkline charts and alert thresholds.
+          </p>
+        </div>
+
+        <!-- Card Footer: Tech Stack & Progress -->
+        <div class="pt-4 border-t border-white/[0.05] flex flex-col gap-3">
+          <!-- Stack Monospace Tags -->
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.08] text-slate-300">Go</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.08] text-slate-300">ClickHouse</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.03] border border-white/[0.08] text-slate-300">Tailwind</span>
+          </div>
+
+          <!-- Simple Progress line + text fraction -->
+          <div>
+            <div class="flex justify-between items-center text-[11px] font-mono mb-1.5">
+              <span class="text-slate-400">Progress</span>
+              <span class="text-emerald-400 font-medium">4 of 4 screens</span>
+            </div>
+            <div class="w-full h-1 bg-white/[0.06] rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-400 rounded-full" style="width: 100%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="absolute top-4 right-4 text-slate-600 group-hover:text-brand-cyan transition-colors">
+          <svg class="w-4 h-4 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 17L17 7M17 7H9M17 7V15" />
+          </svg>
+        </div>
+      </a>
+
+      <!-- Distinct "+ New Project" Card Affordance -->
+      <a href="#" class="group relative flex flex-col items-center justify-center p-6 rounded-lg border-2 border-dashed border-brand-cyan/30 hover:border-brand-cyan/80 bg-brand-cyan/[0.02] hover:bg-brand-cyan/[0.06] transition-all min-h-[220px] text-center cursor-pointer">
+        <div class="w-11 h-11 rounded-full bg-brand-cyan/10 border border-brand-cyan/30 flex items-center justify-center text-brand-cyan group-hover:scale-110 group-hover:bg-brand-cyan group-hover:text-black transition-all mb-3 shadow-[0_0_15px_rgba(0,240,255,0.15)]">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+        </div>
+        <span class="text-sm font-semibold text-white group-hover:text-brand-cyan transition-colors mb-1">
+          Start new project
+        </span>
+        <p class="text-xs text-slate-400 max-w-[200px]">
+          Describe any project or stack to architect a new custom syllabus.
+        </p>
+      </a>
+
+    </div>
+
+    <!-- Quick info bar at bottom -->
+    <div class="mt-12 pt-6 border-t border-white/[0.04] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400 font-mono">
+      <div class="flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-brand-cyan"></span>
+        <span>Automatic resume: projects with 1 active state load directly into IDE</span>
+      </div>
+      <div class="flex items-center gap-4">
+        <span>SESSION ID: #ASC-9921</span>
+        <span>•</span>
+        <span>LATENCY: 12ms</span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer (Quiet, Minimal) -->
+  <footer class="relative z-10 border-t border-white/[0.04] py-5 text-center text-xs text-slate-600">
+    <div class="max-w-6xl mx-auto px-6 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500/80"></span>
+        <span>NODES ONLINE</span>
+      </div>
+      <span>© 2025 Ascent Engineering Lab. AI-Native Curriculum.</span>
+      <span class="font-mono text-[11px] text-slate-600">v1.4.0-sys</span>
+    </div>
+  </footer>
+
+</body>
+</html>

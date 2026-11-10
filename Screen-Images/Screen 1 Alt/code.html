@@ -1,0 +1,402 @@
+<!DOCTYPE html><html class="dark" lang="en"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_standard" name="shell-type"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+          "background": "#13131b",
+          "on-secondary-fixed": "#002118",
+          "on-primary-container": "#006970",
+          "on-secondary-container": "#00604b",
+          "on-tertiary-fixed-variant": "#653e00",
+          "error": "#ffb4ab",
+          "primary": "#dbfcff",
+          "secondary-fixed": "#43fece",
+          "on-error-container": "#ffdad6",
+          "surface-container-high": "#292932",
+          "on-surface-variant": "#b9cacb",
+          "surface-container-lowest": "#0d0d15",
+          "tertiary": "#fff3ea",
+          "on-primary-fixed": "#002022",
+          "primary-fixed-dim": "#00dbe9",
+          "surface-container": "#1f1f27",
+          "secondary-container": "#00e3b6",
+          "primary-fixed": "#7df4ff",
+          "on-tertiary-fixed": "#2a1700",
+          "secondary": "#5dffd2",
+          "on-tertiary-container": "#855300",
+          "surface-variant": "#34343d",
+          "on-surface": "#e4e1ed",
+          "outline-variant": "#3b494b",
+          "tertiary-fixed": "#ffddb8",
+          "surface-container-highest": "#34343d",
+          "primary-container": "#00f0ff",
+          "on-error": "#690005",
+          "inverse-primary": "#006970",
+          "on-secondary": "#00382b",
+          "tertiary-container": "#ffd19c",
+          "on-primary": "#00363a",
+          "on-primary-fixed-variant": "#004f54",
+          "surface-dim": "#13131b",
+          "on-background": "#e4e1ed",
+          "tertiary-fixed-dim": "#ffb95f",
+          "outline": "#849495",
+          "error-container": "#93000a",
+          "secondary-fixed-dim": "#00e0b3",
+          "inverse-surface": "#e4e1ed",
+          "on-tertiary": "#472a00",
+          "surface-container-low": "#1b1b23",
+          "on-secondary-fixed-variant": "#00513f",
+          "surface": "#13131b",
+          "inverse-on-surface": "#303038",
+          "surface-bright": "#393841",
+          "surface-tint": "#00dbe9"
+        },
+        "borderRadius": {
+          "DEFAULT": "0.125rem",
+          "lg": "0.25rem",
+          "xl": "0.5rem",
+          "full": "0.75rem"
+        },
+        "spacing": {
+          "space-2xs": "0.125rem",
+          "gutter-mobile": "0.75rem",
+          "terminal-height-collapsed": "2.25rem",
+          "space-xs": "0.25rem",
+          "space-lg": "1rem",
+          "space-xl": "1.5rem",
+          "space-3xl": "3rem",
+          "space-md": "0.75rem",
+          "gutter-desktop": "1rem",
+          "space-2xl": "2rem",
+          "space-sm": "0.5rem",
+          "sidebar-width": "16rem"
+        },
+        "fontFamily": {
+          "label-sm": [
+            "JetBrains Mono"
+          ],
+          "code-lg": [
+            "JetBrains Mono"
+          ],
+          "headline-lg-mobile": [
+            "Geist"
+          ],
+          "headline-sm": [
+            "Geist"
+          ],
+          "body-lg": [
+            "Geist"
+          ],
+          "headline-xl": [
+            "Geist"
+          ],
+          "code-sm": [
+            "JetBrains Mono"
+          ],
+          "code-md": [
+            "JetBrains Mono"
+          ],
+          "body-sm": [
+            "Geist"
+          ],
+          "body-md": [
+            "Geist"
+          ],
+          "headline-lg": [
+            "Geist"
+          ],
+          "label-md": [
+            "JetBrains Mono"
+          ],
+          "headline-md": [
+            "Geist"
+          ],
+          "headline-xl-mobile": [
+            "Geist"
+          ]
+        },
+        "fontSize": {
+          "label-sm": [
+            "10px",
+            {
+              "lineHeight": "14px",
+              "letterSpacing": "0.06em",
+              "fontWeight": "500"
+            }
+          ],
+          "code-lg": [
+            "14px",
+            {
+              "lineHeight": "22px",
+              "fontWeight": "400"
+            }
+          ],
+          "headline-lg-mobile": [
+            "22px",
+            {
+              "lineHeight": "30px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "600"
+            }
+          ],
+          "headline-sm": [
+            "16px",
+            {
+              "lineHeight": "24px",
+              "letterSpacing": "0em",
+              "fontWeight": "500"
+            }
+          ],
+          "body-lg": [
+            "16px",
+            {
+              "lineHeight": "26px",
+              "fontWeight": "400"
+            }
+          ],
+          "headline-xl": [
+            "40px",
+            {
+              "lineHeight": "48px",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "600"
+            }
+          ],
+          "code-sm": [
+            "11px",
+            {
+              "lineHeight": "16px",
+              "fontWeight": "400"
+            }
+          ],
+          "code-md": [
+            "13px",
+            {
+              "lineHeight": "20px",
+              "fontWeight": "400"
+            }
+          ],
+          "body-sm": [
+            "12px",
+            {
+              "lineHeight": "18px",
+              "fontWeight": "400"
+            }
+          ],
+          "body-md": [
+            "14px",
+            {
+              "lineHeight": "22px",
+              "fontWeight": "400"
+            }
+          ],
+          "headline-lg": [
+            "30px",
+            {
+              "lineHeight": "38px",
+              "letterSpacing": "-0.02em",
+              "fontWeight": "600"
+            }
+          ],
+          "label-md": [
+            "12px",
+            {
+              "lineHeight": "16px",
+              "letterSpacing": "0.04em",
+              "fontWeight": "500"
+            }
+          ],
+          "headline-md": [
+            "20px",
+            {
+              "lineHeight": "28px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "500"
+            }
+          ],
+          "headline-xl-mobile": [
+            "28px",
+            {
+              "lineHeight": "36px",
+              "letterSpacing": "-0.01em",
+              "fontWeight": "600"
+            }
+          ]
+        }
+      },
+    },
+  }</script></head><body class="bg-surface font-body-md text-body-md text-on-surface min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container"><header class="fixed top-0 left-0 w-full z-50 bg-surface-container-lowest/80 backdrop-blur-xl border-b border-outline-variant/30"><div class="h-14 w-full px-gutter-desktop max-w-7xl mx-auto flex items-center justify-between"><div class="flex items-center gap-space-sm"><a class="flex items-center gap-space-2xs" data-path="overview" href="#"><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight">Ascent</span><span class="h-1.5 w-1.5 rounded-full bg-primary-container inline-block shadow-[0_0_8px_#00f0ff]"></span></a></div><div class="flex items-center gap-space-xl"><nav class="flex items-center gap-space-lg" data-active-classes="text-primary-container"><a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="overview" href="#">Overview</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="how-it-works" href="#">How it works</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="projects" href="#">Projects</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="scope" href="#">Scope</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-colors" data-path="documentation" href="#">Docs</a><a class="font-label-md text-label-md text-on-surface-variant hover:text-primary transition-colors" data-path="sign-in" href="#">Sign in</a></nav><div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/30 flex items-center justify-center"><img src="https://lh3.googleusercontent.com/aida/AEtjO1VZ8EOIVot3JNU6jhz8vyuVn3RmvADnUO3opHcbU-drwSYoUtxTLgv0lLq90gKFaYYwiGmQVGFq7ZS7Y3txu76whMpr1l4WWiPrCzxFGawpm8NgKZDHngVstZF66JkgGWZVnsK79ardIQcoHV9BMC6jLqForAxZ2vTARg1fPI1mDX11M56eTP9W1EgRRgEu3ADld4lDvlOCtmtyGPdXN2CqbYKBwz12eM-mg-eUDzm4cmzWIcYNxZwMPA" alt="Developer Avatar" class="w-full h-full object-cover"></div></div></div></header><main class="w-full pt-14 flex-1 bg-surface"><div class="flex flex-col w-full relative select-none">
+<!-- Subtle Spatial Coordinates Grid -->
+<div class="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
+<div class="w-[840px] h-[580px] rounded-full bg-primary-container/[0.03] blur-[120px] pointer-events-none"></div>
+<svg class="absolute w-full h-[700px] opacity-[0.07] stroke-outline-variant" height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<pattern height="36" id="grid-pattern" patternUnits="userSpaceOnUse" width="36">
+<path d="M 36 0 L 0 0 0 36" fill="none" stroke="currentColor" stroke-dasharray="1 7" stroke-width="0.75"></path>
+</pattern>
+</defs>
+<rect fill="url(#grid-pattern)" height="100%" width="100%"></rect>
+</svg>
+</div>
+<!-- Primary Engineering Cockpit Viewport -->
+<div class="relative z-10 w-full max-w-5xl mx-auto px-gutter-desktop min-h-[calc(100vh-6rem)] flex flex-col justify-between py-space-xl">
+<!-- Top System Telemetry Metadata -->
+<div class="flex items-center justify-between w-full font-label-sm text-label-sm text-outline tracking-wider">
+<div class="flex items-center gap-space-sm">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-primary-container shadow-[0_0_8px_#00f0ff] animate-pulse"></span>
+<span class="text-on-surface-variant/80 font-code-sm uppercase">INIT_SESSION // DEV-POD-09</span>
+</div>
+<div class="flex items-center gap-space-lg font-code-sm">
+<span class="text-on-surface-variant/50">LATENCY: <span class="text-primary-container/80">14ms</span></span>
+<span class="text-on-surface-variant/50">RUNTIME: <span class="text-on-surface-variant/80">NODE_V22.4_V8</span></span>
+</div>
+</div>
+<!-- Centered Core Command Module -->
+<div class="w-full flex flex-col items-center justify-center max-w-3xl mx-auto my-auto -mt-8">
+<!-- Monolithic Architectural Heading -->
+<h1 class="font-headline-xl text-headline-xl text-on-surface tracking-tight mb-space-2xl text-center antialiased">
+        What are we building?
+      </h1>
+<!-- High-Tech Interactive Input Matrix -->
+<div class="w-full relative group">
+<!-- Back-glow diffusion halo on hover/focus -->
+<div class="absolute -inset-[1px] bg-gradient-to-r from-primary-container/20 via-secondary-container/20 to-primary-container/20 rounded-lg blur-md opacity-40 group-focus-within:opacity-100 transition-opacity duration-500 pointer-events-none" id="ambient-glow"></div>
+<div class="relative flex items-center w-full bg-surface-container-lowest/95 rounded-lg px-space-md py-space-sm shadow-2xl transition-all duration-300">
+<!-- Monospace Prompt Pointer -->
+<div class="flex items-center pl-space-xs pr-space-md text-primary-container font-label-md select-none">
+<span class="text-headline-sm font-label-md text-primary-container font-semibold">&gt;</span>
+</div>
+<!-- Direct Input Prompt Field -->
+<div class="relative flex-1 flex items-center min-w-0">
+<input autocomplete="off" class="w-full bg-transparent border-none outline-none font-code-md text-code-md text-on-surface placeholder:text-outline-variant/60 font-normal pr-space-sm tracking-tight" id="prompt-input" placeholder="e-commerce app using React and Tailwind" spellcheck="false" type="text">
+<!-- Visual Terminal Blinking Caret (hides when input has content) -->
+<span class="absolute left-0 pointer-events-none inline-block w-[2px] h-4 bg-primary-container animate-pulse hidden" id="custom-cursor"></span>
+</div>
+<!-- Integrated Action Hub & Shortcuts -->
+<div class="flex items-center gap-space-sm pl-space-sm">
+<div class="hidden sm:flex items-center gap-space-2xs px-space-xs py-space-2xs rounded bg-surface-container font-label-sm text-label-sm text-outline text-[10px]">
+<span class="font-code-sm text-[11px]">⌘</span>
+<span class="">ENTER</span>
+</div>
+<!-- Primary Execute CTA -->
+<button class="flex items-center justify-center gap-space-xs px-space-md py-space-xs bg-primary-container hover:bg-primary text-surface-container-lowest font-label-md text-label-md tracking-wider rounded font-semibold transition-all duration-150 hover:shadow-[0_0_16px_rgba(0,240,255,0.4)] active:scale-[0.98]" id="submit-prompt-btn" type="button">
+<span class="">CONTINUE</span>
+<span class="material-symbols-outlined text-[15px] font-bold">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Quick Archetype Suggestion Pills -->
+<div class="w-full flex flex-wrap items-center justify-center gap-space-xs mt-space-lg">
+<button class="suggestion-chip px-space-md py-space-xs rounded bg-surface-container-low/70 hover:bg-surface-container-high hover:text-primary-container text-on-surface-variant font-label-sm text-label-sm transition-all duration-200" data-fill="E-commerce store with Stripe and catalog sync" type="button">
+          E-commerce app
+        </button>
+<button class="suggestion-chip px-space-md py-space-xs rounded bg-surface-container-low/70 hover:bg-surface-container-high hover:text-primary-container text-on-surface-variant font-label-sm text-label-sm transition-all duration-200" data-fill="Autonomous agent dashboard with live trace metrics" type="button">
+          AI Agent Cockpit
+        </button>
+<button class="suggestion-chip px-space-md py-space-xs rounded bg-surface-container-low/70 hover:bg-surface-container-high hover:text-primary-container text-on-surface-variant font-label-sm text-label-sm transition-all duration-200" data-fill="Realtime multi-player canvas with WebSockets" type="button">
+          Realtime workspace
+        </button>
+<button class="suggestion-chip px-space-md py-space-xs rounded bg-surface-container-low/70 hover:bg-surface-container-high hover:text-primary-container text-on-surface-variant font-label-sm text-label-sm transition-all duration-200" data-fill="High-throughput analytics stream with ClickHouse" type="button">
+          Telemetry dashboard
+        </button>
+<button class="suggestion-chip px-space-md py-space-xs rounded bg-surface-container-low/70 hover:bg-surface-container-high hover:text-primary-container text-on-surface-variant font-label-sm text-label-sm transition-all duration-200" data-fill="Internal developer portal with service catalog" type="button">
+          Developer portal
+        </button>
+</div>
+<!-- Live Inferenced Stack Spec Line -->
+<div class="mt-space-2xl flex items-center justify-center gap-space-sm font-code-sm text-code-sm text-outline transition-all duration-300">
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-secondary shadow-[0_0_6px_#00e3b6]"></span>
+<span class="text-outline/70">Detected stack:</span>
+<span class="text-on-surface-variant font-medium" id="detected-stack-text">React 19 · Next.js · TailwindCSS · SQLite</span>
+</div>
+</div>
+<!-- Bottom Engineering Diagnostic Strip -->
+<div class="w-full flex items-center justify-between font-label-sm text-label-sm text-outline-variant/60 pt-space-md">
+<div class="flex items-center gap-space-md">
+<span class="">ARCH: x86_64_HOST</span>
+<span class="">SECURITY: ATTESTED</span>
+</div>
+<div class="flex items-center gap-space-md font-code-sm">
+<span class="hover:text-on-surface cursor-pointer transition-colors">CONFIG // PROFILES</span>
+<span class="text-outline-variant/30">|</span>
+<span class="hover:text-on-surface cursor-pointer transition-colors">VCS // CONNECTED (MAIN)</span>
+</div>
+</div>
+</div>
+<!-- Interactive Terminal Trigger Handling -->
+<script>
+    (function() {
+      const input = document.getElementById('prompt-input');
+      const submitBtn = document.getElementById('submit-prompt-btn');
+      const chips = document.querySelectorAll('.suggestion-chip');
+      const stackText = document.getElementById('detected-stack-text');
+
+      const stackVariants = [
+        "React 19 · Next.js · TailwindCSS · SQLite",
+        "FastAPI · Python 3.12 · PostgreSQL · Redis",
+        "Go 1.23 · WebSockets · React · ClickHouse",
+        "SvelteKit · Supabase · TailwindCSS · Edge",
+        "Node.js 22 · GraphQL · Apollo · MongoDB"
+      ];
+
+      // Dynamic placeholder cycle on empty focus
+      chips.forEach((chip, index) => {
+        chip.addEventListener('click', () => {
+          const fillText = chip.getAttribute('data-fill');
+          if (fillText && input) {
+            input.value = fillText;
+            input.focus();
+            stackText.textContent = stackVariants[index % stackVariants.length];
+            stackText.classList.add('text-primary-container');
+            setTimeout(() => {
+              stackText.classList.remove('text-primary-container');
+            }, 600);
+          }
+        });
+      });
+
+      // Simple keyboard handling
+      if (input) {
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            triggerExecution();
+          }
+        });
+      }
+
+      if (submitBtn) {
+        submitBtn.addEventListener('click', triggerExecution);
+      }
+
+      function triggerExecution() {
+        const val = input ? input.value.trim() : '';
+        if (!val) {
+          if (input) {
+            input.placeholder = 'Please enter a target architecture description...';
+            input.focus();
+          }
+          return;
+        }
+
+        submitBtn.innerHTML = `
+          <span class="inline-block w-3 h-3 rounded-full border-2 border-surface-container-lowest border-t-transparent animate-spin"></span>
+          <span>COMPILING...</span>
+        `;
+        submitBtn.classList.add('opacity-80', 'pointer-events-none');
+
+        setTimeout(() => {
+          submitBtn.innerHTML = `
+            <span>INITIALIZED</span>
+            <span class="material-symbols-outlined text-[15px]">check</span>
+          `;
+          submitBtn.classList.remove('bg-primary-container');
+          submitBtn.classList.add('bg-secondary-container');
+        }, 900);
+      }
+    })();
+  </script>
+</div></main><footer class="w-full border-t border-outline-variant/20 bg-surface-container-lowest"><div class="h-10 w-full px-gutter-desktop max-w-7xl mx-auto flex items-center justify-between"><div class="flex items-center gap-space-xs"><span class="inline-block h-1.5 w-1.5 rounded-full bg-secondary-container shadow-[0_0_6px_#00e3b6]"></span><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Engine ready</span></div><div class="font-label-sm text-label-sm text-on-surface-variant/60">© 2025 Ascent Systems Inc.</div></div></footer>
+
+</body></html>

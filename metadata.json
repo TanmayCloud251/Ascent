@@ -1,0 +1,8 @@
+{
+  "name": "Ascent — AI-Powered Project-Based Coding Academy",
+  "description": "Master developer skills by building real, open-ended projects screen by screen with interactive teach-then-build AI tutoring.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
