@@ -14,29 +14,38 @@ const HOST = '0.0.0.0'
 app.use(express.json({ limit: '10mb' }))
 
 // ============================================================================
-// GEMINI MODEL CONFIGURATION (Defined in ONE constant as required by spec)
+// GEMINI MODEL CONFIGURATION
+// Note: gemini-3.6-flash and 3.5-flash have reached their 20-req/day Free Tier quota on this key.
+// gemini-3.1-flash-lite has healthy quota, supports JSON schemas, and is fully active.
 // ============================================================================
-export const GEMINI_MODEL = 'gemini-3.8-flash'
+export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite'
 
-// Dynamic Gemini client resolution (reads GEMINI_API_KEY or ASCENT_API_KEY on each invocation)
+// Dynamic Gemini client resolution (finds the first non-placeholder key)
 export function getGeminiClient(): GoogleGenAI | null {
-  const currentKey =
-    process.env.GEMINI_API_KEY ||
-    process.env.ASCENT_API_KEY ||
-    process.env.API_KEY ||
-    process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-    ''
+  const candidateKeys = [
+    process.env.GEMINI_API_KEY,
+    process.env.ASCENT_API_KEY,
+    process.env.API_KEY,
+    process.env.NEXT_PUBLIC_GEMINI_API_KEY
+  ]
 
-  if (
-    !currentKey ||
-    currentKey === 'MY_GEMINI_API_KEY' ||
-    currentKey === 'MY_ASCENT_API_KEY' ||
-    currentKey.trim() === ''
-  ) {
+  const validKey = candidateKeys.find(k => {
+    if (!k || typeof k !== 'string') return false
+    const trimmed = k.trim()
+    return (
+      trimmed !== '' &&
+      trimmed !== 'MY_GEMINI_API_KEY' &&
+      trimmed !== 'MY_ASCENT_API_KEY' &&
+      trimmed !== 'undefined' &&
+      trimmed !== 'null'
+    )
+  })
+
+  if (!validKey) {
     return null
   }
   return new GoogleGenAI({
-    apiKey: currentKey,
+    apiKey: validKey,
     httpOptions: {
       headers: {
         'User-Agent': 'aistudio-build'
@@ -123,6 +132,9 @@ function extractGeminiErrorMessage(err: any): string {
       if (parsed.error.code === 429) {
         return 'Gemini API rate limit reached. Please wait a moment and click Retry.'
       }
+      if (parsed.error.code === 503 || parsed.error.status === 'UNAVAILABLE') {
+        return 'The Gemini 3.8 Flash model is currently experiencing a temporary demand spike on Google servers (503 Service Unavailable). Your quota has NOT ended. Please wait 15–30 seconds and click Retry.'
+      }
       return parsed.error.message
     }
   } catch {
@@ -130,6 +142,9 @@ function extractGeminiErrorMessage(err: any): string {
   }
   if (message.includes('API_KEY_INVALID') || message.includes('API key not valid')) {
     return 'Gemini API key is invalid or expired. Please check your key in Settings > Secrets and click Retry.'
+  }
+  if (message.includes('503') || message.includes('high demand') || message.includes('UNAVAILABLE')) {
+    return 'The Gemini 3.8 Flash model is currently experiencing a temporary demand spike on Google servers (503 Service Unavailable). Your quota has NOT ended. Please wait 15–30 seconds and click Retry.'
   }
   return message
 }
@@ -260,7 +275,7 @@ app.use('/api/llm', rateLimitMiddleware)
 app.post('/api/llm/generate-spec', async (req: Request, res: Response) => {
   const startTime = Date.now()
   try {
-    const { prompt, techStack, previousSpec, clarifyingAnswers } = req.body
+    const { prompt, useTailwind: rawUseTailwind, techStack, previousSpec, clarifyingAnswers } = req.body
 
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       return res.status(400).json({ success: false, error: 'Valid prompt string is required', retryable: false })
@@ -279,10 +294,19 @@ app.post('/api/llm/generate-spec', async (req: Request, res: Response) => {
 
     telemetry.geminiCalls++
 
-    const runtimeChoice = techStack?.runtime === 'Vanilla DOM' ? 'Vanilla DOM' : 'React 19'
-    const stylingChoice = techStack?.styling || 'Tailwind CSS v4'
-    const stateChoice = techStack?.stateManagement || (runtimeChoice === 'React 19' ? 'React State / Hooks' : 'Vanilla Event Emitter')
-    const backendChoice = techStack?.backendSim || 'Browser In-Memory State'
+    // FIXED STACK SCOPE:
+    // Every course teaches and builds with HTML, CSS, and vanilla JavaScript ONLY.
+    // No React, Vue, Zustand, npm packages, bundlers, TypeScript, or backend/server code.
+    const useTailwind = rawUseTailwind !== undefined
+      ? Boolean(rawUseTailwind)
+      : techStack?.useTailwind !== undefined
+      ? Boolean(techStack.useTailwind)
+      : true
+
+    const runtimeChoice = 'HTML + CSS + JavaScript'
+    const stylingChoice = useTailwind ? 'Tailwind CSS' : 'Plain CSS'
+    const stateChoice = 'Browser In-Memory State / DOM'
+    const backendChoice = 'In-Browser LocalStorage / IndexedDB'
 
     const answersContext = clarifyingAnswers && Object.keys(clarifyingAnswers).length > 0
       ? `\nStudent Decisions on Architectural Questions:\n${Object.entries(clarifyingAnswers).map(([k, v]) => `- ${k}: ${v}`).join('\n')}\nIncorporate these decisions directly into the revised architectureHighlights and primaryFeatures.`
@@ -292,31 +316,45 @@ app.post('/api/llm/generate-spec', async (req: Request, res: Response) => {
       ? `\nPrevious Draft Spec to Refine:\n${JSON.stringify({ appName: previousSpec.appName, summary: previousSpec.summary, features: previousSpec.primaryFeatures }, null, 2)}`
       : ''
 
+    const stylingRule = useTailwind
+      ? 'Tailwind CSS utilities (learner builds with semantic HTML + Tailwind utility classes + vanilla JS DOM manipulation; avoid custom CSS except when necessary).'
+      : 'Plain CSS (learner builds with semantic HTML + semantic CSS classes, CSS custom properties, and Flexbox/Grid + vanilla JS DOM manipulation; zero utility libraries).'
+
     const systemInstruction = `You are Ascent, an elite computer science curriculum architect and senior software engineer.
 Analyze the user's project idea and synthesize a complete, production-grade project specification.
 
 Student Idea: "${prompt.trim()}"
-Preferred Stack:
-- Runtime: ${runtimeChoice}
-- Styling: ${stylingChoice}
-- State Management: ${stateChoice}
-- Backend Simulation: ${backendChoice}
+
+STRICT FIXED STACK MANDATE:
+- Stack: HTML, CSS, and vanilla JavaScript ONLY.
+- Absolute Prohibition: NO React, NO Vue, NO Svelte, NO Zustand/Redux, NO TypeScript, NO npm packages, NO bundlers (Webpack/Vite/Parcel), and NO server-side/backend code.
+- Styling: ${stylingRule}
+- Data Persistence: In-browser only (localStorage or IndexedDB).
+- Backend Scope-Down Rule: Any features requiring a real backend (e.g. payments, real email delivery, multi-user authentication, cloud databases) MUST be scoped down to realistic front-end-only equivalents (e.g. simulated checkout with receipt generator, mock auth stored in localStorage, client-side data export/import) and the spec summary/features MUST explicitly state this front-end-only scoping.
+
+Context & Decisions:
 ${answersContext}${previousSpecContext}
 
 Strict Constraints:
-1. appName: Creative, crisp, memorable name (e.g., "ApexPulse", "OmniBoard", "FluxCommerce").
+1. appName: Creative, crisp, memorable name (e.g., "AquaFeed", "ApexPulse", "OmniTracker").
 2. tagline: Under 12 words, active and punchy.
-3. summary: Concise 2-3 sentences explaining what problem it solves and what the user experience feels like.
-4. targetAudience: Specific user persona or developer target.
-5. primaryFeatures: Exactly 4 to 6 concrete, interactive features that will be built screen-by-screen.
-6. techStack: MUST strictly match the requested runtime ("${runtimeChoice}"), styling ("${stylingChoice}"), stateManagement ("${stateChoice}"), and backendSim ("${backendChoice}").
-7. architectureHighlights: 3 to 4 technical patterns or architectural constraints reflecting user choices.
-8. clarifyingQuestions: Exactly 2 to 3 genuine architectural clarifying questions to present to the student before building. Each question must include an id (e.g. "q1", "q2"), a clear question string, and 2 to 4 distinct plain-text option strings. If previous answers are provided, preserve question IDs and mark selectedAnswer.`
+3. summary: Concise 2-3 sentences explaining what problem it solves, what the user experience feels like, and how features are implemented purely in vanilla front-end browser storage.
+4. targetAudience: Specific user persona.
+5. primaryFeatures: Exactly 4 to 6 concrete, interactive features that will be built screen-by-screen in vanilla HTML, CSS, and JS.
+6. techStack:
+   - runtime: "HTML + CSS + JavaScript"
+   - styling: "${stylingChoice}"
+   - stateManagement: "${stateChoice}"
+   - backendSim: "${backendChoice}"
+   - useTailwind: ${useTailwind}
+7. useTailwind: MUST be boolean ${useTailwind}.
+8. architectureHighlights: 3 to 4 technical patterns or architectural constraints reflecting vanilla DOM manipulation, event listeners, localStorage/IndexedDB schemas, and UI rendering methods.
+9. clarifyingQuestions: Exactly 2 to 3 genuine architectural clarifying questions to present to the student before building (e.g., data schema structures, localStorage keys, UI layouts). Each question must include an id (e.g. "q1", "q2"), a clear question string, and 2 to 4 distinct plain-text option strings. If previous answers are provided, preserve question IDs and mark selectedAnswer.`
 
     const callGemini = async () => {
       const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
-        contents: `Generate a production project specification for: "${prompt.trim()}"`,
+        contents: `Generate a production vanilla front-end project specification for: "${prompt.trim()}".`,
         config: {
           systemInstruction,
           responseMimeType: 'application/json',
@@ -331,15 +369,17 @@ Strict Constraints:
                 type: Type.ARRAY,
                 items: { type: Type.STRING }
               },
+              useTailwind: { type: Type.BOOLEAN },
               techStack: {
                 type: Type.OBJECT,
                 properties: {
                   runtime: { type: Type.STRING },
                   styling: { type: Type.STRING },
                   stateManagement: { type: Type.STRING },
-                  backendSim: { type: Type.STRING }
+                  backendSim: { type: Type.STRING },
+                  useTailwind: { type: Type.BOOLEAN }
                 },
-                required: ['runtime', 'styling', 'stateManagement', 'backendSim']
+                required: ['runtime', 'styling', 'stateManagement', 'backendSim', 'useTailwind']
               },
               architectureHighlights: {
                 type: Type.ARRAY,
@@ -367,6 +407,7 @@ Strict Constraints:
               'summary',
               'targetAudience',
               'primaryFeatures',
+              'useTailwind',
               'techStack',
               'architectureHighlights',
               'clarifyingQuestions'
@@ -478,16 +519,24 @@ app.post('/api/llm/generate-screen-plan', async (req: Request, res: Response) =>
 
     telemetry.geminiCalls++
 
+    const useTailwind = spec.useTailwind !== undefined ? spec.useTailwind : spec.techStack?.useTailwind !== undefined ? spec.techStack.useTailwind : true
+    const stylingDetail = useTailwind ? 'Tailwind CSS utility classes' : 'Plain semantic CSS with Flexbox/Grid and CSS variables'
+
     const systemInstruction = `You are Ascent, an elite computer science curriculum architect and senior software engineer.
 Given the confirmed specification for the student's project, generate an ordered screen plan.
 App: "${spec.appName}" - ${spec.tagline}
 Summary: ${spec.summary}
 Primary Features: ${spec.primaryFeatures.join(', ')}
-Tech Stack: ${spec.techStack.runtime}, ${spec.techStack.styling}, ${spec.techStack.stateManagement}
+Tech Stack: HTML + CSS + JavaScript (${stylingDetail})
+
+STRICT VANILLA FRONT-END ARCHITECTURE:
+- Project Structure: In Ascent, each screen is its own standalone HTML file (e.g. index.html, dashboard.html, history.html, settings.html) sharing /js/*.js scripts and ${useTailwind ? 'Tailwind utility classes' : '/css/styles.css'}.
+- NO React, Vue, TypeScript, or backend server code.
+- Data persists in-browser only via localStorage or IndexedDB.
 
 Strict Rules:
 1. Output between 5 and 8 ordered screens.
-2. The sequence MUST be in strict dependency order: each screen may only depend on screens that come earlier (e.g., shell/layout & data entry/input BEFORE aggregate dashboards/analytics BEFORE detail modals/export settings).
+2. The sequence MUST be in strict dependency order: each screen may only depend on screens that come earlier (e.g., initial entry/landing index.html & input forms BEFORE analytics/dashboards BEFORE detail modals/settings/exports).
 3. The screens must be deeply specific to "${spec.appName}", NOT generic templates.
 4. Each screen must have a distinct 'name' (2-4 words) and a crisp 'description' explaining what user actions and data mutations occur on it.`
 
@@ -605,8 +654,11 @@ app.post('/api/llm/generate-syllabus', async (req: Request, res: Response) => {
 
     telemetry.geminiCalls++
 
+    const useTailwind = spec.useTailwind !== undefined ? spec.useTailwind : spec.techStack?.useTailwind !== undefined ? spec.techStack.useTailwind : true
+    const stylingDetail = useTailwind ? 'Tailwind CSS utility classes' : 'Plain semantic CSS'
+
     const memoryContext = projectMemory
-      ? `\nProject Architecture Context:\n- Tech Stack: ${projectMemory.techStack || spec.techStack.runtime}\n- Naming Conventions: ${(projectMemory.namingConventions || []).join(', ') || 'PascalCase components, camelCase hooks'}\n- File Tree Existing: ${(projectMemory.fileTree || []).join(', ') || 'None yet (initial screen)'}`
+      ? `\nProject Architecture Context:\n- Tech Stack: HTML + CSS + JavaScript (${stylingDetail})\n- Naming Conventions: ${(projectMemory.namingConventions || []).join(', ') || 'semantic HTML tags, kebab-case classes or Tailwind utilities, camelCase JS functions and variables'}\n- File Tree Existing: ${(projectMemory.fileTree || []).join(', ') || 'index.html, /js/app.js'}`
       : ''
 
     const systemInstruction = `You are Ascent, an elite computer science curriculum architect and senior software engineer.
@@ -614,15 +666,22 @@ Generate a structured teach-then-build syllabus for ONE SPECIFIC SCREEN of the s
 App: "${spec.appName}"
 Target Screen: "${currentScreen.screenName}"
 Screen Role: "${currentScreen.description}"
-Stack: ${spec.techStack.runtime}, ${spec.techStack.styling}, ${spec.techStack.stateManagement}
+Stack: HTML, CSS, and vanilla JavaScript (${stylingDetail})
 ${memoryContext}
 
+STRICT FIXED STACK MANDATE:
+- Everything is built purely in vanilla HTML, CSS, and JavaScript.
+- NO React, NO Vue, NO TypeScript, NO npm libraries.
+- DOM manipulation via standard Web APIs (document.querySelector, addEventListener, innerHTML/createElement).
+- Data storage strictly in localStorage or IndexedDB.
+- Styling: ${useTailwind ? 'Tailwind CSS utility classes' : 'Semantic CSS with Flexbox/Grid in /css/styles.css'}.
+
 Strict Rules:
-1. Generate exactly 4 to 7 progressive modules for this screen in strict dependency order (e.g. types/contracts first, state hook/store second, subcomponent primitives third, integrated container screen view fourth).
+1. Generate exactly 4 to 7 progressive modules for this screen in strict dependency order (e.g. 1. HTML markup & structural layout, 2. CSS styles or Tailwind utility styling, 3. DOM event listeners & user interactions, 4. localStorage data persistence & rendering).
 2. Each module must have:
-   - title: concise action-oriented title (e.g., "Define TypeScript Feed Event Schema", "Implement Feeding Store with Zustand")
-   - learningObjective: 1-2 clear sentences stating the exact engineering concept learned
-   - componentType: e.g., "type_definition" | "state_hook" | "ui_atom" | "container_view" | "validation" | "service"
+   - title: concise action-oriented title (e.g., "Build Semantic Feeding Form Markup", "Wire Up Add Meal Event Listener with localStorage", "Render Dynamic History Table from Browser Storage")
+   - learningObjective: 1-2 clear sentences stating the exact web standard/DOM concept learned
+   - componentType: e.g., "html_structure" | "css_layout" | "dom_event" | "local_storage" | "dom_render"
 3. Output strictly valid JSON matching the schema.`
 
     const callGemini = async () => {
@@ -665,7 +724,7 @@ Strict Rules:
     let attempts = 0
     let lastError: any = null
 
-    while (attempts < 2 && !syllabusResult) {
+    while (attempts < 3 && !syllabusResult) {
       attempts++
       try {
         const result = await callGemini()
@@ -681,6 +740,9 @@ Strict Rules:
       } catch (e: any) {
         lastError = e
         logEvent('generate_syllabus_attempt_failed', { attempt: attempts, error: e?.message })
+        if (attempts < 3) {
+          await new Promise(r => setTimeout(r, 1500))
+        }
       }
     }
 

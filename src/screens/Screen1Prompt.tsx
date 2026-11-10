@@ -15,39 +15,43 @@ import { TechStackConfig } from '../types/ascent'
 
 const SUGGESTED_TEMPLATES = [
   {
-    title: 'SaaS Analytics Dashboard',
-    prompt: 'real-time cloud telemetry and SaaS analytics dashboard with live metric KPI cards, event feed, and query filtering',
-    stack: { runtime: 'React 19' as const, styling: 'Tailwind CSS v4', stateManagement: 'React State / Hooks', backendSim: 'Browser In-Memory State' }
+    title: 'Background Color Changer',
+    prompt: 'interactive background color changer with hex code picker, random palette generator button, and copy-to-clipboard toast',
+    useTailwind: true
   },
   {
-    title: 'E-Commerce Storefront & Cart',
-    prompt: 'modern e-commerce storefront with product catalog, category filters, and optimistic slide-over cart drawer',
-    stack: { runtime: 'React 19' as const, styling: 'Tailwind CSS v4', stateManagement: 'Zustand', backendSim: 'Browser In-Memory State' }
+    title: 'Currency Converter',
+    prompt: 'live currency converter calculator with country currency dropdowns, amount exchange rate calculation, and swap button',
+    useTailwind: true
   },
   {
-    title: 'Agile Kanban Sprint Board',
-    prompt: 'collaborative agile sprint kanban board with drag-and-drop lanes, task filtering, and priority tagging',
-    stack: { runtime: 'React 19' as const, styling: 'Tailwind CSS v4', stateManagement: 'React State / Hooks', backendSim: 'Browser In-Memory State' }
+    title: 'Minimalist Blog Reader',
+    prompt: 'clean personal blog reader with article list, reading time badges, tag filters, and dark mode reading view',
+    useTailwind: true
   },
   {
-    title: 'Developer Terminal Portfolio',
-    prompt: 'cyberpunk interactive developer terminal portfolio with command line prompt, project showcase, and system specs readout',
-    stack: { runtime: 'Vanilla DOM' as const, styling: 'Tailwind CSS v4', stateManagement: 'Vanilla Event Emitter', backendSim: 'Browser In-Memory State' }
+    title: 'Pet Care & Feeding Schedule Tracker',
+    prompt: 'interactive pet axolotl feeding tracker with meal logging, visual hunger status indicators, and localStorage persistence',
+    useTailwind: true
   }
 ]
 
 export const Screen1Prompt: React.FC = () => {
-  const { generateProjectSpec, specError, isGeneratingSpec, clearSpecError, activePrompt, setActivePrompt } = useApp()
+  const {
+    generateProjectSpec,
+    specError,
+    isGeneratingSpec,
+    clearSpecError,
+    activePrompt,
+    useTailwind,
+    setUseTailwind,
+    isTailwindLocked
+  } = useApp()
+
   const [promptInput, setPromptInput] = useState(
-    activePrompt || 'enterprise cloud telemetry dashboard with real-time query metrics, sparkline graphs, and cluster health status'
+    activePrompt || 'interactive background color changer with hex code display, random generator button, and saved favorite colors'
   )
   const [isWizardOpen, setIsWizardOpen] = useState(false)
-  const [techStackConfig, setTechStackConfig] = useState<TechStackConfig>({
-    runtime: 'React 19',
-    styling: 'Tailwind CSS v4',
-    stateManagement: 'React State / Hooks',
-    backendSim: 'Browser In-Memory State'
-  })
 
   // Keep input in sync if activePrompt changed via Header presets
   useEffect(() => {
@@ -56,20 +60,26 @@ export const Screen1Prompt: React.FC = () => {
     }
   }, [activePrompt])
 
-  const handleLaunch = async (overridePrompt?: string, overrideStack?: TechStackConfig) => {
+  const handleLaunch = async (overridePrompt?: string, overrideTailwind?: boolean) => {
     const finalPrompt = overridePrompt || promptInput
-    const finalStack = overrideStack || techStackConfig
     if (!finalPrompt.trim()) return
     clearSpecError()
-    setActivePrompt(finalPrompt)
-    await generateProjectSpec(finalPrompt, finalStack)
+    const targetTailwind = overrideTailwind !== undefined ? overrideTailwind : useTailwind
+    await generateProjectSpec(finalPrompt, {
+      runtime: 'HTML + CSS + JavaScript',
+      styling: targetTailwind ? 'Tailwind CSS' : 'Plain CSS',
+      stateManagement: 'Browser In-Memory State / DOM',
+      backendSim: 'In-Browser LocalStorage / IndexedDB',
+      useTailwind: targetTailwind
+    })
   }
 
-  const handleSelectTemplate = (tmpl: typeof SUGGESTED_TEMPLATES[0]) => {
+  const handleSelectTemplate = (tmpl: (typeof SUGGESTED_TEMPLATES)[0]) => {
     setPromptInput(tmpl.prompt)
-    setActivePrompt(tmpl.prompt)
-    setTechStackConfig(tmpl.stack)
-    // Presets ONLY pre-fill the prompt text box; they never auto-launch
+    if (!isTailwindLocked) {
+      setUseTailwind(tmpl.useTailwind)
+    }
+    // Pre-fills the prompt text box cleanly
   }
 
   return (
@@ -84,7 +94,7 @@ export const Screen1Prompt: React.FC = () => {
             <span className="w-2 h-2 rounded-full bg-[#00F0FF] animate-ping" />
             <span className="text-slate-300">SOCRATIC CURRICULUM COMPILER</span>
             <span className="text-slate-600">·</span>
-            <span className="text-emerald-400 font-semibold">GEMINI 3.8 FLASH SPEC ENGINE</span>
+            <span className="text-emerald-400 font-semibold">LLM SPEC ENGINE</span>
           </div>
         </div>
 
@@ -93,7 +103,7 @@ export const Screen1Prompt: React.FC = () => {
           <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight leading-tight">
             Build what you imagine.<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00F0FF] via-cyan-300 to-indigo-400">
-              Screen by screen, line by line.
+              From Idea to Implementation
             </span>
           </h1>
           <p className="text-slate-400 text-sm md:text-base max-w-2xl mx-auto">
@@ -165,26 +175,46 @@ export const Screen1Prompt: React.FC = () => {
             <div className="pt-4 border-t border-white/5 flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-[#00F0FF]" /> TARGET STACK:
+                  <Sparkles className="w-3.5 h-3.5 text-[#00F0FF]" /> FIXED STACK:
                 </span>
-                <span className="px-2.5 py-1 rounded bg-[#00F0FF]/10 border border-[#00F0FF]/30 text-[#00F0FF]">
-                  {techStackConfig.runtime}
+                <span className="px-2.5 py-1 rounded bg-[#00F0FF]/10 border border-[#00F0FF]/30 text-[#00F0FF] font-semibold">
+                  HTML + CSS + JavaScript
                 </span>
-                <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-slate-300">
-                  {techStackConfig.styling}
+                <span className={`px-2.5 py-1 rounded border text-xs flex items-center gap-1.5 ${
+                  useTailwind
+                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                    : 'bg-white/5 border-white/10 text-slate-300'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${useTailwind ? 'bg-[#00F0FF]' : 'bg-slate-500'}`} />
+                  {useTailwind ? 'Tailwind CSS Utilities' : 'Plain Semantic CSS'}
                 </span>
-                <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-slate-300">
-                  {techStackConfig.stateManagement}
+                <span className="px-2.5 py-1 rounded bg-black/40 border border-white/5 text-slate-400">
+                  In-Browser Storage
                 </span>
               </div>
 
-              <button
-                onClick={() => setIsWizardOpen(true)}
-                className="text-slate-400 hover:text-[#00F0FF] flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                <span>Customize Stack</span>
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Single Tailwind CSS Toggle */}
+                <button
+                  type="button"
+                  disabled={isTailwindLocked}
+                  onClick={() => setUseTailwind(!useTailwind)}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-mono flex items-center gap-2 transition-all cursor-pointer ${
+                    isTailwindLocked
+                      ? 'opacity-60 cursor-not-allowed bg-black/40 border-white/10 text-slate-500'
+                      : useTailwind
+                      ? 'border-[#00F0FF] bg-[#00F0FF]/15 text-[#00F0FF]'
+                      : 'border-white/20 bg-black/40 text-slate-400 hover:text-white hover:border-white/40'
+                  }`}
+                  title={isTailwindLocked ? 'Tailwind styling choice is locked after spec confirmation' : 'Toggle Tailwind CSS vs Plain CSS'}
+                >
+                  <Sliders className="w-3.5 h-3.5 text-[#00F0FF]" />
+                  <span>Use Tailwind CSS:</span>
+                  <span className={`font-bold ${useTailwind ? 'text-[#00F0FF]' : 'text-slate-400'}`}>
+                    {useTailwind ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Bottom Actions Bar */}
@@ -244,7 +274,7 @@ export const Screen1Prompt: React.FC = () => {
                       {tmpl.title}
                     </h4>
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400">
-                      {tmpl.stack.runtime}
+                      {tmpl.useTailwind ? 'Tailwind' : 'Plain CSS'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 line-clamp-1 mt-0.5 font-mono">
@@ -261,7 +291,7 @@ export const Screen1Prompt: React.FC = () => {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5 text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              STORAGE LAYER: LOCALSTORAGE ABSTRACTION (ACTIVE)
+              STACK: VANILLA HTML + CSS + JS (RESTRICTED)
             </span>
             <span className="flex items-center gap-1.5 text-cyan-400">
               <span className="w-1.5 h-1.5 rounded-full bg-[#00F0FF]" />
@@ -271,15 +301,15 @@ export const Screen1Prompt: React.FC = () => {
 
           <div className="flex items-center gap-1.5 text-slate-400">
             <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-            <span>ZERO MOCK DATA · DETERMINISTIC PERSISTENCE</span>
+            <span>ZERO MOCK DATA · IN-BROWSER PERSISTENCE</span>
           </div>
         </div>
       </div>
 
-      {/* Tech Stack Customization Modal */}
+      {/* Tech Stack Customization Modal (Scope-Restricted) */}
       {isWizardOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="cyber-card bg-[#101018] border border-white/20 p-6 max-w-lg w-full rounded-xl space-y-5">
+          <div className="cyber-card bg-[#101018] border border-white/20 p-6 max-w-md w-full rounded-xl space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-lg font-bold text-white font-display flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-[#00F0FF]" /> Tech Stack Specifications
@@ -293,82 +323,53 @@ export const Screen1Prompt: React.FC = () => {
             </div>
 
             <div className="space-y-4 text-xs font-mono">
-              <div>
-                <label className="text-slate-300 block mb-1.5 font-bold">1. Primary Runtime Paradigm</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: 'React 19 Component Mode', val: 'React 19' as const },
-                    { label: 'Vanilla HTML5 + JS DOM Mode', val: 'Vanilla DOM' as const }
-                  ].map(opt => {
-                    const isSelected = techStackConfig.runtime === opt.val
-                    return (
-                      <button
-                        key={opt.val}
-                        onClick={() => setTechStackConfig(prev => ({ ...prev, runtime: opt.val }))}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          isSelected
-                            ? 'border-[#00F0FF] bg-[#00F0FF]/15 text-[#00F0FF] font-bold'
-                            : 'border-white/10 text-slate-400 hover:border-white/20'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    )
-                  })}
-                </div>
+              <div className="p-3 rounded-lg bg-black/40 border border-white/10 space-y-1">
+                <span className="text-slate-400 text-[10px] uppercase tracking-wider block font-semibold">Fixed Course Stack</span>
+                <p className="text-white font-bold text-sm">HTML + CSS + JavaScript</p>
+                <p className="text-slate-400 text-[11px] font-sans">
+                  Ascent is dedicated to teaching foundational front-end mastery. Zero frameworks, zero bundlers, pure browser web APIs.
+                </p>
               </div>
 
-              <div>
-                <label className="text-slate-300 block mb-1.5 font-bold">2. Styling Framework</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['Tailwind CSS v4', 'CSS Grid & Modern CSS'].map(opt => (
-                    <button
-                      key={opt}
-                      onClick={() => setTechStackConfig(prev => ({ ...prev, styling: opt }))}
-                      className={`p-2.5 rounded-lg border text-left transition-all ${
-                        techStackConfig.styling === opt
-                          ? 'border-[#00F0FF] bg-[#00F0FF]/15 text-[#00F0FF] font-bold'
-                          : 'border-white/10 text-slate-400 hover:border-white/20'
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+              <div className="p-4 rounded-lg bg-[#00F0FF]/5 border border-[#00F0FF]/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-white font-bold block text-sm">Use Tailwind CSS</label>
+                    <span className="text-[11px] text-slate-400 font-sans block mt-0.5">
+                      {useTailwind
+                        ? 'Project uses HTML + Tailwind utility classes + vanilla JS DOM code.'
+                        : 'Project uses HTML + plain CSS (semantic classes, Flexbox/Grid) + vanilla JS.'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isTailwindLocked}
+                    onClick={() => setUseTailwind(!useTailwind)}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold transition-all ${
+                      isTailwindLocked
+                        ? 'opacity-60 cursor-not-allowed bg-black/40 border-white/10 text-slate-500'
+                        : useTailwind
+                        ? 'bg-[#00F0FF] text-black border-[#00F0FF]'
+                        : 'bg-black/60 border-white/20 text-slate-300 hover:border-white/40'
+                    }`}
+                  >
+                    {useTailwind ? 'ENABLED' : 'DISABLED'}
+                  </button>
                 </div>
-              </div>
-
-              <div>
-                <label className="text-slate-300 block mb-1.5 font-bold">3. State Management</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['React State / Hooks', 'Zustand Store'].map(opt => (
-                    <button
-                      key={opt}
-                      onClick={() => setTechStackConfig(prev => ({ ...prev, stateManagement: opt }))}
-                      className={`p-2.5 rounded-lg border text-left transition-all ${
-                        techStackConfig.stateManagement === opt
-                          ? 'border-[#00F0FF] bg-[#00F0FF]/15 text-[#00F0FF] font-bold'
-                          : 'border-white/10 text-slate-400 hover:border-white/20'
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
+                {isTailwindLocked && (
+                  <p className="text-[10px] text-amber-400 font-sans">
+                    * The Tailwind choice is locked for this project because the specification has been confirmed.
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="pt-3 border-t border-white/10 flex justify-end gap-3">
-              <button
-                onClick={() => setIsWizardOpen(false)}
-                className="cyber-btn-secondary"
-              >
-                Close
-              </button>
+            <div className="pt-3 border-t border-white/10 flex justify-end">
               <button
                 onClick={() => setIsWizardOpen(false)}
                 className="cyber-btn-primary"
               >
-                Save Preferences
+                Done
               </button>
             </div>
           </div>

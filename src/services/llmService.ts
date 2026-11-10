@@ -28,6 +28,7 @@ export interface LLMTraceEvent {
 
 export interface GenerateSpecOptions {
   prompt: string
+  useTailwind?: boolean
   techStack?: Partial<TechStackConfig>
   previousSpec?: ProjectSpec
   clarifyingAnswers?: Record<string, string>
@@ -113,7 +114,7 @@ export const getLatestLLMTrace = (): LLMTraceEvent | null => currentLatestTrace
  */
 export const llmService = {
   async generateSpec(options: GenerateSpecOptions): Promise<GenerateSpecResult> {
-    const { prompt, techStack, previousSpec, clarifyingAnswers, forceRefresh = false } = options
+    const { prompt, useTailwind = true, techStack, previousSpec, clarifyingAnswers, forceRefresh = false } = options
     const trimmedPrompt = prompt.trim()
 
     if (!trimmedPrompt) {
@@ -122,6 +123,7 @@ export const llmService = {
 
     const requestPayload = {
       prompt: trimmedPrompt,
+      useTailwind,
       techStack,
       previousSpec,
       clarifyingAnswers

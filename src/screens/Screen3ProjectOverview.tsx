@@ -258,17 +258,27 @@ export const Screen3ProjectOverview: React.FC = () => {
 
           {/* Project Memory Card */}
           {projectMemory && (
-            <div className="p-3 m-3 rounded-lg bg-black/40 border border-white/5 text-[11px] font-mono space-y-2">
+            <div className="p-3 m-3 rounded-lg bg-black/40 border border-white/5 text-[11px] font-mono space-y-2.5">
               <div className="flex items-center justify-between text-slate-500">
                 <span className="flex items-center gap-1.5">
                   <FolderTree className="w-3 h-3 text-[#00F0FF]" /> PROJECT MEMORY
                 </span>
-                <span className="text-emerald-400">INITIALIZED</span>
+                <span className="text-emerald-400 font-semibold">INITIALIZED</span>
               </div>
-              <div className="text-slate-400 space-y-1 text-[10px]">
-                <div><span className="text-slate-500">Stack:</span> {projectMemory.techStack}</div>
-                <div><span className="text-slate-500">Tree:</span> {projectMemory.fileTree.length} files tracked</div>
-                <div><span className="text-slate-500">Decisions:</span> {projectMemory.decisionsMade.length} architectural choices</div>
+              <div className="text-slate-400 space-y-1.5 text-[10px]">
+                <div><span className="text-slate-500">Fixed Stack:</span> {projectMemory.techStack}</div>
+                <div>
+                  <span className="text-slate-500 block mb-1">Target App Files ({projectMemory.fileTree.length}):</span>
+                  <div className="space-y-0.5 max-h-28 overflow-y-auto pl-1.5 border-l border-white/10 font-mono text-[10px]">
+                    {projectMemory.fileTree.map(file => (
+                      <div key={file} className="flex items-center gap-1.5 text-slate-300">
+                        <span className="text-[#00F0FF]">{file.endsWith('.html') ? '📄' : file.endsWith('.css') ? '🎨' : '⚡'}</span>
+                        <span className={file.endsWith('.html') ? 'text-white' : 'text-slate-400'}>{file}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div><span className="text-slate-500">Decisions:</span> {projectMemory.decisionsMade.length} design choices recorded</div>
               </div>
             </div>
           )}

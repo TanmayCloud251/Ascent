@@ -25,10 +25,11 @@ export interface ClarifyingQuestion {
 }
 
 export interface TechStackConfig {
-  runtime: 'React 19' | 'Vanilla DOM'
-  styling: string
-  stateManagement: string
-  backendSim: string
+  runtime: 'HTML + CSS + JavaScript'
+  styling: 'Tailwind CSS' | 'Plain CSS'
+  stateManagement: 'Browser In-Memory State / DOM'
+  backendSim: 'In-Browser LocalStorage / IndexedDB'
+  useTailwind: boolean
 }
 
 export interface ProjectSpec {
@@ -38,6 +39,7 @@ export interface ProjectSpec {
   targetAudience: string
   primaryFeatures: string[]
   techStack: TechStackConfig
+  useTailwind: boolean
   architectureHighlights: string[]
   clarifyingQuestions: ClarifyingQuestion[]
 }
@@ -51,19 +53,21 @@ export const ClarifyingQuestionSchema = z.object({
 })
 
 export const TechStackConfigSchema = z.object({
-  runtime: z.enum(['React 19', 'Vanilla DOM']).default('React 19'),
-  styling: z.string().default('Tailwind CSS v4'),
-  stateManagement: z.string().default('React State / Hooks'),
-  backendSim: z.string().default('Browser In-Memory State')
+  runtime: z.literal('HTML + CSS + JavaScript').default('HTML + CSS + JavaScript'),
+  styling: z.enum(['Tailwind CSS', 'Plain CSS']).default('Tailwind CSS'),
+  stateManagement: z.literal('Browser In-Memory State / DOM').default('Browser In-Memory State / DOM'),
+  backendSim: z.literal('In-Browser LocalStorage / IndexedDB').default('In-Browser LocalStorage / IndexedDB'),
+  useTailwind: z.boolean().default(true)
 })
 
 export const ProjectSpecSchema = z.object({
   appName: z.string().min(2),
   tagline: z.string().min(5),
   summary: z.string().min(10),
-  targetAudience: z.string().default('General Developers & Users'),
+  targetAudience: z.string().default('General Web Users'),
   primaryFeatures: z.array(z.string()).min(2),
   techStack: TechStackConfigSchema,
+  useTailwind: z.boolean().default(true),
   architectureHighlights: z.array(z.string()).min(2),
   clarifyingQuestions: z.array(ClarifyingQuestionSchema).default([])
 })
@@ -137,6 +141,7 @@ export interface Project {
   userId: string
   userPrompt: string
   spec: ProjectSpec
+  useTailwind: boolean
   screens: ScreenPlanItem[]
   currentScreenIndex: number
   modulesByScreen?: Record<string, ModuleItem[]>

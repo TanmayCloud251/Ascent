@@ -30,6 +30,9 @@ export const Screen2Scope: React.FC = () => {
     generateProjectSpec,
     updateClarifyingAnswer,
     confirmProjectSpec,
+    useTailwind,
+    setUseTailwind,
+    isTailwindLocked,
     setScreen
   } = useApp()
 
@@ -42,7 +45,7 @@ export const Screen2Scope: React.FC = () => {
     const stageDetails = {
       idle: 'Initializing request...',
       analyzing: 'Parsing domain requirements & developer constraints...',
-      synthesizing: 'Calling Gemini 3.8 Flash with structured JSON schema...',
+      synthesizing: 'Calling LLM with structured JSON schema...',
       validating: 'Verifying Zod runtime contracts & architecture highlights...',
       done: 'Specification compiled successfully.',
       error: 'An error occurred during generation.'
@@ -168,7 +171,7 @@ export const Screen2Scope: React.FC = () => {
               <ol className="list-decimal pl-5 space-y-1 text-slate-400 font-mono text-[11px]">
                 <li>Click <span className="text-cyan-300 font-semibold">Settings &gt; Secrets</span> in the AI Studio header.</li>
                 <li>Add or set secret named <code className="text-[#00F0FF] font-bold">GEMINI_API_KEY</code> with your Gemini API key.</li>
-                <li>Click the <strong className="text-white">Retry Generation</strong> button below. Ascent will immediately detect the key and compile your spec with Gemini 3.8 Flash.</li>
+                <li>Click the <strong className="text-white">Retry Generation</strong> button below. Ascent will immediately detect the key and compile your spec with LLM.</li>
               </ol>
             </div>
 
@@ -287,18 +290,20 @@ export const Screen2Scope: React.FC = () => {
 
           {/* Tech Stack Readout */}
           <div className="pt-3 border-t border-white/5 flex flex-wrap items-center gap-2 text-xs font-mono">
-            <span className="text-slate-500 uppercase tracking-wider text-[11px] mr-2">TECH STACK:</span>
+            <span className="text-slate-500 uppercase tracking-wider text-[11px] mr-1">FIXED STACK:</span>
             <span className="px-3 py-1 rounded-md bg-[#00F0FF]/15 border border-[#00F0FF]/40 text-[#00F0FF] font-semibold">
-              {techStack.runtime}
+              HTML + CSS + JavaScript
             </span>
-            <span className="px-3 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300">
-              {techStack.styling}
+            <span className={`px-2.5 py-1 rounded-md border text-xs flex items-center gap-1.5 ${
+              useTailwind
+                ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                : 'bg-white/5 border-white/10 text-slate-300'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${useTailwind ? 'bg-[#00F0FF]' : 'bg-slate-500'}`} />
+              {useTailwind ? 'Tailwind CSS Utilities' : 'Plain Semantic CSS'}
             </span>
-            <span className="px-3 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300">
-              {techStack.stateManagement}
-            </span>
-            <span className="px-3 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300">
-              {techStack.backendSim}
+            <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-400">
+              In-Browser Storage (localStorage/IndexedDB)
             </span>
           </div>
         </div>

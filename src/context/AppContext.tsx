@@ -57,6 +57,9 @@ interface AppContextType {
   activeSpec: ProjectSpec | null
   activePrompt: string
   setActivePrompt: (prompt: string) => void
+  useTailwind: boolean
+  setUseTailwind: (val: boolean) => void
+  isTailwindLocked: boolean
   specStage: SpecGenerationStage
   specError: string | null
   isGeneratingSpec: boolean
@@ -120,15 +123,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => storageService.getCurrentUser())
   const [currentScreen, setCurrentScreen] = useState<ScreenIndex>(1)
 
-  // Slice 1 State: Real Spec Generation & Review
+  // Slice 1 State: Real Spec Generation & Review (FIXED VANILLA STACK)
   const [activeSpec, setActiveSpec] = useState<ProjectSpec | null>(null)
   const [activePrompt, setActivePrompt] = useState<string>('')
-  const [activeStackConfig, setActiveStackConfig] = useState<Partial<TechStackConfig>>({
-    runtime: 'React 19',
-    styling: 'Tailwind CSS v4',
-    stateManagement: 'React State / Hooks',
-    backendSim: 'Browser In-Memory State'
+  const [useTailwind, setUseTailwindState] = useState<boolean>(true)
+  const [isTailwindLocked, setIsTailwindLocked] = useState<boolean>(false)
+
+  const [activeStackConfig, setActiveStackConfig] = useState<TechStackConfig>({
+    runtime: 'HTML + CSS + JavaScript',
+    styling: 'Tailwind CSS',
+    stateManagement: 'Browser In-Memory State / DOM',
+    backendSim: 'In-Browser LocalStorage / IndexedDB',
+    useTailwind: true
   })
+
+  const setUseTailwind = useCallback((val: boolean) => {
+    if (isTailwindLocked) return
+    setUseTailwindState(val)
+    setActiveStackConfig(prev => ({
+      ...prev,
+      useTailwind: val,
+      styling: val ? 'Tailwind CSS' : 'Plain CSS'
+    }))
+  }, [isTailwindLocked])
   const [specStage, setSpecStage] = useState<SpecGenerationStage>('idle')
   const [specError, setSpecError] = useState<string | null>(null)
   const [lastGenerationFromCache, setLastGenerationFromCache] = useState<boolean>(false)
@@ -208,6 +225,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (activeStored) {
         if (activeStored.spec) {
           setActiveSpec(activeStored.spec)
+          const isTailwind = activeStored.useTailwind !== undefined
+            ? activeStored.useTailwind
+            : activeStored.spec.useTailwind !== undefined
+            ? activeStored.spec.useTailwind
+            : true
+          setUseTailwindState(isTailwind)
+          setActiveStackConfig({
+            runtime: 'HTML + CSS + JavaScript',
+            styling: isTailwind ? 'Tailwind CSS' : 'Plain CSS',
+            stateManagement: 'Browser In-Memory State / DOM',
+            backendSim: 'In-Browser LocalStorage / IndexedDB',
+            useTailwind: isTailwind
+          })
+        }
+        if (activeStored.status === 'spec_confirmed' || activeStored.status === 'in_progress' || activeStored.status === 'completed') {
+          setIsTailwindLocked(true)
+        } else {
+          setIsTailwindLocked(false)
         }
         if (activeStored.userPrompt) {
           setActivePrompt(activeStored.userPrompt)
@@ -239,7 +274,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setActivePrompt(trimmed)
     if (techStack) {
-      setActiveStackConfig(techStack)
+      setActiveStackConfig(prev => ({ ...prev, ...techStack }))
     }
 
     setSpecError(null)
@@ -248,15 +283,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       setSpecStage('synthesizing')
+      const targetTailwind = techStack?.useTailwind !== undefined ? techStack.useTailwind : useTailwind
       const result = await llmService.generateSpec({
         prompt: trimmed,
-        techStack: techStack || activeStackConfig,
+        useTailwind: targetTailwind,
+        techStack: {
+          runtime: 'HTML + CSS + JavaScript',
+          styling: targetTailwind ? 'Tailwind CSS' : 'Plain CSS',
+          stateManagement: 'Browser In-Memory State / DOM',
+          backendSim: 'In-Browser LocalStorage / IndexedDB',
+          useTailwind: targetTailwind
+        },
         forceRefresh
       })
 
       setSpecStage('validating')
       setActiveSpec(result.spec)
       setLastGenerationFromCache(result.fromCache)
+      setUseTailwindState(result.spec.useTailwind)
 
       const newProjectId = `proj_${Date.now()}`
       const newProject: AscentProject = {
@@ -264,6 +308,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userId: currentUser.id,
         userPrompt: trimmed,
         spec: result.spec,
+        useTailwind: result.spec.useTailwind,
         screens: [],
         currentScreenIndex: 0,
         status: 'draft_spec',
@@ -282,7 +327,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setSpecError(errorMsg)
       setSpecStage('error')
     }
-  }, [activeStackConfig, currentUser.id])
+  }, [activeStackConfig, currentUser.id, useTailwind])
 
   const retryGenerateSpec = useCallback(async () => {
     if (activePrompt) {
@@ -385,30 +430,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPlanError(null)
     setIsGeneratingPlan(true)
     setPlanStage('plan')
+    setIsTailwindLocked(true) // LOCK TOGGLE AFTER CONFIRMATION
     setCurrentScreen(3) // Navigate to Screen 3 (Project Overview)
 
     try {
-      // 1. Initialize Project Memory if not already initialized
-      let memory = storageService.getProjectMemory(activeProjectId)
-      if (!memory) {
-        memory = {
-          projectId: activeProjectId,
-          techStack: `${activeSpec.techStack.runtime} + ${activeSpec.techStack.styling} + ${activeSpec.techStack.stateManagement}`,
-          namingConventions: [
-            'PascalCase for React components (e.g. HeaderCard.jsx)',
-            'camelCase for custom hooks and utilities (e.g. useAxolotlFeed.js)',
-            'UPPER_SNAKE_CASE for constant lookup tables'
-          ],
-          fileTree: [],
-          decisionsMade: activeSpec.clarifyingQuestions
-            .filter(q => q.selectedAnswer)
-            .map(q => `${q.question}: ${q.selectedAnswer}`),
-          completedFiles: {}
-        }
-        storageService.saveProjectMemory(memory)
-      }
-      setProjectMemory(memory)
-
       // 2. Generate or Load Cached Screen Plan (5-8 screens in strict dependency order)
       const planResult = await llmService.generateScreenPlan({
         spec: activeSpec
@@ -416,6 +441,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const screens = planResult.screens
       setActiveScreens(screens)
       setCurrentScreenIndex(0)
+
+      // 1. Initialize Project Memory with multi-page HTML file structure
+      // Each screen of the target app is its own HTML file (e.g. index.html, dashboard.html)
+      // sharing /css/styles.css (only when Tailwind is off), and /js/*.js files.
+      const initialFileTree: string[] = screens.map((s, idx) => {
+        if (idx === 0) return 'index.html'
+        const cleanName = s.screenName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+        return `${cleanName || `screen-${idx + 1}`}.html`
+      })
+
+      if (!activeSpec.useTailwind) {
+        initialFileTree.push('css/styles.css')
+      }
+      initialFileTree.push('js/app.js')
+      initialFileTree.push('js/storage.js')
+
+      let memory = storageService.getProjectMemory(activeProjectId)
+      if (!memory) {
+        memory = {
+          projectId: activeProjectId,
+          techStack: `HTML + CSS + JavaScript (${activeSpec.useTailwind ? 'Tailwind CSS utilities' : 'Plain CSS'})`,
+          namingConventions: [
+            'Each screen has its own standalone .html file (index.html, dashboard.html, etc.)',
+            activeSpec.useTailwind
+              ? 'Tailwind utility classes directly on HTML elements'
+              : 'Semantic class names and CSS custom properties in css/styles.css',
+            'camelCase for vanilla JavaScript functions, events, and variables (js/*.js)',
+            'LocalStorage / IndexedDB keys namespaced with app prefix'
+          ],
+          fileTree: initialFileTree,
+          decisionsMade: activeSpec.clarifyingQuestions
+            .filter(q => q.selectedAnswer)
+            .map(q => `${q.question}: ${q.selectedAnswer}`),
+          completedFiles: {}
+        }
+        storageService.saveProjectMemory(memory)
+      } else {
+        memory.fileTree = initialFileTree
+        storageService.saveProjectMemory(memory)
+      }
+      setProjectMemory(memory)
 
       // 3. Generate or Load Cached Syllabus for the First Screen ONLY
       setPlanStage('syllabus')
@@ -433,6 +502,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (stored) {
         stored.status = 'spec_confirmed'
         stored.spec = activeSpec
+        stored.useTailwind = activeSpec.useTailwind
         stored.screens = screens
         stored.currentScreenIndex = 0
         stored.modulesByScreen = {
@@ -504,30 +574,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Preset Selection: PRE-FILLS PROMPT ONLY (RULE #2)
   // ==========================================================================
   const loadPresetProject = (key: 'ecommerce' | 'dashboard' | 'taskmanager' | 'portfolio') => {
-    const presets: Record<string, { prompt: string; stack: Partial<TechStackConfig> }> = {
+    const presets: Record<string, { prompt: string; useTailwind: boolean }> = {
       ecommerce: {
-        prompt: 'a real-time e-commerce storefront with optimistic cart and Stripe webhooks',
-        stack: { runtime: 'React 19', styling: 'Tailwind CSS v4', stateManagement: 'Zustand' }
+        prompt: 'interactive pet axolotl feeding schedule and aquarium tank chemistry tracker with log tables and localStorage persistence',
+        useTailwind: true
       },
       dashboard: {
-        prompt: 'enterprise cloud telemetry dashboard with real-time query metrics and sparklines',
-        stack: { runtime: 'React 19', styling: 'Tailwind CSS v4', stateManagement: 'React State / Hooks' }
+        prompt: 'vanilla web telemetry dashboard with KPI metric cards, sparkline trends, search filtering, and client-side data export',
+        useTailwind: true
       },
       taskmanager: {
-        prompt: 'collaborative agile sprint kanban board with swimlanes and quick task filtering',
-        stack: { runtime: 'React 19', styling: 'CSS Grid', stateManagement: 'React State / Hooks' }
+        prompt: 'collaborative agile sprint kanban board with drag-and-drop lanes, priority tags, and browser localStorage',
+        useTailwind: true
       },
       portfolio: {
-        prompt: 'modern developer terminal showcase and project grid with dark cyberpunk aesthetic',
-        stack: { runtime: 'Vanilla DOM', styling: 'Tailwind CSS v4', stateManagement: 'Vanilla Event Emitter' }
+        prompt: 'cyberpunk interactive developer terminal portfolio with command line prompt, project showcase modal, and custom CSS styling',
+        useTailwind: false
       }
     }
 
     const target = presets[key] || presets.dashboard
     // ONLY pre-fill prompt and stack; never launch or map to canned specs
     setActivePrompt(target.prompt)
-    if (target.stack) {
-      setActiveStackConfig(target.stack)
+    if (!isTailwindLocked) {
+      setUseTailwind(target.useTailwind)
     }
     setCurrentScreen(1)
   }
@@ -560,11 +630,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentScreen(2)
   }
 
-  const createNewProject = async (promptText: string, customStack: string[] = ['React 19', 'JavaScript', 'Tailwind CSS', 'HTML5']) => {
+  const createNewProject = async (promptText: string, customStack: string[] = ['HTML', 'CSS', 'JavaScript']) => {
+    const targetTailwind = customStack.includes('Tailwind') || useTailwind
     await generateProjectSpec(promptText, {
-      runtime: customStack.includes('HTML5') ? 'Vanilla DOM' : 'React 19',
-      styling: customStack.includes('Tailwind CSS') ? 'Tailwind CSS v4' : 'CSS Grid',
-      stateManagement: customStack.includes('Zustand') ? 'Zustand' : 'React State / Hooks'
+      runtime: 'HTML + CSS + JavaScript',
+      styling: targetTailwind ? 'Tailwind CSS' : 'Plain CSS',
+      stateManagement: 'Browser In-Memory State / DOM',
+      backendSim: 'In-Browser LocalStorage / IndexedDB',
+      useTailwind: targetTailwind
     })
   }
 
@@ -723,6 +796,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activeSpec,
         activePrompt,
         setActivePrompt,
+        useTailwind,
+        setUseTailwind,
+        isTailwindLocked,
         specStage,
         specError,
         isGeneratingSpec: specStage === 'analyzing' || specStage === 'synthesizing' || specStage === 'validating',
