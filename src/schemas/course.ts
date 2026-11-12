@@ -13,7 +13,9 @@ export const CheckTypeSchema = z.enum([
   'classContains',
   'styleEquals',
   'scriptDefines',
-  'eventResult'
+  'eventResult',
+  'imageLoaded',
+  'assetExists'
 ])
 export type CheckType = z.infer<typeof CheckTypeSchema>
 
@@ -31,8 +33,10 @@ export const CheckSchema = z.object({
   selector: z.string().optional(),
   expected: z.string().optional(),
   property: z.string().optional(),
+  path: z.string().optional(),
   action: z.union([EventActionSchema, z.string()]).optional(),
-  message: z.string().optional()
+  message: z.string().optional(),
+  requirementRef: z.string().optional()
 })
 export type Check = z.infer<typeof CheckSchema>
 
@@ -50,6 +54,7 @@ export const LearnerProgressSchema = z.object({
   hintsUsed: z.number().int().default(0),
   usedSolution: z.boolean().default(false),
   completedWithSolution: z.boolean().default(false),
+  startedAt: z.string().optional(),
   completedAt: z.string().optional()
 })
 export type LearnerProgress = z.infer<typeof LearnerProgressSchema>
@@ -61,7 +66,7 @@ export const ReviewSubmissionResponseSchema = z.object({
 export type ReviewSubmissionResponse = z.infer<typeof ReviewSubmissionResponseSchema>
 
 // ============================================================================
-// File Entry Schema
+// File & Asset Schemas
 // ============================================================================
 
 export const FileEntrySchema = z.object({
@@ -69,6 +74,31 @@ export const FileEntrySchema = z.object({
   content: z.string()
 })
 export type FileEntry = z.infer<typeof FileEntrySchema>
+
+export const ProjectFileSchema = z.object({
+  path: z.string().min(1),
+  kind: z.enum(['text', 'binary']),
+  content: z.string().optional(),
+  assetRef: z.string().optional(),
+  mimeType: z.string().default('text/plain'),
+  size: z.number().nonnegative().optional(),
+  isProvided: z.boolean().optional()
+})
+export type ProjectFile = z.infer<typeof ProjectFileSchema>
+
+export const CuratedAssetSchema = z.object({
+  path: z.string().min(1),
+  mimeType: z.string().min(1),
+  size: z.number().nonnegative().optional()
+})
+export type CuratedAsset = z.infer<typeof CuratedAssetSchema>
+
+export const ReferenceLinkSchema = z.object({
+  title: z.string().min(1),
+  url: z.string().url(),
+  note: z.string().min(1)
+})
+export type ReferenceLink = z.infer<typeof ReferenceLinkSchema>
 
 // ============================================================================
 // Project Specification Schema
@@ -124,7 +154,7 @@ export const ProjectSpecSchema = z.object({
   outOfScope: z.array(z.string()).min(1),
   estimatedScreenCount: z.number().int().min(1).max(8).default(1),
   difficulty: z.enum(['beginner', 'intermediate']).default('beginner'),
-  estimatedHours: z.number().min(1).max(20).default(3)
+  estimatedHours: z.number().min(0.1).max(20).default(3)
 })
 export type ProjectSpec = z.infer<typeof ProjectSpecSchema>
 
@@ -163,6 +193,9 @@ export type Module = z.infer<typeof ModuleSchema>
 export const ModuleContentSchema = z.object({
   lesson: z.string(), // Markdown
   task: z.string(),   // Markdown
+  requirements: z.array(z.string()).default([]),
+  expectedResult: z.string().default(''),
+  references: z.array(ReferenceLinkSchema).default([]),
   starterFiles: z.array(FileEntrySchema),
   solutionFiles: z.array(FileEntrySchema),
   checks: z.array(CheckSchema).min(1),
@@ -202,6 +235,7 @@ export const CuratedCourseSchema = z.object({
   difficulty: z.enum(['beginner', 'intermediate']),
   estimatedHours: z.number(),
   useTailwind: z.literal(false),
+  assets: z.array(CuratedAssetSchema).default([]),
   spec: ProjectSpecSchema,
   page: PageSchema,
   modules: z.array(FullModuleSchema).min(4),

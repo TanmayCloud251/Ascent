@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { useApp } from '../context/AppContext'
+import { useApp, DEFAULT_STARTER_PROMPT } from '../context/AppContext'
 import {
   Terminal,
   ArrowRight,
@@ -83,7 +83,7 @@ export const Screen1Prompt: React.FC = () => {
   } = useApp()
 
   const [promptInput, setPromptInput] = useState(
-    activePrompt || 'interactive background color changer with hex code display, random generator button, and saved favorite colors'
+    activePrompt || DEFAULT_STARTER_PROMPT
   )
   const [isWizardOpen, setIsWizardOpen] = useState(false)
 

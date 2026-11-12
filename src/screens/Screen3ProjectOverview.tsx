@@ -29,7 +29,13 @@ export const Screen3ProjectOverview: React.FC = () => {
     planError,
     confirmProjectSpec,
     useTailwind,
-    setScreen
+    setScreen,
+    openModule,
+    getEffectiveModuleStatus,
+    getModuleProgress,
+    finishActivePage,
+    selectActiveScreen,
+    activeProjectSource
   } = useApp()
 
   // Loading state during single page + component syllabus generation
@@ -123,9 +129,10 @@ export const Screen3ProjectOverview: React.FC = () => {
     )
   }
 
-  const completedModulesCount = activeModules.filter(m => m.status === 'done').length
+  const completedModulesCount = activeModules.filter((m, idx) => getEffectiveModuleStatus(m.id, idx) === 'done').length
   const totalModulesCount = activeModules.length
-  const activeModuleItem = activeModules.find(m => m.status === 'active') || activeModules[0]
+  const activeIdx = activeModules.findIndex((m, idx) => getEffectiveModuleStatus(m.id, idx) === 'active')
+  const allModulesCompleted = totalModulesCount > 0 && completedModulesCount === totalModulesCount
 
   return (
     <div className="flex-1 flex flex-col h-[calc(100vh-3.5rem)] overflow-hidden bg-[#0A0A0F]">
@@ -159,10 +166,24 @@ export const Screen3ProjectOverview: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setScreen(4)}
+            onClick={() => {
+              if (allModulesCompleted) {
+                finishActivePage()
+              } else {
+                openModule(activeIdx >= 0 ? activeIdx : 0)
+              }
+            }}
             className="cyber-btn-primary px-3.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer font-bold"
           >
-            <span>{completedModulesCount > 0 ? 'Continue Module' : 'Start Module 1'}</span>
+            <span>
+              {allModulesCompleted
+                ? activeProjectSource === 'curated'
+                  ? 'Project Complete Summary'
+                  : 'Page Complete Summary'
+                : completedModulesCount > 0
+                ? 'Continue Module'
+                : 'Start Module 1'}
+            </span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -193,14 +214,16 @@ export const Screen3ProjectOverview: React.FC = () => {
               const isDone = pg.status === 'done'
 
               return (
-                <div
+                <button
+                  type="button"
                   key={pg.id || idx}
-                  className={`w-full text-left p-3.5 rounded-xl border transition-all font-mono text-xs ${
+                  onClick={() => selectActiveScreen(idx)}
+                  className={`w-full text-left p-3.5 rounded-xl border transition-all font-mono text-xs cursor-pointer ${
                     isCurrent
                       ? 'bg-[#121224] border-[#00F0FF] shadow-lg shadow-[#00F0FF]/10 text-white'
                       : isDone
-                      ? 'bg-black/30 border-emerald-500/30 text-slate-300'
-                      : 'bg-[#0E0E16] border-white/10 text-slate-300'
+                      ? 'bg-black/30 border-emerald-500/30 text-slate-300 hover:border-emerald-400/60'
+                      : 'bg-[#0E0E16] border-white/10 text-slate-300 hover:border-white/30'
                   }`}
                 >
                   <div className="flex items-center justify-between mb-1.5">
@@ -227,7 +250,7 @@ export const Screen3ProjectOverview: React.FC = () => {
                   <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
                     {pg.purpose || pg.description}
                   </p>
-                </div>
+                </button>
               )
             })}
           </div>
@@ -246,10 +269,12 @@ export const Screen3ProjectOverview: React.FC = () => {
                 <div>
                   <span className="text-slate-500 block mb-1">Built Artifacts:</span>
                   <div className="space-y-0.5 pl-1.5 border-l border-white/10 font-mono text-[10px]">
-                    <div className="flex items-center gap-1.5 text-white">
-                      <span className="text-[#00F0FF]">📄</span>
-                      <span>{currentPage.fileName}</span>
-                    </div>
+                    {(projectMemory.fileTree.length > 0 ? projectMemory.fileTree : [currentPage.fileName]).map((filePath) => (
+                      <div key={filePath} className="flex items-center gap-1.5 text-white">
+                        <span className="text-[#00F0FF]">📄</span>
+                        <span>{filePath}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
                 {projectMemory.decisionsMade && projectMemory.decisionsMade.length > 0 && (
@@ -304,9 +329,11 @@ export const Screen3ProjectOverview: React.FC = () => {
 
             <div className="grid grid-cols-1 gap-3 pt-1">
               {activeModules.map((mod, mIdx) => {
-                const isActive = mod.status === 'active' || (mIdx === 0 && completedModulesCount === 0)
-                const isDone = mod.status === 'done'
-                const isLocked = !isActive && !isDone
+                const effectiveStatus = getEffectiveModuleStatus(mod.id, mIdx)
+                const isActive = effectiveStatus === 'active'
+                const isDone = effectiveStatus === 'done'
+                const prog = getModuleProgress(mod.id)
+                const completedWithSolution = Boolean(prog?.completedWithSolution || prog?.usedSolution)
 
                 return (
                   <div
@@ -341,8 +368,13 @@ export const Screen3ProjectOverview: React.FC = () => {
                         </span>
 
                         {isDone ? (
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 font-mono">
-                            <CheckCircle2 className="w-3 h-3" /> DONE
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 font-mono border ${
+                            completedWithSolution
+                              ? 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+                              : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                          }`}>
+                            <CheckCircle2 className="w-3 h-3" />
+                            {completedWithSolution ? 'DONE (SOLUTION)' : 'DONE'}
                           </span>
                         ) : isActive ? (
                           <span className="px-2 py-0.5 rounded bg-[#00F0FF]/20 text-[#00F0FF] border border-[#00F0FF]/40 text-[10px] font-bold flex items-center gap-1 font-mono">
@@ -369,11 +401,26 @@ export const Screen3ProjectOverview: React.FC = () => {
                           Build this component in the live browser sandbox
                         </span>
                         <button
-                          onClick={() => setScreen(4)}
+                          onClick={() => openModule(mIdx)}
                           className="cyber-btn-primary px-4 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer font-bold"
                         >
                           <span>Start This Component</span>
                           <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+
+                    {isDone && (
+                      <div className="mt-4 pt-3 border-t border-emerald-500/15 pl-8 flex items-center justify-between">
+                        <span className="text-[11px] font-mono text-emerald-300/80">
+                          {prog ? `${prog.attempts} check attempt${prog.attempts === 1 ? '' : 's'} · ${prog.hintsUsed} hint${prog.hintsUsed === 1 ? '' : 's'} used` : 'Completed module — opens read-only'}
+                        </span>
+                        <button
+                          onClick={() => openModule(mIdx)}
+                          className="px-3 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/15 text-slate-200 text-xs font-mono flex items-center gap-1.5 cursor-pointer transition-colors"
+                        >
+                          <span>Review Code</span>
+                          <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
                     )}

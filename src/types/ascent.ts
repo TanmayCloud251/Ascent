@@ -11,6 +11,7 @@ export interface UserProfile {
   name: string
   handle: string
   avatarSeed: string
+  avatarInitials?: string
   tier: UserTier
   streakDays: number
   lastActive: string // ISO date
@@ -176,18 +177,27 @@ export interface PageItem {
   modules: PageModuleItem[]
 }
 
-export const PageResponseSchema = z.object({
-  projectComplete: z.boolean().default(false),
-  page: z
-    .object({
-      name: z.string().min(2),
-      description: z.string().min(6),
-      fileName: z.string().min(4),
-      purpose: z.string().min(6)
-    })
-    .optional(),
-  modules: z.array(PageModuleItemSchema).min(4).max(10).optional()
-})
+export const PageResponseSchema = z
+  .object({
+    projectComplete: z.boolean().default(false),
+    page: z
+      .object({
+        name: z.string().min(2),
+        description: z.string().min(6),
+        fileName: z.string().min(4),
+        purpose: z.string().min(6)
+      })
+      .optional(),
+    modules: z.array(PageModuleItemSchema).min(4).max(10).optional()
+  })
+  .superRefine((val, ctx) => {
+    if (!val.projectComplete && (!val.page || !val.modules || val.modules.length < 4)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Incomplete page syllabus when projectComplete is false'
+      })
+    }
+  })
 
 export type PageResponse = z.infer<typeof PageResponseSchema>
 
@@ -208,6 +218,14 @@ export interface Project {
   updatedAt: string
 }
 
+export interface CompletedPageSummary {
+  id: string
+  name: string
+  fileName: string
+  description: string
+  purpose: string
+}
+
 export interface ProjectMemory {
   projectId: string
   techStack: string
@@ -216,6 +234,14 @@ export interface ProjectMemory {
   fileTree: string[]
   decisionsMade: string[]
   completedFiles: Record<string, string>
+  completedPages?: CompletedPageSummary[]
+  assets?: Array<{
+    path: string
+    assetRef: string
+    mimeType: string
+    size?: number
+    isProvided?: boolean
+  }>
 }
 
 

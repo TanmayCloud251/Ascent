@@ -1,0 +1,100 @@
+{
+  "slug": "login-greeting",
+  "verifiedAt": "2026-11-12T08:47:54.856Z",
+  "model": "gemini-3.1-flash-lite",
+  "assetsCount": 0,
+  "repairedModules": [
+    "mod-4",
+    "mod-5"
+  ],
+  "droppedUrls": [
+    {
+      "moduleId": "mod-4",
+      "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_forms/Styling_buttons",
+      "reason": "HTTP non-200/unreachable after repair"
+    }
+  ],
+  "allModulesValid": true,
+  "modules": [
+    {
+      "order": 1,
+      "id": "mod-1",
+      "title": "Document Head Setup",
+      "starterFailedCount": 3,
+      "starterTotal": 3,
+      "starterFailsAtLeastOne": true,
+      "solutionPassed": 3,
+      "solutionTotal": 3,
+      "solutionAllPass": true,
+      "originalPassed": 3,
+      "originalTotal": 3,
+      "originalAllPass": true,
+      "passedAllConditions": true,
+      "failures": []
+    },
+    {
+      "order": 2,
+      "id": "mod-2",
+      "title": "Body Layout & Heading",
+      "starterFailedCount": 3,
+      "starterTotal": 3,
+      "starterFailsAtLeastOne": true,
+      "solutionPassed": 3,
+      "solutionTotal": 3,
+      "solutionAllPass": true,
+      "originalPassed": 3,
+      "originalTotal": 3,
+      "originalAllPass": true,
+      "passedAllConditions": true,
+      "failures": []
+    },
+    {
+      "order": 3,
+      "id": "mod-3",
+      "title": "Login Form Markup",
+      "starterFailedCount": 4,
+      "starterTotal": 4,
+      "starterFailsAtLeastOne": true,
+      "solutionPassed": 4,
+      "solutionTotal": 4,
+      "solutionAllPass": true,
+      "originalPassed": 4,
+      "originalTotal": 4,
+      "originalAllPass": true,
+      "passedAllConditions": true,
+      "failures": []
+    },
+    {
+      "order": 4,
+      "id": "mod-4",
+      "title": "Inline CSS Styling",
+      "starterFailedCount": 3,
+      "starterTotal": 3,
+      "starterFailsAtLeastOne": true,
+      "solutionPassed": 3,
+      "solutionTotal": 3,
+      "solutionAllPass": true,
+      "originalPassed": 3,
+      "originalTotal": 3,
+      "originalAllPass": true,
+      "passedAllConditions": true,
+      "failures": []
+    },
+    {
+      "order": 5,
+      "id": "mod-5",
+      "title": "Inline JavaScript Behavior",
+      "starterFailedCount": 2,
+      "starterTotal": 3,
+      "starterFailsAtLeastOne": true,
+      "solutionPassed": 3,
+      "solutionTotal": 3,
+      "solutionAllPass": true,
+      "originalPassed": 3,
+      "originalTotal": 3,
+      "originalAllPass": true,
+      "passedAllConditions": true,
+      "failures": []
+    }
+  ]
+}

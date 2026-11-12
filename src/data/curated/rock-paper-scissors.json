@@ -5,33 +5,43 @@
   "difficulty": "beginner",
   "estimatedHours": 2.5,
   "useTailwind": false,
+  "assets": [],
   "spec": {
     "appName": "Rock Paper Scissors",
-    "tagline": "Classic hand showdown against an automated opponent with score tracking.",
-    "summary": "An engaging, responsive Rock Paper Scissors arcade web game. Features player move selection, computer choice generation, instant victory resolution, and score persistence in LocalStorage.",
-    "targetAudience": "Gamers and learners exploring interactive DOM manipulation and randomized state handling.",
+    "tagline": "A sleek, responsive, and persistent take on the classic game.",
+    "summary": "A fully functional Rock Paper Scissors web game that tracks scores across sessions using local storage, featuring a dark-themed responsive UI.",
+    "targetAudience": "Casual gamers looking for a quick diversion and web development students learning DOM manipulation and persistence.",
     "primaryFeatures": [
       {
-        "name": "Interactive Choice Arena",
-        "description": "Large responsive buttons for Rock, Paper, and Scissors with tactile hover feedback."
+        "name": "Game Logic Engine",
+        "description": "Calculates winners between player and randomly generated computer choices."
       },
       {
-        "name": "Battle Outcome Resolver",
-        "description": "Instant comparison between player and computer choices with colored win/lose feedback."
+        "name": "Persistent Score Tracking",
+        "description": "Saves and retrieves player/computer scores from browser LocalStorage."
       },
       {
-        "name": "Persistent Score Tracker",
-        "description": "Running win counters stored in browser LocalStorage with reset capability."
+        "name": "Interactive Score Reset",
+        "description": "Provides a clean interface to reset current session statistics."
       }
     ],
     "userFlows": [
       {
-        "flowName": "Play a Round",
+        "flowName": "Playing a Round",
         "steps": [
-          "Click on one of the move buttons (Rock, Paper, or Scissors).",
-          "Observe computer move reveal and round verdict.",
-          "Check updated score tracker at the top.",
-          "Click Reset Score when ready to start fresh."
+          "User clicks a choice button (Rock, Paper, or Scissors)",
+          "Application randomly selects a move for the computer",
+          "UI updates with symbols for both player and computer",
+          "Game determines the winner and increments the score",
+          "Result message and score display are refreshed"
+        ]
+      },
+      {
+        "flowName": "Resetting Progress",
+        "steps": [
+          "User clicks the Reset Score button",
+          "Application clears scores in memory and localStorage",
+          "UI reset to initial state with zeroed scores and question mark placeholders"
         ]
       }
     ],
@@ -40,8 +50,16 @@
         "name": "GameScores",
         "storageKey": "rps_game_scores_v1",
         "fields": [
-          { "name": "player", "type": "number", "description": "Total player wins" },
-          { "name": "computer", "type": "number", "description": "Total computer wins" }
+          {
+            "name": "player",
+            "type": "integer",
+            "description": "The current cumulative score of the human player."
+          },
+          {
+            "name": "computer",
+            "type": "integer",
+            "description": "The current cumulative score of the computer."
+          }
         ]
       }
     ],
@@ -54,308 +72,544 @@
     },
     "useTailwind": false,
     "architectureHighlights": [
-      "Semantic HTML structure with decoupled CSS design tokens",
-      "Deterministic game resolution mapping using pure JS functions",
-      "State synchronization between DOM text nodes and LocalStorage"
+      "Modular separation of concerns between CSS, HTML, and JS.",
+      "Event Delegation patterns applied via buttons for streamlined interaction.",
+      "Responsive CSS Flexbox grid for uniform layout across devices."
     ],
     "assumptions": [
-      "Randomized computer opponent using Math.random()",
-      "Single-player offline gameplay stored on local device"
+      "The user has a modern web browser that supports LocalStorage.",
+      "The environment allows executing standard vanilla JavaScript."
     ],
     "outOfScope": [
-      "Multiplayer WebSockets networking",
-      "Complex audio synthesizers or 3D animations"
+      "Multiplayer networking or real-time online leaderboards.",
+      "Animation libraries like GSAP or Framer Motion."
     ],
     "estimatedScreenCount": 1,
     "difficulty": "beginner",
     "estimatedHours": 2.5
   },
   "page": {
-    "id": "page_rock_paper_scissors",
-    "projectId": "proj_curated_rps",
+    "id": "rps-main-page",
+    "projectId": "rock-paper-scissors",
     "order": 1,
-    "name": "Rock Paper Scissors Arena",
-    "description": "Single-page arcade game arena featuring score board, player choice buttons, battle display, and game controls.",
+    "name": "Index Page",
+    "description": "The main game entry point containing the dashboard, arena, and footer.",
     "fileName": "index.html",
-    "purpose": "Provide a complete browser-based Rock Paper Scissors game.",
+    "purpose": "To serve the structural foundation and host the game interface for the user.",
     "status": "active",
     "modules": [
       {
-        "id": "mod_1",
-        "pageId": "page_rock_paper_scissors",
+        "id": "mod-1",
+        "pageId": "rps-main-page",
         "order": 1,
-        "title": "Set Up HTML5 Doctype and Stylesheet Link",
-        "learningObjective": "Create the document skeleton with viewport metadata and external CSS linking.",
+        "title": "Document Head & Structural HTML Skeleton",
+        "learningObjective": "Setting up the basic HTML5 boilerplate, linking assets, and creating the main game-container block.",
         "componentType": "document-head",
         "status": "active"
       },
       {
-        "id": "mod_2",
-        "pageId": "page_rock_paper_scissors",
+        "id": "mod-2",
+        "pageId": "rps-main-page",
         "order": 2,
-        "title": "Build Game Container and Scoreboard",
-        "learningObjective": "Construct the outer container and score board elements displaying player and computer scores.",
-        "componentType": "header",
+        "title": "Base Styling & Theme Layout",
+        "learningObjective": "Implementing CSS variables, flexbox layouts, and the dark-mode aesthetic for the game board.",
+        "componentType": "body-layout",
         "status": "locked"
       },
       {
-        "id": "mod_3",
-        "pageId": "page_rock_paper_scissors",
+        "id": "mod-3",
+        "pageId": "rps-main-page",
         "order": 3,
-        "title": "Build Interactive Move Selection Buttons",
-        "learningObjective": "Implement button elements with data-choice attributes for Rock, Paper, and Scissors.",
-        "componentType": "form",
+        "title": "Core UI Elements & Interactive Controls",
+        "learningObjective": "Building out the score display, choice buttons, and hand-icon status placeholders.",
+        "componentType": "main-section",
         "status": "locked"
       },
       {
-        "id": "mod_4",
-        "pageId": "page_rock_paper_scissors",
+        "id": "mod-4",
+        "pageId": "rps-main-page",
         "order": 4,
-        "title": "Create Battle Arena Display and Reset Button",
-        "learningObjective": "Build hand reveal display boxes, round status text, and the game reset action button.",
-        "componentType": "content-block",
+        "title": "Core JavaScript Logic & Event Handling",
+        "learningObjective": "Programming the game state logic, random choice generator, and button click listeners.",
+        "componentType": "script-behavior",
         "status": "locked"
       },
       {
-        "id": "mod_5",
-        "pageId": "page_rock_paper_scissors",
+        "id": "mod-5",
+        "pageId": "rps-main-page",
         "order": 5,
-        "title": "Wire Game Logic, Outcome Evaluation, and LocalStorage",
-        "learningObjective": "Implement JavaScript round evaluation, DOM updates, and score persistence in LocalStorage.",
-        "componentType": "script-behavior",
+        "title": "State Persistence / Reset & Final Integration",
+        "learningObjective": "Connecting LocalStorage for data persistence and finalizing the reset function for a polished user experience.",
+        "componentType": "footer",
         "status": "locked"
       }
     ]
   },
   "modules": [
     {
-      "id": "mod_1",
-      "pageId": "page_rock_paper_scissors",
+      "id": "mod-1",
+      "pageId": "rps-main-page",
       "order": 1,
-      "title": "Set Up HTML5 Doctype and Stylesheet Link",
-      "learningObjective": "Create the document skeleton with viewport metadata and external CSS linking.",
+      "title": "Document Head & Structural HTML Skeleton",
+      "learningObjective": "Setting up the basic HTML5 boilerplate, linking assets, and creating the main game-container block.",
       "componentType": "document-head",
       "status": "active",
-      "lesson": "# Initializing the Game Shell\n\nResponsive gaming experiences require an accurate viewport setup. In this first module, you create the HTML shell linking `styles.css`.",
-      "task": "In `index.html`, set up the doctype, html tag, head tag with title 'Rock Paper Scissors' and link to `styles.css`, and an empty body.",
+      "lesson": "The document head is the brain of your webpage. It contains metadata that tells the browser how to render the page, what character set to use, and how to scale the viewport on mobile devices. By linking your CSS file here, you ensure that styles are loaded before the content is painted, preventing a 'flash of unstyled content'.\n\nThink of the head as a configuration file for your HTML. For example, you can set the page language like this: <html lang='en'>.",
+      "task": "Your goal is to build the structural skeleton of the Rock Paper Scissors game. You need to link your stylesheet and create a main wrapper container to hold the game elements.\n\n### Requirements\n- Link 'styles.css' in the <head>.\n- Add a <div class='game-container'> as the main wrapper.\n- Add a <header class='game-header'> inside the container.\n- Add an <h1> with class 'game-title' containing 'Rock Paper Scissors'.\n\nExample of a container:\n<div class='wrapper'>\n  <h1>Title</h1>\n</div>\n\nIf you're stuck, check the hints and MDN references provided below.",
+      "requirements": [
+        "Link element with href='styles.css' in head",
+        "div element with class='game-container'",
+        "header element with class='game-header'",
+        "h1 element with class='game-title' and text 'Rock Paper Scissors'"
+      ],
+      "expectedResult": "The browser will render the page with the correct title and a centered game container, ready for the game board layout.",
+      "references": [
+        {
+          "title": "MDN: <head>",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/head",
+          "note": "Learn about the metadata container for your document."
+        },
+        {
+          "title": "MDN: <link>",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link",
+          "note": "Understand how to link external resources like CSS."
+        }
+      ],
       "starterFiles": [
-        { "path": "index.html", "content": "" },
-        { "path": "styles.css", "content": "/* Arcade Theme */\n" }
-      ],
-      "solutionFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Rock Paper Scissors</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n</body>\n</html>\n"
-        },
-        { "path": "styles.css", "content": "/* Arcade Theme */\n" }
-      ],
-      "checks": [
-        {
-          "id": "chk_title_rps",
-          "description": "Title tag says Rock Paper Scissors",
-          "type": "textContains",
-          "selector": "title",
-          "expected": "Rock Paper Scissors"
-        }
-      ],
-      "hints": [
-        "Include `<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">`."
-      ]
-    },
-    {
-      "id": "mod_2",
-      "pageId": "page_rock_paper_scissors",
-      "order": 2,
-      "title": "Build Game Container and Scoreboard",
-      "learningObjective": "Construct the outer container and score board elements displaying player and computer scores.",
-      "componentType": "header",
-      "status": "locked",
-      "lesson": "# Designing the Arcade Scoreboard\n\nA prominent scoreboard at the top of the interface provides instant motivation and shows real-time progress.",
-      "task": "Inside `<body>`, add `.game-container` with a `<header class=\"game-header\">` containing an `h1` and `.score-board` with `#player-score` and `#computer-score`.",
-      "starterFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Rock Paper Scissors</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n</body>\n</html>\n"
-        },
-        { "path": "styles.css", "content": "/* Base */\n" }
-      ],
-      "solutionFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Rock Paper Scissors</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"game-container\">\n    <header class=\"game-header\">\n      <h1 class=\"game-title\">Rock Paper Scissors</h1>\n      <div class=\"score-board\">\n        <div class=\"score-card\">\n          <span class=\"score-label\">Player</span>\n          <span id=\"player-score\" class=\"score-value\">0</span>\n        </div>\n        <span class=\"score-divider\">:</span>\n        <div class=\"score-card\">\n          <span class=\"score-label\">Computer</span>\n          <span id=\"computer-score\" class=\"score-value\">0</span>\n        </div>\n      </div>\n    </header>\n  </div>\n</body>\n</html>\n"
-        },
-        {
-          "path": "styles.css",
-          "content": "body {\n  font-family: sans-serif;\n  background-color: #0b0f19;\n  color: #f8fafc;\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  margin: 0;\n}\n.game-container {\n  background: #151c2e;\n  padding: 2rem;\n  border-radius: 1rem;\n  text-align: center;\n  max-width: 480px;\n  width: 100%;\n}\n.game-title {\n  color: #a855f7;\n  margin-bottom: 1rem;\n}\n.score-board {\n  display: flex;\n  justify-content: center;\n  gap: 1.5rem;\n  font-size: 1.25rem;\n}\n"
-        }
-      ],
-      "checks": [
-        {
-          "id": "chk_score_player",
-          "description": "Player score element exists with ID player-score",
-          "type": "elementExists",
-          "selector": "#player-score"
-        },
-        {
-          "id": "chk_score_computer",
-          "description": "Computer score element exists with ID computer-score",
-          "type": "elementExists",
-          "selector": "#computer-score"
-        }
-      ],
-      "hints": [
-        "Create spans with IDs `#player-score` and `#computer-score`."
-      ]
-    },
-    {
-      "id": "mod_3",
-      "pageId": "page_rock_paper_scissors",
-      "order": 3,
-      "title": "Build Interactive Move Selection Buttons",
-      "learningObjective": "Implement button elements with data-choice attributes for Rock, Paper, and Scissors.",
-      "componentType": "form",
-      "status": "locked",
-      "lesson": "# Data Attributes for Event Delegation\n\nUsing `data-choice=\"rock\"` attributes on action buttons allows clean, DRY event delegation in JavaScript.",
-      "task": "Add `<main class=\"game-arena\">` containing `<div class=\"choices-container\">` with three buttons having `class=\"choice-btn\"` and `data-choice` values 'rock', 'paper', and 'scissors'.",
-      "starterFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><title>RPS</title></head>\n<body>\n  <div class=\"game-container\">\n    <header class=\"game-header\">\n      <span id=\"player-score\">0</span>\n      <span id=\"computer-score\">0</span>\n    </header>\n  </div>\n</body>\n</html>\n"
-        },
-        { "path": "styles.css", "content": "/* Styles */\n" }
-      ],
-      "solutionFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><title>RPS</title></head>\n<body>\n  <div class=\"game-container\">\n    <header class=\"game-header\">\n      <span id=\"player-score\">0</span>\n      <span id=\"computer-score\">0</span>\n    </header>\n    <main class=\"game-arena\">\n      <div class=\"choices-container\">\n        <button class=\"choice-btn\" data-choice=\"rock\">✊</button>\n        <button class=\"choice-btn\" data-choice=\"paper\">✋</button>\n        <button class=\"choice-btn\" data-choice=\"scissors\">✌️</button>\n      </div>\n    </main>\n  </div>\n</body>\n</html>\n"
-        },
-        {
-          "path": "styles.css",
-          "content": ".choices-container {\n  display: flex;\n  justify-content: center;\n  gap: 1rem;\n  margin: 1.5rem 0;\n}\n.choice-btn {\n  font-size: 2rem;\n  padding: 1rem;\n  background: #0b0f19;\n  border: 2px solid #232f48;\n  border-radius: 0.75rem;\n  cursor: pointer;\n}\n"
-        }
-      ],
-      "checks": [
-        {
-          "id": "chk_choice_rock",
-          "description": "Choice button for rock exists",
-          "type": "elementExists",
-          "selector": ".choice-btn[data-choice='rock']"
-        },
-        {
-          "id": "chk_choice_paper",
-          "description": "Choice button for paper exists",
-          "type": "elementExists",
-          "selector": ".choice-btn[data-choice='paper']"
-        }
-      ],
-      "hints": [
-        "Set `data-choice=\"rock\"`, `data-choice=\"paper\"`, `data-choice=\"scissors\"`."
-      ]
-    },
-    {
-      "id": "mod_4",
-      "pageId": "page_rock_paper_scissors",
-      "order": 4,
-      "title": "Create Battle Arena Display and Reset Button",
-      "learningObjective": "Build hand reveal display boxes, round status text, and the game reset action button.",
-      "componentType": "content-block",
-      "status": "locked",
-      "lesson": "# Reveal Cards & Battle Feedback\n\nVisual feedback turns inputs into game excitement. We create hand icons and round result text.",
-      "task": "Add `<div class=\"battle-display\">` with `#player-hand`, `#round-result`, and `#computer-hand`. Add `<footer class=\"game-footer\">` with `<button id=\"reset-btn\" class=\"reset-button\">Reset Score</button>`.",
-      "starterFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html><body><div class=\"game-container\"><main class=\"game-arena\"><div class=\"choices-container\"><button class=\"choice-btn\" data-choice=\"rock\">✊</button></div></main></div></body></html>"
-        },
-        { "path": "styles.css", "content": "/* Battle */" }
-      ],
-      "solutionFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html><body><div class=\"game-container\">\n<main class=\"game-arena\">\n  <div class=\"choices-container\"><button class=\"choice-btn\" data-choice=\"rock\">✊</button></div>\n  <div class=\"battle-display\">\n    <span id=\"player-hand\">❓</span>\n    <p id=\"round-result\">Choose your move!</p>\n    <span id=\"computer-hand\">❓</span>\n  </div>\n</main>\n<footer class=\"game-footer\">\n  <button id=\"reset-btn\" class=\"reset-button\">Reset Score</button>\n</footer>\n</div></body></html>"
-        },
-        {
-          "path": "styles.css",
-          "content": ".battle-display { display: flex; justify-content: space-around; align-items: center; margin: 1rem 0; }\n#round-result { font-weight: bold; }\n"
-        }
-      ],
-      "checks": [
-        {
-          "id": "chk_round_result",
-          "description": "Round result text element exists",
-          "type": "elementExists",
-          "selector": "#round-result"
-        },
-        {
-          "id": "chk_reset_button",
-          "description": "Reset score button exists",
-          "type": "elementExists",
-          "selector": "#reset-btn"
-        }
-      ],
-      "hints": [
-        "Include `#round-result` and `#reset-btn`."
-      ]
-    },
-    {
-      "id": "mod_5",
-      "pageId": "page_rock_paper_scissors",
-      "order": 5,
-      "title": "Wire Game Logic, Outcome Evaluation, and LocalStorage",
-      "learningObjective": "Implement JavaScript round evaluation, DOM updates, and score persistence in LocalStorage.",
-      "componentType": "script-behavior",
-      "status": "locked",
-      "lesson": "# Game Logic and Outcome Resolution\n\nWe connect event listeners to calculate the winner according to classic rules: Rock crushes Scissors, Scissors cut Paper, Paper covers Rock.",
-      "task": "Link `<script src=\"app.js\"></script>` in `index.html`. Implement computer move selection, round winner calculation, DOM text updating, and score persistence to `localStorage` in `app.js`.",
-      "starterFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html><body><div class=\"game-container\"><span id=\"player-score\">0</span><span id=\"computer-score\">0</span><button class=\"choice-btn\" data-choice=\"rock\">✊</button><span id=\"player-hand\"></span><p id=\"round-result\"></p><span id=\"computer-hand\"></span><button id=\"reset-btn\"></button></div></body></html>"
-        },
-        { "path": "app.js", "content": "// Logic" }
-      ],
-      "solutionFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html><body><div class=\"game-container\"><span id=\"player-score\">0</span><span id=\"computer-score\">0</span><button class=\"choice-btn\" data-choice=\"rock\">✊</button><span id=\"player-hand\"></span><p id=\"round-result\"></p><span id=\"computer-hand\"></span><button id=\"reset-btn\"></button></div><script src=\"app.js\"></script></body></html>"
-        },
         {
           "path": "app.js",
-          "content": "const choices = ['rock', 'paper', 'scissors'];\nconst playerScoreEl = document.getElementById('player-score');\nconst computerScoreEl = document.getElementById('computer-score');\nconst roundResultEl = document.getElementById('round-result');\nlet scores = { player: 0, computer: 0 };\n\nfunction playRound(playerChoice) {\n  const comp = choices[Math.floor(Math.random() * choices.length)];\n  if (playerChoice === comp) {\n    roundResultEl.textContent = 'Tie!';\n  } else if ((playerChoice==='rock'&&comp==='scissors')||(playerChoice==='paper'&&comp==='rock')||(playerChoice==='scissors'&&comp==='paper')) {\n    scores.player++;\n    playerScoreEl.textContent = scores.player;\n    roundResultEl.textContent = 'You win!';\n  } else {\n    scores.computer++;\n    computerScoreEl.textContent = scores.computer;\n    roundResultEl.textContent = 'You lose!';\n  }\n}\ndocument.querySelectorAll('.choice-btn').forEach(b => b.addEventListener('click', () => playRound(b.dataset.choice)));\n"
+          "content": "// Interactive logic for Rock Paper Scissors\n"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Rock Paper Scissors</title>\n</head>\n<body>\n</body>\n</html>\n"
+        },
+        {
+          "path": "styles.css",
+          "content": "/* Styles for Rock Paper Scissors */\n"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Rock Paper Scissors"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang='en'>\n<head>\n  <meta charset='UTF-8'>\n  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n  <title>Rock Paper Scissors</title>\n  <link rel='stylesheet' href='styles.css'>\n</head>\n<body>\n  <div class='game-container'>\n    <header class='game-header'>\n      <h1 class='game-title'>Rock Paper Scissors</h1>\n    </header>\n  </div>\n</body>\n</html>"
+        },
+        {
+          "path": "styles.css",
+          "content": "/* Styles for Rock Paper Scissors */"
         }
       ],
       "checks": [
         {
-          "id": "chk_script_rps",
-          "description": "Script tag links to app.js",
+          "id": "check-link",
+          "description": "Verify that the stylesheet is linked in the head.",
           "type": "attributeEquals",
-          "selector": "script[src='app.js']",
-          "expected": "app.js"
+          "selector": "link[href='styles.css']",
+          "expected": "stylesheet",
+          "property": "rel",
+          "requirementRef": "Link element with href='styles.css' in head"
         },
         {
-          "id": "chk_playround_def",
-          "description": "playRound function is declared",
-          "type": "scriptDefines",
-          "expected": "playRound"
+          "id": "check-container",
+          "description": "Verify the game-container exists.",
+          "type": "elementExists",
+          "selector": ".game-container",
+          "requirementRef": "div element with class='game-container'"
+        },
+        {
+          "id": "check-title",
+          "description": "Verify the game title text.",
+          "type": "textContains",
+          "selector": ".game-title",
+          "expected": "Rock Paper Scissors",
+          "requirementRef": "h1 element with class='game-title' and text 'Rock Paper Scissors'"
         }
       ],
       "hints": [
-        "Use `document.querySelectorAll('.choice-btn')` to add click listeners."
+        "Ensure the <link> tag is placed inside the <head> section, not the <body>.",
+        "The class name for the main wrapper must be exactly 'game-container' to match the CSS requirements later.",
+        "Check that your h1 tag is nested inside the header element."
+      ]
+    },
+    {
+      "id": "mod-2",
+      "pageId": "rps-main-page",
+      "order": 2,
+      "title": "Base Styling & Theme Layout",
+      "learningObjective": "Implementing CSS variables, flexbox layouts, and the dark-mode aesthetic for the game board.",
+      "componentType": "body-layout",
+      "status": "locked",
+      "lesson": "CSS variables (also known as custom properties) are a powerful way to manage design tokens like colors, spacing, and font sizes across your entire application. By defining them in the :root selector, you create a single source of truth that makes theme updates effortless. For example, changing a single variable like --primary-color can instantly update every button and header in your app.\n\nFlexbox is another essential tool for modern layouts. It allows you to align items along a main axis and cross axis with ease, solving complex alignment problems that used to require messy floats or absolute positioning. A simple example: `display: flex; justify-content: center; align-items: center;` will perfectly center any element within its parent container.",
+      "task": "Your goal is to transform the basic HTML structure into a polished, dark-themed game board using CSS variables and Flexbox. \n\n### Requirements\n- Define a :root block in styles.css with at least --bg-color, --card-bg, and --primary variables.\n- Apply a flexbox layout to the body to center the .game-container.\n- Style the .game-container with a dark background, rounded corners, and a subtle box-shadow.\n\n### Example\n```css\n:root { --main-bg: #121212; }\nbody { background-color: var(--main-bg); }\n```\n\nIf you're stuck, check the Hints and MDN references provided below.",
+      "requirements": [
+        "CSS :root variables for theme colors",
+        "Flexbox layout on body for centering",
+        "Dark theme styling for .game-container",
+        "styles.css file exists"
+      ],
+      "expectedResult": "The game container will be centered on the screen with a dark, modern aesthetic, featuring a distinct background color and rounded corners.",
+      "references": [
+        {
+          "title": "Using CSS custom properties",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties",
+          "note": "Learn how to define and use CSS variables."
+        },
+        {
+          "title": "Flexbox layout",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout/Basic_concepts_of_flexbox",
+          "note": "Understand how to align elements using flexbox."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Rock Paper Scissors"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang='en'>\n<head>\n  <meta charset='UTF-8'>\n  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n  <title>Rock Paper Scissors</title>\n  <link rel='stylesheet' href='styles.css'>\n</head>\n<body>\n  <div class='game-container'>\n    <header class='game-header'>\n      <h1 class='game-title'>Rock Paper Scissors</h1>\n    </header>\n  </div>\n</body>\n</html>"
+        },
+        {
+          "path": "styles.css",
+          "content": "/* Styles for Rock Paper Scissors */"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Rock Paper Scissors"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang='en'>\n<head>\n  <meta charset='UTF-8'>\n  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n  <title>Rock Paper Scissors</title>\n  <link rel='stylesheet' href='styles.css'>\n</head>\n<body>\n  <div class='game-container'>\n    <header class='game-header'>\n      <h1 class='game-title'>Rock Paper Scissors</h1>\n    </header>\n  </div>\n</body>\n</html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root {\n  --bg-color: #0b0f19;\n  --card-bg: #151c2e;\n  --primary: #a855f7;\n}\n\nbody {\n  background-color: var(--bg-color);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 100vh;\n}\n\n.game-container {\n  background-color: var(--card-bg);\n  border-radius: 1.25rem;\n  padding: 2rem;\n  width: 100%;\n  max-width: 500px;\n}"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-root-vars",
+          "description": "Verify CSS variables are defined in :root",
+          "type": "styleEquals",
+          "selector": ":root",
+          "expected": "#0b0f19",
+          "property": "--bg-color",
+          "requirementRef": "CSS :root variables for theme colors"
+        },
+        {
+          "id": "check-body-flex",
+          "description": "Verify body uses flexbox for centering",
+          "type": "styleEquals",
+          "selector": "body",
+          "expected": "flex",
+          "property": "display",
+          "requirementRef": "Flexbox layout on body for centering"
+        },
+        {
+          "id": "check-container-bg",
+          "description": "Verify game container has dark background",
+          "type": "styleEquals",
+          "selector": ".game-container",
+          "expected": "rgb(21, 28, 46)",
+          "property": "background-color",
+          "requirementRef": "Dark theme styling for .game-container"
+        }
+      ],
+      "hints": [
+        "Use the :root selector to define your variables at the top of your CSS file.",
+        "To center the container, apply 'display: flex', 'align-items: center', and 'justify-content: center' to the body element.",
+        "Remember to use 'var(--variable-name)' to apply the colors you defined."
+      ]
+    },
+    {
+      "id": "mod-3",
+      "pageId": "rps-main-page",
+      "order": 3,
+      "title": "Core UI Elements & Interactive Controls",
+      "learningObjective": "Building out the score display, choice buttons, and hand-icon status placeholders.",
+      "componentType": "main-section",
+      "status": "locked",
+      "lesson": "Building a user interface requires careful planning of your HTML structure to ensure that elements are accessible and easy to target with CSS and JavaScript. By using semantic tags and descriptive class names, you create a predictable environment where your logic can interact with the DOM seamlessly. Think of your HTML as the skeleton of your application, providing the necessary hooks for your styles and behaviors to attach to.\n\nFor example, when creating a button, you might use a data attribute to store specific information: <button data-choice='rock'>✊</button>. This allows your JavaScript to easily retrieve the value 'rock' whenever that button is clicked, keeping your code clean and modular.",
+      "task": "Your goal is to build the core UI for the Rock Paper Scissors game. You need to implement the score board, the choice buttons, and the battle display area where the game status and hand icons will appear.\n\n### Requirements\n- Add a `.score-board` container with player and computer score cards.\n- Include three `.choice-btn` elements with `data-choice` attributes.\n- Create a `.battle-display` section with placeholders for player/computer hands and a round result message.\n- Ensure all IDs (`player-score`, `computer-score`, `player-hand`, `computer-hand`, `round-result`) are present for future logic.\n\n### Example\n<div class='score-card'><span class='score-label'>Player</span><span id='player-score'>0</span></div>\n\nIf you're stuck, check the hints and MDN references provided below to understand how to structure your layout using Flexbox and semantic HTML.",
+      "requirements": [
+        "Add .score-board container with #player-score and #computer-score elements",
+        "Add .choices-container with three .choice-btn buttons having data-choice attributes",
+        "Add .battle-display with #player-hand, #computer-hand, and #round-result elements"
+      ],
+      "expectedResult": "The game interface will display a score board at the top, three choice buttons in the center, and a battle display area showing the current round status and hand icons.",
+      "references": [
+        {
+          "title": "MDN: Flexbox Layout",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout/Basic_concepts_of_flexbox",
+          "note": "Essential for aligning the score board and choice buttons."
+        },
+        {
+          "title": "MDN: Data Attributes",
+          "url": "https://developer.mozilla.org/en-US/docs/Learn/HTML/Howto/Use_data_attributes",
+          "note": "Learn how to store custom data on HTML elements."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Rock Paper Scissors"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang='en'>\n<head>\n  <meta charset='UTF-8'>\n  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n  <title>Rock Paper Scissors</title>\n  <link rel='stylesheet' href='styles.css'>\n</head>\n<body>\n  <div class='game-container'>\n    <header class='game-header'>\n      <h1 class='game-title'>Rock Paper Scissors</h1>\n    </header>\n  </div>\n</body>\n</html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root {\n  --bg-color: #0b0f19;\n  --card-bg: #151c2e;\n  --primary: #a855f7;\n}\n\nbody {\n  background-color: var(--bg-color);\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 100vh;\n}\n\n.game-container {\n  background-color: var(--card-bg);\n  border-radius: 1.25rem;\n  padding: 2rem;\n  width: 100%;\n  max-width: 500px;\n}"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Rock Paper Scissors"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Rock Paper Scissors</title><link rel='stylesheet' href='styles.css'></head><body><div class='game-container'><header class='game-header'><h1 class='game-title'>Rock Paper Scissors</h1><div class='score-board'><div class='score-card'><span class='score-label'>Player</span><span id='player-score' class='score-value'>0</span></div><span class='score-divider'>:</span><div class='score-card'><span class='score-label'>Computer</span><span id='computer-score' class='score-value'>0</span></div></div></header><main class='game-arena'><div class='choices-container'><button class='choice-btn' data-choice='rock'>✊</button><button class='choice-btn' data-choice='paper'>✋</button><button class='choice-btn' data-choice='scissors'>✌️</button></div><div class='battle-display'><div class='hand-box'><span class='hand-label'>You Picked</span><span id='player-hand' class='hand-icon'>❓</span></div><div class='status-box'><p id='round-result' class='round-result'>Choose your move to start!</p></div><div class='hand-box'><span class='hand-label'>Computer Picked</span><span id='computer-hand' class='hand-icon'>❓</span></div></div></main></div><script src='app.js'></script></body></html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root { --bg-color: #0b0f19; --card-bg: #151c2e; --primary: #a855f7; --border: #232f48; --text-main: #f8fafc; --text-muted: #94a3b8; } body { background-color: var(--bg-color); color: var(--text-main); display: flex; align-items: center; justify-content: center; min-height: 100vh; } .game-container { background-color: var(--card-bg); border-radius: 1.25rem; padding: 2rem; width: 100%; max-width: 500px; text-align: center; } .score-board { display: flex; justify-content: center; gap: 1rem; } .choice-btn { cursor: pointer; font-size: 2rem; } .battle-display { display: flex; justify-content: space-between; margin-top: 2rem; }"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-score-board",
+          "description": "Check if the score board exists with player and computer score elements.",
+          "type": "elementExists",
+          "selector": "#player-score",
+          "requirementRef": "Add .score-board container with #player-score and #computer-score elements"
+        },
+        {
+          "id": "check-choice-buttons",
+          "description": "Check if choice buttons exist with data-choice attributes.",
+          "type": "attributeEquals",
+          "selector": "button[data-choice='rock']",
+          "expected": "rock",
+          "property": "data-choice",
+          "requirementRef": "Add .choices-container with three .choice-btn buttons having data-choice attributes"
+        },
+        {
+          "id": "check-battle-display",
+          "description": "Check if the battle display elements exist.",
+          "type": "elementExists",
+          "selector": "#round-result",
+          "requirementRef": "Add .battle-display with #player-hand, #computer-hand, and #round-result elements"
+        }
+      ],
+      "hints": [
+        "Use a flex container for the score board to align the player and computer scores side-by-side.",
+        "Ensure your buttons have the class 'choice-btn' so they can be styled consistently.",
+        "The battle display needs three sections: one for the player's icon, one for the result text, and one for the computer's icon."
+      ]
+    },
+    {
+      "id": "mod-4",
+      "pageId": "rps-main-page",
+      "order": 4,
+      "title": "Core JavaScript Logic & Event Handling",
+      "learningObjective": "Programming the game state logic, random choice generator, and button click listeners.",
+      "componentType": "script-behavior",
+      "status": "locked",
+      "lesson": "JavaScript logic is the engine of your application. By using event listeners, we can capture user interactions and trigger functions that update the DOM dynamically. This creates a responsive experience where the interface reflects the current state of the game.\n\nFor example, you can use `element.addEventListener('click', () => { ... })` to run code whenever a user interacts with a button. This is a fundamental pattern for building interactive web applications.",
+      "task": "### Goal\nImplement the core game logic to handle user choices, generate a random computer move, and update the game display.\n\n### Requirements\n- Implement `getComputerChoice` to return 'rock', 'paper', or 'scissors'.\n- Implement `playRound` to compare choices and update the DOM elements `#player-hand`, `#computer-hand`, and `#round-result`.\n- Add click event listeners to all `.choice-btn` elements.\n\n### Example\n```javascript\nconst btn = document.querySelector('.choice-btn');\nbtn.addEventListener('click', () => console.log('Clicked!'));\n```\n\n### If you're stuck\nCheck the Hints and MDN References below for guidance on event handling and DOM manipulation.",
+      "requirements": [
+        "Implement getComputerChoice function",
+        "Implement playRound function",
+        "Add click event listeners to .choice-btn elements",
+        "Update #player-hand and #computer-hand text content",
+        "Update #round-result text content"
+      ],
+      "expectedResult": "Clicking any of the choice buttons will now update the 'You Picked' and 'Computer Picked' icons and display the round result message.",
+      "references": [
+        {
+          "title": "EventTarget.addEventListener()",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener",
+          "note": "Learn how to listen for user clicks."
+        },
+        {
+          "title": "Math.random()",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random",
+          "note": "Essential for generating the computer's random choice."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Rock Paper Scissors"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Rock Paper Scissors</title><link rel='stylesheet' href='styles.css'></head><body><div class='game-container'><header class='game-header'><h1 class='game-title'>Rock Paper Scissors</h1><div class='score-board'><div class='score-card'><span class='score-label'>Player</span><span id='player-score' class='score-value'>0</span></div><span class='score-divider'>:</span><div class='score-card'><span class='score-label'>Computer</span><span id='computer-score' class='score-value'>0</span></div></div></header><main class='game-arena'><div class='choices-container'><button class='choice-btn' data-choice='rock'>✊</button><button class='choice-btn' data-choice='paper'>✋</button><button class='choice-btn' data-choice='scissors'>✌️</button></div><div class='battle-display'><div class='hand-box'><span class='hand-label'>You Picked</span><span id='player-hand' class='hand-icon'>❓</span></div><div class='status-box'><p id='round-result' class='round-result'>Choose your move to start!</p></div><div class='hand-box'><span class='hand-label'>Computer Picked</span><span id='computer-hand' class='hand-icon'>❓</span></div></div></main></div><script src='app.js'></script></body></html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root { --bg-color: #0b0f19; --card-bg: #151c2e; --primary: #a855f7; --border: #232f48; --text-main: #f8fafc; --text-muted: #94a3b8; } body { background-color: var(--bg-color); color: var(--text-main); display: flex; align-items: center; justify-content: center; min-height: 100vh; } .game-container { background-color: var(--card-bg); border-radius: 1.25rem; padding: 2rem; width: 100%; max-width: 500px; text-align: center; } .score-board { display: flex; justify-content: center; gap: 1rem; } .choice-btn { cursor: pointer; font-size: 2rem; } .battle-display { display: flex; justify-content: space-between; margin-top: 2rem; }"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "app.js",
+          "content": "const choices = ['rock', 'paper', 'scissors']; const icons = { rock: '✊', paper: '✋', scissors: '✌️' }; const playerHandEl = document.getElementById('player-hand'); const computerHandEl = document.getElementById('computer-hand'); const roundResultEl = document.getElementById('round-result'); const choiceButtons = document.querySelectorAll('.choice-btn'); function getComputerChoice() { const randomIndex = Math.floor(Math.random() * choices.length); return choices[randomIndex]; } function playRound(playerChoice) { const computerChoice = getComputerChoice(); playerHandEl.textContent = icons[playerChoice]; computerHandEl.textContent = icons[computerChoice]; if (playerChoice === computerChoice) { roundResultEl.textContent = \"It's a tie!\"; } else if ((playerChoice === 'rock' && computerChoice === 'scissors') || (playerChoice === 'paper' && computerChoice === 'rock') || (playerChoice === 'scissors' && computerChoice === 'paper')) { roundResultEl.textContent = `You win! ${playerChoice} beats ${computerChoice}.`; } else { roundResultEl.textContent = `You lose! ${computerChoice} beats ${playerChoice}.`; } } choiceButtons.forEach(btn => { btn.addEventListener('click', () => { const choice = btn.dataset.choice; playRound(choice); }); });"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Rock Paper Scissors</title><link rel='stylesheet' href='styles.css'></head><body><div class='game-container'><header class='game-header'><h1 class='game-title'>Rock Paper Scissors</h1><div class='score-board'><div class='score-card'><span class='score-label'>Player</span><span id='player-score' class='score-value'>0</span></div><span class='score-divider'>:</span><div class='score-card'><span class='score-label'>Computer</span><span id='computer-score' class='score-value'>0</span></div></div></header><main class='game-arena'><div class='choices-container'><button class='choice-btn' data-choice='rock'>✊</button><button class='choice-btn' data-choice='paper'>✋</button><button class='choice-btn' data-choice='scissors'>✌️</button></div><div class='battle-display'><div class='hand-box'><span class='hand-label'>You Picked</span><span id='player-hand' class='hand-icon'>❓</span></div><div class='status-box'><p id='round-result' class='round-result'>Choose your move to start!</p></div><div class='hand-box'><span class='hand-label'>Computer Picked</span><span id='computer-hand' class='hand-icon'>❓</span></div></div></main></div><script src='app.js'></script></body></html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root { --bg-color: #0b0f19; --card-bg: #151c2e; --primary: #a855f7; --border: #232f48; --text-main: #f8fafc; --text-muted: #94a3b8; } body { background-color: var(--bg-color); color: var(--text-main); display: flex; align-items: center; justify-content: center; min-height: 100vh; } .game-container { background-color: var(--card-bg); border-radius: 1.25rem; padding: 2rem; width: 100%; max-width: 500px; text-align: center; } .score-board { display: flex; justify-content: center; gap: 1rem; } .choice-btn { cursor: pointer; font-size: 2rem; } .battle-display { display: flex; justify-content: space-between; margin-top: 2rem; }"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-logic-defined",
+          "description": "Verify that the playRound function is defined in the script.",
+          "type": "scriptDefines",
+          "expected": "playRound",
+          "requirementRef": "Implement playRound function"
+        },
+        {
+          "id": "check-event-interaction",
+          "description": "Verify that clicking a button updates the player hand display.",
+          "type": "eventResult",
+          "selector": "#player-hand",
+          "expected": "✊",
+          "property": "textContent",
+          "action": {
+            "type": "click",
+            "selector": "button[data-choice='rock']"
+          },
+          "requirementRef": "Add click event listeners to .choice-btn elements"
+        }
+      ],
+      "hints": [
+        "Use `document.querySelectorAll('.choice-btn')` to select all buttons and loop through them with `forEach` to attach event listeners.",
+        "The `dataset` property on the button element is a great way to retrieve the 'rock', 'paper', or 'scissors' value.",
+        "Remember that `Math.random()` returns a float between 0 and 1; multiply it by the length of your choices array and use `Math.floor()` to get a valid index."
+      ]
+    },
+    {
+      "id": "mod-5",
+      "pageId": "rps-main-page",
+      "order": 5,
+      "title": "State Persistence / Reset & Final Integration",
+      "learningObjective": "Connecting LocalStorage for data persistence and finalizing the reset function for a polished user experience.",
+      "componentType": "footer",
+      "status": "locked",
+      "lesson": "State persistence is a crucial aspect of web development that allows your application to remember user data even after a page refresh. By leveraging the browser's localStorage API, you can store key-value pairs as strings, which provides a seamless experience for users returning to your game. For example, you can save a user's theme preference using localStorage.setItem('theme', 'dark').\n\nResetting state is equally important for maintaining a clean user interface. When a user clicks a reset button, you should clear the data in both the UI elements and the storage object to ensure the game starts from a fresh, predictable state. A simple way to toggle a class is element.classList.add('active').",
+      "task": "Your goal is to finalize the Rock Paper Scissors game by implementing score persistence and a reset feature.\n\n### Requirements\n- Add a 'Reset Score' button to the footer.\n- Implement `localStorage` to save and load player and computer scores.\n- Ensure the game state (scores, hands, and result text) resets correctly when the button is clicked.\n- Update the UI dynamically to reflect score changes and reset actions.\n\n### Example\n```javascript\nlocalStorage.setItem('myKey', JSON.stringify({ score: 10 }));\nconst data = JSON.parse(localStorage.getItem('myKey'));\n```\n\nIf you're stuck, check the hints and MDN references for working with JSON and Web Storage.",
+      "requirements": [
+        "Button with id 'reset-btn' exists in the footer",
+        "localStorage is used to persist scores with key 'rps_game_scores_v1'",
+        "Reset button click clears scores and resets UI to initial state",
+        "Scores are updated in the DOM after every round"
+      ],
+      "expectedResult": "The game now persists scores across page refreshes and includes a functional Reset button that clears all progress.",
+      "references": [
+        {
+          "title": "Window.localStorage",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage",
+          "note": "Learn how to store data persistently in the browser."
+        },
+        {
+          "title": "JSON.stringify()",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify",
+          "note": "Essential for converting objects into strings for storage."
+        },
+        {
+          "title": "EventTarget.addEventListener()",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener",
+          "note": "Used to handle the reset button click event."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "app.js",
+          "content": "const choices = ['rock', 'paper', 'scissors']; const icons = { rock: '✊', paper: '✋', scissors: '✌️' }; const playerHandEl = document.getElementById('player-hand'); const computerHandEl = document.getElementById('computer-hand'); const roundResultEl = document.getElementById('round-result'); const choiceButtons = document.querySelectorAll('.choice-btn'); function getComputerChoice() { const randomIndex = Math.floor(Math.random() * choices.length); return choices[randomIndex]; } function playRound(playerChoice) { const computerChoice = getComputerChoice(); playerHandEl.textContent = icons[playerChoice]; computerHandEl.textContent = icons[computerChoice]; if (playerChoice === computerChoice) { roundResultEl.textContent = \"It's a tie!\"; } else if ((playerChoice === 'rock' && computerChoice === 'scissors') || (playerChoice === 'paper' && computerChoice === 'rock') || (playerChoice === 'scissors' && computerChoice === 'paper')) { roundResultEl.textContent = `You win! ${playerChoice} beats ${computerChoice}.`; } else { roundResultEl.textContent = `You lose! ${computerChoice} beats ${playerChoice}.`; } } choiceButtons.forEach(btn => { btn.addEventListener('click', () => { const choice = btn.dataset.choice; playRound(choice); }); });"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Rock Paper Scissors</title><link rel='stylesheet' href='styles.css'></head><body><div class='game-container'><header class='game-header'><h1 class='game-title'>Rock Paper Scissors</h1><div class='score-board'><div class='score-card'><span class='score-label'>Player</span><span id='player-score' class='score-value'>0</span></div><span class='score-divider'>:</span><div class='score-card'><span class='score-label'>Computer</span><span id='computer-score' class='score-value'>0</span></div></div></header><main class='game-arena'><div class='choices-container'><button class='choice-btn' data-choice='rock'>✊</button><button class='choice-btn' data-choice='paper'>✋</button><button class='choice-btn' data-choice='scissors'>✌️</button></div><div class='battle-display'><div class='hand-box'><span class='hand-label'>You Picked</span><span id='player-hand' class='hand-icon'>❓</span></div><div class='status-box'><p id='round-result' class='round-result'>Choose your move to start!</p></div><div class='hand-box'><span class='hand-label'>Computer Picked</span><span id='computer-hand' class='hand-icon'>❓</span></div></div></main></div><script src='app.js'></script></body></html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root { --bg-color: #0b0f19; --card-bg: #151c2e; --primary: #a855f7; --border: #232f48; --text-main: #f8fafc; --text-muted: #94a3b8; } body { background-color: var(--bg-color); color: var(--text-main); display: flex; align-items: center; justify-content: center; min-height: 100vh; } .game-container { background-color: var(--card-bg); border-radius: 1.25rem; padding: 2rem; width: 100%; max-width: 500px; text-align: center; } .score-board { display: flex; justify-content: center; gap: 1rem; } .choice-btn { cursor: pointer; font-size: 2rem; } .battle-display { display: flex; justify-content: space-between; margin-top: 2rem; }"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "app.js",
+          "content": "const choices = ['rock', 'paper', 'scissors']; const icons = { rock: '✊', paper: '✋', scissors: '✌️' }; const playerScoreEl = document.getElementById('player-score'); const computerScoreEl = document.getElementById('computer-score'); const playerHandEl = document.getElementById('player-hand'); const computerHandEl = document.getElementById('computer-hand'); const roundResultEl = document.getElementById('round-result'); const resetBtn = document.getElementById('reset-btn'); const choiceButtons = document.querySelectorAll('.choice-btn'); const STORAGE_KEY = 'rps_game_scores_v1'; let scores = { player: 0, computer: 0 }; function loadScores() { try { const saved = localStorage.getItem(STORAGE_KEY); if (saved) { scores = JSON.parse(saved); playerScoreEl.textContent = scores.player; computerScoreEl.textContent = scores.computer; } } catch (e) { console.warn('Failed to load scores:', e); } } function saveScores() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(scores)); } catch (e) { console.warn('Failed to save scores:', e); } } function getComputerChoice() { const randomIndex = Math.floor(Math.random() * choices.length); return choices[randomIndex]; } function playRound(playerChoice) { const computerChoice = getComputerChoice(); playerHandEl.textContent = icons[playerChoice]; computerHandEl.textContent = icons[computerChoice]; if (playerChoice === computerChoice) { roundResultEl.textContent = \"It's a tie!\"; roundResultEl.className = 'round-result'; } else if ((playerChoice === 'rock' && computerChoice === 'scissors') || (playerChoice === 'paper' && computerChoice === 'rock') || (playerChoice === 'scissors' && computerChoice === 'paper')) { scores.player++; playerScoreEl.textContent = scores.player; roundResultEl.textContent = `You win! ${playerChoice} beats ${computerChoice}.`; roundResultEl.className = 'round-result win'; saveScores(); } else { scores.computer++; computerScoreEl.textContent = scores.computer; roundResultEl.textContent = `You lose! ${computerChoice} beats ${playerChoice}.`; roundResultEl.className = 'round-result lose'; saveScores(); } } function resetGame() { scores = { player: 0, computer: 0 }; playerScoreEl.textContent = '0'; computerScoreEl.textContent = '0'; playerHandEl.textContent = '❓'; computerHandEl.textContent = '❓'; roundResultEl.textContent = 'Choose your move to start!'; roundResultEl.className = 'round-result'; saveScores(); } choiceButtons.forEach(btn => { btn.addEventListener('click', () => { const choice = btn.dataset.choice; playRound(choice); }); }); resetBtn.addEventListener('click', resetGame); loadScores();"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Rock Paper Scissors</title><link rel='stylesheet' href='styles.css'></head><body><div class='game-container'><header class='game-header'><h1 class='game-title'>Rock Paper Scissors</h1><div class='score-board'><div class='score-card'><span class='score-label'>Player</span><span id='player-score' class='score-value'>0</span></div><span class='score-divider'>:</span><div class='score-card'><span class='score-label'>Computer</span><span id='computer-score' class='score-value'>0</span></div></div></header><main class='game-arena'><div class='choices-container'><button class='choice-btn' data-choice='rock' title='Rock'>✊</button><button class='choice-btn' data-choice='paper' title='Paper'>✋</button><button class='choice-btn' data-choice='scissors' title='Scissors'>✌️</button></div><div class='battle-display'><div class='hand-box'><span class='hand-label'>You Picked</span><span id='player-hand' class='hand-icon'>❓</span></div><div class='status-box'><p id='round-result' class='round-result'>Choose your move to start!</p></div><div class='hand-box'><span class='hand-label'>Computer Picked</span><span id='computer-hand' class='hand-icon'>❓</span></div></div></main><footer class='game-footer'><button id='reset-btn' class='reset-button'>Reset Score</button></footer></div><script src='app.js'></script></body></html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root { --bg-color: #0b0f19; --card-bg: #151c2e; --primary: #a855f7; --primary-hover: #9333ea; --text-main: #f8fafc; --text-muted: #94a3b8; --border: #232f48; --win-color: #22c55e; --lose-color: #ef4444; } * { box-sizing: border-box; margin: 0; padding: 0; } body { font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif; background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; } .game-container { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 1.25rem; width: 100%; max-width: 500px; padding: 2rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5); text-align: center; } .game-header { margin-bottom: 2rem; } .game-title { font-size: 1.5rem; font-weight: 800; color: var(--primary); margin-bottom: 1.25rem; } .score-board { display: flex; align-items: center; justify-content: center; gap: 1.5rem; background: #0b0f19; border: 1px solid var(--border); border-radius: 0.75rem; padding: 0.75rem 1.5rem; width: fit-content; margin: 0 auto; } .score-card { display: flex; flex-direction: column; } .score-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); } .score-value { font-size: 1.75rem; font-weight: 800; color: var(--text-main); } .score-divider { font-size: 1.5rem; font-weight: 800; color: var(--border); } .choices-container { display: flex; justify-content: center; gap: 1rem; margin-bottom: 2rem; } .choice-btn { background: #0b0f19; border: 2px solid var(--border); border-radius: 1rem; width: 5rem; height: 5rem; font-size: 2.25rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.15s, border-color 0.15s, background-color 0.15s; } .choice-btn:hover { transform: translateY(-4px); border-color: var(--primary); background: #1a233a; } .battle-display { background: #0b0f19; border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.25rem; display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; } .hand-box { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; flex: 1; } .hand-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; } .hand-icon { font-size: 2.5rem; } .status-box { flex: 1.2; } .round-result { font-size: 0.95rem; font-weight: 600; color: var(--text-main); } .round-result.win { color: var(--win-color); } .round-result.lose { color: var(--lose-color); } .game-footer { border-top: 1px solid var(--border); padding-top: 1.25rem; } .reset-button { background: transparent; border: 1px solid var(--border); color: var(--text-muted); padding: 0.5rem 1.25rem; border-radius: 0.5rem; font-size: 0.8125rem; cursor: pointer; transition: all 0.2s; } .reset-button:hover { border-color: var(--primary); color: var(--text-main); }"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-reset-btn",
+          "description": "Verify the reset button exists in the DOM",
+          "type": "elementExists",
+          "selector": "#reset-btn",
+          "requirementRef": "Button with id 'reset-btn' exists in the footer"
+        },
+        {
+          "id": "check-reset-action",
+          "description": "Verify clicking reset button clears the player score",
+          "type": "eventResult",
+          "selector": "#player-score",
+          "expected": "0",
+          "property": "textContent",
+          "action": {
+            "type": "click",
+            "selector": "#reset-btn"
+          },
+          "requirementRef": "Reset button click clears scores and resets UI to initial state"
+        },
+        {
+          "id": "check-storage-key",
+          "description": "Verify the script defines the correct storage key",
+          "type": "scriptDefines",
+          "expected": "STORAGE_KEY",
+          "requirementRef": "localStorage is used to persist scores with key 'rps_game_scores_v1'"
+        }
+      ],
+      "hints": [
+        "Use localStorage.getItem(key) and JSON.parse() to retrieve your saved scores when the page loads.",
+        "Remember to call saveScores() inside your playRound function after updating the score object.",
+        "The resetGame function should set the scores object back to { player: 0, computer: 0 } and update the textContent of the score elements."
       ]
     }
   ],
   "finalFiles": [
     {
+      "path": "app.js",
+      "content": "const choices = ['rock', 'paper', 'scissors'];\r\nconst icons = {\r\n  rock: '✊',\r\n  paper: '✋',\r\n  scissors: '✌️'\r\n};\r\n\r\nconst playerScoreEl = document.getElementById('player-score');\r\nconst computerScoreEl = document.getElementById('computer-score');\r\nconst playerHandEl = document.getElementById('player-hand');\r\nconst computerHandEl = document.getElementById('computer-hand');\r\nconst roundResultEl = document.getElementById('round-result');\r\nconst resetBtn = document.getElementById('reset-btn');\r\nconst choiceButtons = document.querySelectorAll('.choice-btn');\r\n\r\nconst STORAGE_KEY = 'rps_game_scores_v1';\r\n\r\nlet scores = { player: 0, computer: 0 };\r\n\r\nfunction loadScores() {\r\n  try {\r\n    const saved = localStorage.getItem(STORAGE_KEY);\r\n    if (saved) {\r\n      scores = JSON.parse(saved);\r\n      playerScoreEl.textContent = scores.player;\r\n      computerScoreEl.textContent = scores.computer;\r\n    }\r\n  } catch (e) {\r\n    console.warn('Failed to load scores:', e);\r\n  }\r\n}\r\n\r\nfunction saveScores() {\r\n  try {\r\n    localStorage.setItem(STORAGE_KEY, JSON.stringify(scores));\r\n  } catch (e) {\r\n    console.warn('Failed to save scores:', e);\r\n  }\r\n}\r\n\r\nfunction getComputerChoice() {\r\n  const randomIndex = Math.floor(Math.random() * choices.length);\r\n  return choices[randomIndex];\r\n}\r\n\r\nfunction playRound(playerChoice) {\r\n  const computerChoice = getComputerChoice();\r\n\r\n  playerHandEl.textContent = icons[playerChoice];\r\n  computerHandEl.textContent = icons[computerChoice];\r\n\r\n  if (playerChoice === computerChoice) {\r\n    roundResultEl.textContent = \"It's a tie!\";\r\n    roundResultEl.className = 'round-result';\r\n  } else if (\r\n    (playerChoice === 'rock' && computerChoice === 'scissors') ||\r\n    (playerChoice === 'paper' && computerChoice === 'rock') ||\r\n    (playerChoice === 'scissors' && computerChoice === 'paper')\r\n  ) {\r\n    scores.player++;\r\n    playerScoreEl.textContent = scores.player;\r\n    roundResultEl.textContent = `You win! ${playerChoice} beats ${computerChoice}.`;\r\n    roundResultEl.className = 'round-result win';\r\n    saveScores();\r\n  } else {\r\n    scores.computer++;\r\n    computerScoreEl.textContent = scores.computer;\r\n    roundResultEl.textContent = `You lose! ${computerChoice} beats ${playerChoice}.`;\r\n    roundResultEl.className = 'round-result lose';\r\n    saveScores();\r\n  }\r\n}\r\n\r\nfunction resetGame() {\r\n  scores = { player: 0, computer: 0 };\r\n  playerScoreEl.textContent = '0';\r\n  computerScoreEl.textContent = '0';\r\n  playerHandEl.textContent = '❓';\r\n  computerHandEl.textContent = '❓';\r\n  roundResultEl.textContent = 'Choose your move to start!';\r\n  roundResultEl.className = 'round-result';\r\n  saveScores();\r\n}\r\n\r\nchoiceButtons.forEach(btn => {\r\n  btn.addEventListener('click', () => {\r\n    const choice = btn.dataset.choice;\r\n    playRound(choice);\r\n  });\r\n});\r\n\r\nresetBtn.addEventListener('click', resetGame);\r\nloadScores();\r\n"
+    },
+    {
       "path": "index.html",
-      "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Rock Paper Scissors</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"game-container\">\n    <header class=\"game-header\">\n      <h1 class=\"game-title\">Rock Paper Scissors</h1>\n      <div class=\"score-board\">\n        <div class=\"score-card\">\n          <span class=\"score-label\">Player</span>\n          <span id=\"player-score\" class=\"score-value\">0</span>\n        </div>\n        <span class=\"score-divider\">:</span>\n        <div class=\"score-card\">\n          <span class=\"score-label\">Computer</span>\n          <span id=\"computer-score\" class=\"score-value\">0</span>\n        </div>\n      </div>\n    </header>\n    <main class=\"game-arena\">\n      <div class=\"choices-container\">\n        <button class=\"choice-btn\" data-choice=\"rock\" title=\"Rock\">✊</button>\n        <button class=\"choice-btn\" data-choice=\"paper\" title=\"Paper\">✋</button>\n        <button class=\"choice-btn\" data-choice=\"scissors\" title=\"Scissors\">✌️</button>\n      </div>\n      <div class=\"battle-display\">\n        <div class=\"hand-box\">\n          <span class=\"hand-label\">You Picked</span>\n          <span id=\"player-hand\" class=\"hand-icon\">❓</span>\n        </div>\n        <div class=\"status-box\">\n          <p id=\"round-result\" class=\"round-result\">Choose your move to start!</p>\n        </div>\n        <div class=\"hand-box\">\n          <span class=\"hand-label\">Computer Picked</span>\n          <span id=\"computer-hand\" class=\"hand-icon\">❓</span>\n        </div>\n      </div>\n    </main>\n    <footer class=\"game-footer\">\n      <button id=\"reset-btn\" class=\"reset-button\">Reset Score</button>\n    </footer>\n  </div>\n  <script src=\"app.js\"></script>\n</body>\n</html>\n"
+      "content": "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n  <meta charset=\"UTF-8\">\r\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n  <title>Rock Paper Scissors</title>\r\n  <link rel=\"stylesheet\" href=\"styles.css\">\r\n</head>\r\n<body>\r\n  <div class=\"game-container\">\r\n    <header class=\"game-header\">\r\n      <h1 class=\"game-title\">Rock Paper Scissors</h1>\r\n      <div class=\"score-board\">\r\n        <div class=\"score-card\">\r\n          <span class=\"score-label\">Player</span>\r\n          <span id=\"player-score\" class=\"score-value\">0</span>\r\n        </div>\r\n        <span class=\"score-divider\">:</span>\r\n        <div class=\"score-card\">\r\n          <span class=\"score-label\">Computer</span>\r\n          <span id=\"computer-score\" class=\"score-value\">0</span>\r\n        </div>\r\n      </div>\r\n    </header>\r\n\r\n    <main class=\"game-arena\">\r\n      <div class=\"choices-container\">\r\n        <button class=\"choice-btn\" data-choice=\"rock\" title=\"Rock\">✊</button>\r\n        <button class=\"choice-btn\" data-choice=\"paper\" title=\"Paper\">✋</button>\r\n        <button class=\"choice-btn\" data-choice=\"scissors\" title=\"Scissors\">✌️</button>\r\n      </div>\r\n\r\n      <div class=\"battle-display\">\r\n        <div class=\"hand-box\">\r\n          <span class=\"hand-label\">You Picked</span>\r\n          <span id=\"player-hand\" class=\"hand-icon\">❓</span>\r\n        </div>\r\n        <div class=\"status-box\">\r\n          <p id=\"round-result\" class=\"round-result\">Choose your move to start!</p>\r\n        </div>\r\n        <div class=\"hand-box\">\r\n          <span class=\"hand-label\">Computer Picked</span>\r\n          <span id=\"computer-hand\" class=\"hand-icon\">❓</span>\r\n        </div>\r\n      </div>\r\n    </main>\r\n\r\n    <footer class=\"game-footer\">\r\n      <button id=\"reset-btn\" class=\"reset-button\">Reset Score</button>\r\n    </footer>\r\n  </div>\r\n\r\n  <script src=\"app.js\"></script>\r\n</body>\r\n</html>\r\n"
     },
     {
       "path": "styles.css",
-      "content": ":root {\n  --bg-color: #0b0f19;\n  --card-bg: #151c2e;\n  --primary: #a855f7;\n  --text-main: #f8fafc;\n  --text-muted: #94a3b8;\n  --border: #232f48;\n}\n* { box-sizing: border-box; margin: 0; padding: 0; }\nbody {\n  font-family: sans-serif;\n  background-color: var(--bg-color);\n  color: var(--text-main);\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 1rem;\n}\n.game-container {\n  background-color: var(--card-bg);\n  border: 1px solid var(--border);\n  border-radius: 1.25rem;\n  width: 100%;\n  max-width: 500px;\n  padding: 2rem;\n  text-align: center;\n}\n.game-title {\n  font-size: 1.5rem;\n  font-weight: 800;\n  color: var(--primary);\n  margin-bottom: 1.25rem;\n}\n.score-board {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 1.5rem;\n  background: #0b0f19;\n  border: 1px solid var(--border);\n  border-radius: 0.75rem;\n  padding: 0.75rem 1.5rem;\n  width: fit-content;\n  margin: 0 auto;\n}\n.score-card { display: flex; flex-direction: column; }\n.score-label { font-size: 0.75rem; color: var(--text-muted); }\n.score-value { font-size: 1.75rem; font-weight: 800; }\n.score-divider { font-size: 1.5rem; color: var(--border); }\n.choices-container {\n  display: flex;\n  justify-content: center;\n  gap: 1rem;\n  margin-bottom: 2rem;\n}\n.choice-btn {\n  background: #0b0f19;\n  border: 2px solid var(--border);\n  border-radius: 1rem;\n  width: 5rem;\n  height: 5rem;\n  font-size: 2.25rem;\n  cursor: pointer;\n}\n.battle-display {\n  background: #0b0f19;\n  border: 1px solid var(--border);\n  border-radius: 0.75rem;\n  padding: 1.25rem;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 1.5rem;\n}\n.hand-box { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; flex: 1; }\n.hand-label { font-size: 0.7rem; color: var(--text-muted); }\n.hand-icon { font-size: 2.5rem; }\n.status-box { flex: 1.2; }\n.round-result { font-size: 0.95rem; font-weight: 600; }\n.game-footer { border-top: 1px solid var(--border); padding-top: 1.25rem; }\n.reset-button {\n  background: transparent;\n  border: 1px solid var(--border);\n  color: var(--text-muted);\n  padding: 0.5rem 1.25rem;\n  border-radius: 0.5rem;\n  cursor: pointer;\n}\n"
-    },
-    {
-      "path": "app.js",
-      "content": "const choices = ['rock', 'paper', 'scissors'];\nconst icons = { rock: '✊', paper: '✋', scissors: '✌️' };\nconst playerScoreEl = document.getElementById('player-score');\nconst computerScoreEl = document.getElementById('computer-score');\nconst playerHandEl = document.getElementById('player-hand');\nconst computerHandEl = document.getElementById('computer-hand');\nconst roundResultEl = document.getElementById('round-result');\nconst resetBtn = document.getElementById('reset-btn');\nlet scores = { player: 0, computer: 0 };\n\nfunction playRound(playerChoice) {\n  const computerChoice = choices[Math.floor(Math.random() * choices.length)];\n  playerHandEl.textContent = icons[playerChoice];\n  computerHandEl.textContent = icons[computerChoice];\n  if (playerChoice === computerChoice) {\n    roundResultEl.textContent = \"It's a tie!\";\n  } else if ((playerChoice === 'rock' && computerChoice === 'scissors') || (playerChoice === 'paper' && computerChoice === 'rock') || (playerChoice === 'scissors' && computerChoice === 'paper')) {\n    scores.player++;\n    playerScoreEl.textContent = scores.player;\n    roundResultEl.textContent = `You win! ${playerChoice} beats ${computerChoice}.`;\n  } else {\n    scores.computer++;\n    computerScoreEl.textContent = scores.computer;\n    roundResultEl.textContent = `You lose! ${computerChoice} beats ${playerChoice}.`;\n  }\n}\ndocument.querySelectorAll('.choice-btn').forEach(btn => btn.addEventListener('click', () => playRound(btn.dataset.choice)));\nresetBtn.addEventListener('click', () => {\n  scores = { player: 0, computer: 0 };\n  playerScoreEl.textContent = '0';\n  computerScoreEl.textContent = '0';\n  roundResultEl.textContent = 'Choose your move to start!';\n});\n"
+      "content": ":root {\r\n  --bg-color: #0b0f19;\r\n  --card-bg: #151c2e;\r\n  --primary: #a855f7;\r\n  --primary-hover: #9333ea;\r\n  --text-main: #f8fafc;\r\n  --text-muted: #94a3b8;\r\n  --border: #232f48;\r\n  --win-color: #22c55e;\r\n  --lose-color: #ef4444;\r\n}\r\n\r\n* {\r\n  box-sizing: border-box;\r\n  margin: 0;\r\n  padding: 0;\r\n}\r\n\r\nbody {\r\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\r\n  background-color: var(--bg-color);\r\n  color: var(--text-main);\r\n  min-height: 100vh;\r\n  display: flex;\r\n  align-items: center;\r\n  justify-content: center;\r\n  padding: 1rem;\r\n}\r\n\r\n.game-container {\r\n  background-color: var(--card-bg);\r\n  border: 1px solid var(--border);\r\n  border-radius: 1.25rem;\r\n  width: 100%;\r\n  max-width: 500px;\r\n  padding: 2rem;\r\n  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);\r\n  text-align: center;\r\n}\r\n\r\n.game-header {\r\n  margin-bottom: 2rem;\r\n}\r\n\r\n.game-title {\r\n  font-size: 1.5rem;\r\n  font-weight: 800;\r\n  color: var(--primary);\r\n  margin-bottom: 1.25rem;\r\n}\r\n\r\n.score-board {\r\n  display: flex;\r\n  align-items: center;\r\n  justify-content: center;\r\n  gap: 1.5rem;\r\n  background: #0b0f19;\r\n  border: 1px solid var(--border);\r\n  border-radius: 0.75rem;\r\n  padding: 0.75rem 1.5rem;\r\n  width: fit-content;\r\n  margin: 0 auto;\r\n}\r\n\r\n.score-card {\r\n  display: flex;\r\n  flex-direction: column;\r\n}\r\n\r\n.score-label {\r\n  font-size: 0.75rem;\r\n  font-weight: 600;\r\n  text-transform: uppercase;\r\n  color: var(--text-muted);\r\n}\r\n\r\n.score-value {\r\n  font-size: 1.75rem;\r\n  font-weight: 800;\r\n  color: var(--text-main);\r\n}\r\n\r\n.score-divider {\r\n  font-size: 1.5rem;\r\n  font-weight: 800;\r\n  color: var(--border);\r\n}\r\n\r\n.choices-container {\r\n  display: flex;\r\n  justify-content: center;\r\n  gap: 1rem;\r\n  margin-bottom: 2rem;\r\n}\r\n\r\n.choice-btn {\r\n  background: #0b0f19;\r\n  border: 2px solid var(--border);\r\n  border-radius: 1rem;\r\n  width: 5rem;\r\n  height: 5rem;\r\n  font-size: 2.25rem;\r\n  display: flex;\r\n  align-items: center;\r\n  justify-content: center;\r\n  cursor: pointer;\r\n  transition: transform 0.15s, border-color 0.15s, background-color 0.15s;\r\n}\r\n\r\n.choice-btn:hover {\r\n  transform: translateY(-4px);\r\n  border-color: var(--primary);\r\n  background: #1a233a;\r\n}\r\n\r\n.battle-display {\r\n  background: #0b0f19;\r\n  border: 1px solid var(--border);\r\n  border-radius: 0.75rem;\r\n  padding: 1.25rem;\r\n  display: flex;\r\n  align-items: center;\r\n  justify-content: space-between;\r\n  margin-bottom: 1.5rem;\r\n}\r\n\r\n.hand-box {\r\n  display: flex;\r\n  flex-direction: column;\r\n  align-items: center;\r\n  gap: 0.5rem;\r\n  flex: 1;\r\n}\r\n\r\n.hand-label {\r\n  font-size: 0.7rem;\r\n  color: var(--text-muted);\r\n  text-transform: uppercase;\r\n}\r\n\r\n.hand-icon {\r\n  font-size: 2.5rem;\r\n}\r\n\r\n.status-box {\r\n  flex: 1.2;\r\n}\r\n\r\n.round-result {\r\n  font-size: 0.95rem;\r\n  font-weight: 600;\r\n  color: var(--text-main);\r\n}\r\n\r\n.round-result.win {\r\n  color: var(--win-color);\r\n}\r\n\r\n.round-result.lose {\r\n  color: var(--lose-color);\r\n}\r\n\r\n.game-footer {\r\n  border-top: 1px solid var(--border);\r\n  padding-top: 1.25rem;\r\n}\r\n\r\n.reset-button {\r\n  background: transparent;\r\n  border: 1px solid var(--border);\r\n  color: var(--text-muted);\r\n  padding: 0.5rem 1.25rem;\r\n  border-radius: 0.5rem;\r\n  font-size: 0.8125rem;\r\n  cursor: pointer;\r\n  transition: all 0.2s;\r\n}\r\n\r\n.reset-button:hover {\r\n  border-color: var(--primary);\r\n  color: var(--text-main);\r\n}\r\n"
     }
   ]
 }

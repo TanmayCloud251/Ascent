@@ -1,5 +1,6 @@
 import express from 'express'
 import type { Request, Response } from 'express'
+import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { GoogleGenAI, Type } from '@google/genai'
@@ -9,8 +10,63 @@ import { ModuleContentSchema, ReviewSubmissionResponseSchema } from './src/schem
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+const API_KEY_ENV_NAMES = [
+  'GEMINI_API_KEY',
+  'ASCENT_API_KEY',
+  'API_KEY',
+  'GOOGLE_API_KEY',
+  'NEXT_PUBLIC_GEMINI_API_KEY'
+] as const
+
+const PLACEHOLDER_API_KEYS = new Set([
+  '',
+  'MY_GEMINI_API_KEY',
+  'MY_ASCENT_API_KEY',
+  'YOUR_API_KEY',
+  'YOUR_GEMINI_API_KEY',
+  'undefined',
+  'null'
+])
+
+export function isValidApiKeyValue(val?: string | null): val is string {
+  if (!val || typeof val !== 'string') return false
+  const trimmed = val.trim()
+  return trimmed.length > 0 && !PLACEHOLDER_API_KEYS.has(trimmed)
+}
+
+function loadEnvFromDisk(overridePlaceholders: boolean = false): void {
+  try {
+    const envPath = path.join(__dirname, '.env')
+    if (!fs.existsSync(envPath)) return
+    const rawEnv = fs.readFileSync(envPath, 'utf8')
+    for (const rawLine of rawEnv.split(/\r?\n/)) {
+      const line = rawLine.trim()
+      if (!line || line.startsWith('#')) continue
+      const eqIdx = line.indexOf('=')
+      if (eqIdx <= 0) continue
+      const key = line.slice(0, eqIdx).trim().replace(/^export\s+/, '')
+      let value = line.slice(eqIdx + 1).trim()
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1).trim()
+      }
+      if (!key) continue
+      const currentVal = process.env[key]
+      if (!currentVal || (overridePlaceholders && !isValidApiKeyValue(currentVal) && isValidApiKeyValue(value))) {
+        process.env[key] = value
+      }
+    }
+  } catch {
+    // Ignore when .env cannot be read
+  }
+}
+
+loadEnvFromDisk(true)
+
 const app = express()
-const PORT = 3000
+const PORT = Number(process.env.PORT) || 3000
 const HOST = '0.0.0.0'
 
 app.use(express.json({ limit: '10mb' }))
@@ -22,26 +78,16 @@ app.use(express.json({ limit: '10mb' }))
 // ============================================================================
 export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite'
 
-// Dynamic Gemini client resolution (finds the first non-placeholder key)
+// Dynamic Gemini client resolution (finds the first non-placeholder key, refreshing .env if needed)
 export function getGeminiClient(): GoogleGenAI | null {
-  const candidateKeys = [
-    process.env.GEMINI_API_KEY,
-    process.env.ASCENT_API_KEY,
-    process.env.API_KEY,
-    process.env.NEXT_PUBLIC_GEMINI_API_KEY
-  ]
+  const findValidKey = () =>
+    API_KEY_ENV_NAMES.map(name => process.env[name]).find(k => isValidApiKeyValue(k))?.trim() || null
 
-  const validKey = candidateKeys.find(k => {
-    if (!k || typeof k !== 'string') return false
-    const trimmed = k.trim()
-    return (
-      trimmed !== '' &&
-      trimmed !== 'MY_GEMINI_API_KEY' &&
-      trimmed !== 'MY_ASCENT_API_KEY' &&
-      trimmed !== 'undefined' &&
-      trimmed !== 'null'
-    )
-  })
+  let validKey = findValidKey()
+  if (!validKey) {
+    loadEnvFromDisk(true)
+    validKey = findValidKey()
+  }
 
   if (!validKey) {
     return null
@@ -151,57 +197,90 @@ function extractGeminiErrorMessage(err: any): string {
   return message
 }
 
+async function generateContentWithRetry(ai: GoogleGenAI, params: Parameters<GoogleGenAI['models']['generateContent']>[0], maxRetries = 2) {
+  let lastError: any
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await ai.models.generateContent(params)
+    } catch (err: any) {
+      lastError = err
+      const msg = String(err?.message || err || '')
+      const isTransient = msg.includes('429') || msg.includes('503') || msg.includes('UNAVAILABLE') || msg.includes('high demand') || msg.includes('RESOURCE_EXHAUSTED')
+      if (!isTransient || attempt === maxRetries) {
+        throw err
+      }
+      const jitter = Math.floor(Math.random() * 400)
+      const delayMs = 900 * Math.pow(2, attempt) + jitter
+      await new Promise(resolve => setTimeout(resolve, delayMs))
+    }
+  }
+  throw lastError
+}
+
 // -------------------------------------------------------------
 // Real Model Verification at Server Startup
 // -------------------------------------------------------------
-async function verifyModelAtStartup() {
-  const ai = getGeminiClient()
-  if (!ai) {
-    modelStatus = {
-      tested: true,
-      success: false,
-      model: GEMINI_MODEL,
-      error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets or your environment, then click Retry.',
-      timestamp: new Date().toISOString()
-    }
-    console.warn(`[Gemini Startup Check] PENDING: ASCENT_API_KEY or GEMINI_API_KEY is not configured or set to placeholder. Model: ${GEMINI_MODEL}`)
-    return
-  }
+let activeVerificationPromise: Promise<void> | null = null
 
-  try {
-    console.log(`[Gemini Startup Check] Testing model "${GEMINI_MODEL}" with API key...`)
-    const response = await ai.models.generateContent({
-      model: GEMINI_MODEL,
-      contents: 'Respond with exactly: {"status":"verified"}'
-    })
-    const text = response.text?.trim()
-    console.log(`[Gemini Startup Check] SUCCESS: Model "${GEMINI_MODEL}" responded successfully: ${text}`)
-    modelStatus = {
-      tested: true,
-      success: true,
-      model: GEMINI_MODEL,
-      error: null,
-      responseSnippet: text,
-      timestamp: new Date().toISOString()
-    }
-  } catch (err: any) {
-    const cleanError = extractGeminiErrorMessage(err)
-    console.error(`[Gemini Startup Check] FAILED: Model "${GEMINI_MODEL}" error: ${cleanError}`)
-    modelStatus = {
-      tested: true,
-      success: false,
-      model: GEMINI_MODEL,
-      error: cleanError,
-      timestamp: new Date().toISOString()
-    }
+async function verifyModelAtStartup() {
+  if (activeVerificationPromise) {
+    return activeVerificationPromise
   }
+  activeVerificationPromise = (async () => {
+    const ai = getGeminiClient()
+    if (!ai) {
+      modelStatus = {
+        tested: true,
+        success: false,
+        model: GEMINI_MODEL,
+        error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets or your environment, then click Retry.',
+        timestamp: new Date().toISOString()
+      }
+      console.warn(`[Gemini Startup Check] PENDING: ASCENT_API_KEY or GEMINI_API_KEY is not configured or set to placeholder. Model: ${GEMINI_MODEL}`)
+      return
+    }
+
+    try {
+      console.log(`[Gemini Startup Check] Testing model "${GEMINI_MODEL}" with API key...`)
+      const response = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: 'Respond with exactly: {"status":"verified"}'
+      })
+      const text = response.text?.trim()
+      console.log(`[Gemini Startup Check] SUCCESS: Model "${GEMINI_MODEL}" responded successfully: ${text}`)
+      modelStatus = {
+        tested: true,
+        success: true,
+        model: GEMINI_MODEL,
+        error: null,
+        responseSnippet: text,
+        timestamp: new Date().toISOString()
+      }
+    } catch (err: any) {
+      const cleanError = extractGeminiErrorMessage(err)
+      console.error(`[Gemini Startup Check] FAILED: Model "${GEMINI_MODEL}" error: ${cleanError}`)
+      modelStatus = {
+        tested: true,
+        success: false,
+        model: GEMINI_MODEL,
+        error: cleanError,
+        timestamp: new Date().toISOString()
+      }
+    }
+  })().finally(() => {
+    activeVerificationPromise = null
+  })
+  return activeVerificationPromise
 }
 
 // -------------------------------------------------------------
 // GET /api/health
 // -------------------------------------------------------------
-app.get('/api/health', (_req: Request, res: Response) => {
+app.get('/api/health', async (_req: Request, res: Response) => {
   const ai = getGeminiClient()
+  if (ai && !modelStatus.success) {
+    await verifyModelAtStartup()
+  }
   res.json({
     status: 'ok',
     engine: 'Ascent Full-Stack Coding Academy Server',
@@ -217,7 +296,11 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // GET /api/llm/status
 // Exposes model verification status to client UI
 // -------------------------------------------------------------
-app.get('/api/llm/status', (_req: Request, res: Response) => {
+app.get('/api/llm/status', async (_req: Request, res: Response) => {
+  const ai = getGeminiClient()
+  if (ai && !modelStatus.success) {
+    await verifyModelAtStartup()
+  }
   res.json({
     model: GEMINI_MODEL,
     verified: modelStatus.success,
@@ -831,9 +914,9 @@ Strict Rules:
 
 // -------------------------------------------------------------
 // POST /api/llm/generate-page
-// SLICE 2 REVISED: Real Gemini structured generation for a SINGLE PAGE and its Component Syllabus
-// Input: confirmed spec (incl. assumptions and outOfScope), useTailwind, ProjectMemory
-// Output: ONE page with 5-10 modules in HTML document/build order
+// SLICE 2 + SLICE 5: Single page & component syllabus (Page 1 or Next Page) with ProjectMemory + hard-stop page budget.
+// Input: confirmed spec (incl. assumptions and outOfScope), useTailwind, ProjectMemory (incl. completedPages, completedFiles)
+// Output: ONE page with 4-10 modules in HTML document/build order, OR { projectComplete: true }
 // -------------------------------------------------------------
 app.post('/api/llm/generate-page', async (req: Request, res: Response) => {
   const startTime = Date.now()
@@ -842,6 +925,30 @@ app.post('/api/llm/generate-page', async (req: Request, res: Response) => {
 
     if (!spec || !spec.appName) {
       return res.status(400).json({ success: false, error: 'Valid ProjectSpec is required', retryable: false })
+    }
+
+    const completedPages: Array<{ name: string; fileName: string; description?: string; purpose?: string }> =
+      Array.isArray(projectMemory?.completedPages) ? projectMemory.completedPages : []
+    const completedPagesCount = completedPages.length
+    const estimatedScreens = Number(spec.estimatedScreenCount) || 3
+    const maxPages = Math.max(1, estimatedScreens + 1)
+
+    // Hard-stop server-side: never build more than estimatedScreenCount + 1 pages
+    if (completedPagesCount >= maxPages) {
+      const duration = Date.now() - startTime
+      logEvent('generate_page_hard_stop', {
+        appName: spec.appName,
+        completedPagesCount,
+        maxPages
+      })
+      return res.json({
+        success: true,
+        projectComplete: true,
+        hardcodedStop: true,
+        model: GEMINI_MODEL,
+        latencyMs: duration,
+        tokensUsed: 0
+      })
     }
 
     const ai = getGeminiClient()
@@ -861,38 +968,82 @@ app.post('/api/llm/generate-page', async (req: Request, res: Response) => {
       ? 'Tailwind CSS utility classes directly on elements'
       : 'Plain semantic CSS with Flexbox/Grid and CSS variables'
 
-    const memoryContext = projectMemory && projectMemory.fileTree && projectMemory.fileTree.length > 0
-      ? `\nProject Architecture Context (Existing files built so far):\n- Files Built: ${projectMemory.fileTree.join(', ')}\n- Decisions Made: ${(projectMemory.decisionsMade || []).join('; ') || 'None'}`
-      : '\nInitial Project Page: This is the very first page of the project (home / core landing page).'
+    const isNextPage = completedPagesCount > 0
+    const completedFilesObj: Record<string, string> =
+      projectMemory?.completedFiles && typeof projectMemory.completedFiles === 'object'
+        ? projectMemory.completedFiles
+        : {}
+    const fileTreeList: string[] = Array.isArray(projectMemory?.fileTree) && projectMemory.fileTree.length > 0
+      ? projectMemory.fileTree
+      : Object.keys(completedFilesObj)
+
+    const actualFilesPreview = Object.entries(completedFilesObj)
+      .slice(0, 12)
+      .map(([filePath, content]) => {
+        const snippet = String(content || '').slice(0, 1800)
+        return `--- ${filePath} ---\n${snippet}`
+      })
+      .join('\n\n')
+
+    const memoryContext = isNextPage
+      ? `\nNEXT PAGE GENERATION CONTEXT (Pages completed so far: ${completedPagesCount} of max ${maxPages}):
+- Completed Pages:\n${completedPages.map((p, idx) => `  ${idx + 1}. ${p.name} (${p.fileName}) — ${p.purpose || p.description || ''}`).join('\n')}
+- Existing File Tree: ${fileTreeList.join(', ') || 'index.html, styles.css, app.js'}
+- Decisions Made: ${(projectMemory?.decisionsMade || []).join('; ') || 'None'}
+- Learner's ACTUAL Code So Far:\n${actualFilesPreview || '(empty)'}`
+      : projectMemory && fileTreeList.length > 0
+        ? `\nProject Architecture Context (Existing files built so far):\n- Files Built: ${fileTreeList.join(', ')}\n- Decisions Made: ${(projectMemory.decisionsMade || []).join('; ') || 'None'}`
+        : '\nInitial Project Page: This is the very first page of the project (home / core landing page).'
+
+    const nextPageRules = isNextPage
+      ? `STRICT NEXT-PAGE & MULTI-PAGE RULES:
+1. Decide first if ALL core features and user flows in the spec (estimatedScreenCount: ${estimatedScreens}, max budget: ${maxPages} pages) are already fulfilled by the completed page(s) above OR if another distinct HTML page adds genuine value without exceeding the budget.
+   - If the app is already complete or only out-of-scope features remain, return { projectComplete: true } immediately (no page or modules).
+2. Otherwise return { projectComplete: false, page, modules } for EXACTLY ONE new HTML page (unique fileName ending in .html, distinct from completed pages: ${completedPages.map(p => p.fileName).join(', ')}).
+3. REUSE shared CSS/JS files (e.g. styles.css, app.js) that already exist in the project instead of duplicating styling or scripts.
+4. LINK CONSISTENTLY: ensure consistent navigation links (<a href="...">) between existing completed pages and this new page. The FIRST module(s) of this new page MAY extend existing shared files (or existing navigation headers) to add nav links to the new page!
+5. NEVER repeat work or components already built in completed pages.
+6. Stay strictly within spec and NEVER add anything from outOfScope.`
+      : `STRICT ARCHITECTURE & SYLLABUS RULES:
+1. Return EXACTLY ONE page. No list of other pages.
+   - For the first page, it must be the logical starting point of the app (usually index.html).`
 
     const systemInstruction = `You are Ascent, an elite computer science curriculum architect and senior software engineer.
-Generate a SINGLE PAGE and its component-by-component syllabus for the student's project.
+Generate either the next SINGLE PAGE and its component-by-component syllabus OR signal { projectComplete: true } when complete.
 
 App: "${spec.appName}" - ${spec.tagline}
 Summary: ${spec.summary}
 Features: ${(spec.primaryFeatures || []).map((f: any) => typeof f === 'string' ? f : `${f.name}: ${f.description}`).join('; ')}
+User Flows: ${(spec.userFlows || []).map((u: any) => `${u.flowName}: ${(u.steps || []).join(' -> ')}`).join(' | ')}
 Assumptions Made: ${(spec.assumptions || []).join('; ')}
 Out of Scope (MUST NOT PLAN ANY SCREENS OR MODULES FOR THESE): ${(spec.outOfScope || []).join('; ')}
 Stack: HTML, CSS, and vanilla JavaScript (${stylingDetail})
+Estimated Screen Count: ${estimatedScreens} (Hard Page Cap: ${maxPages}, Remaining Budget: ${maxPages - completedPagesCount})
 ${memoryContext}
 
-STRICT ARCHITECTURE & SYLLABUS RULES:
-1. Return EXACTLY ONE page. No list of other pages.
-   - For the first page, it must be the logical starting point of the app (usually index.html).
-2. Generate 5 to 10 progressive modules for THIS page in HTML document/build order:
-   - Order: document-head (doctype, meta, title, stylesheet or Tailwind CDN setup) -> body-layout -> header -> navigation -> main-section / content-blocks (cards, tables, lists) -> forms -> footer -> script-behavior (DOM manipulation, event listeners, localStorage persistence).
-   - Each module represents ONE component of THAT page taught by building it: its markup, then its styling (${useTailwind ? 'Tailwind utility classes' : 'plain semantic CSS'}), and behavior where applicable.
-   - Modules must be cumulative: each builds on the same page file so the page works after every module.
+${nextPageRules}
+${isNextPage ? '7' : '2'}. When generating a page (projectComplete: false), generate 4 to 8 progressive modules for THIS page in HTML document/build order:
+   - Order: document-head (doctype, meta, title, link to shared styles/scripts) -> body-layout -> header -> navigation (consistent links across existing pages & this page) -> main-section / content-blocks -> forms -> footer -> script-behavior.
+   - Each module represents ONE component taught by building it: its markup, then its styling (${useTailwind ? 'Tailwind utility classes' : 'plain semantic CSS'}), and behavior where applicable.
+   - Modules must be cumulative: each builds on the learner's existing workspace files + the new HTML file so the project works after every module.
    - componentType MUST be one of:
      "document-head" | "body-layout" | "header" | "navigation" | "main-section" | "content-block" | "form" | "footer" | "script-behavior"
-3. DO NOT include anything from outOfScope.
-4. Titles must be specific action titles for "${spec.appName}" (e.g. "Build Axolotl Feeding Log Table Markup", "Wire Up Add Meal Button and LocalStorage Event"). No generic titles like "Introduction".
-5. For this starting page, set projectComplete: false. You MUST return both 'page' and 5 to 10 progressive 'modules' in HTML document order.`
+${isNextPage ? '8' : '3'}. DO NOT include anything from outOfScope.
+${isNextPage ? '9' : '4'}. Titles must be specific action titles for "${spec.appName}". No generic titles like "Introduction".
+${isNextPage ? '' : '5. For this starting page, set projectComplete: false. You MUST return both \'page\' and 5 to 10 progressive \'modules\' in HTML document order.'}`
 
+    const userPrompt = isNextPage
+      ? `Decide whether "${spec.appName}" needs another page within its ${maxPages}-page budget (${completedPagesCount} already built: ${completedPages.map(p => p.fileName).join(', ')}). If all core user flows are complete, set "projectComplete": true with empty strings for "page" and "modules": []. Otherwise set "projectComplete": false, provide the next "page", and provide 4 to 8 progressive modules in "modules" reusing existing shared files and adding consistent navigation links.`
+      : `Generate the starting HTML page and its 5-10 component modules in HTML document order for "${spec.appName}". Set projectComplete to false and return BOTH "page" and "modules" (5-10 items).`
+
+    let repairNote = ''
     const callGemini = async () => {
+      const promptWithRepair = repairNote
+        ? `${userPrompt}\n\nREPAIR INSTRUCTION: ${repairNote}`
+        : userPrompt
       const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
-        contents: `Generate the starting HTML page and its 5-10 component modules in HTML document order for "${spec.appName}". Set projectComplete to false and provide all modules.`,
+        contents: promptWithRepair,
         config: {
           systemInstruction,
           responseMimeType: 'application/json',
@@ -947,9 +1098,22 @@ STRICT ARCHITECTURE & SYLLABUS RULES:
         tokenCount = result.tokens
         if (rawText) {
           pageResult = cleanAndParseJSON(rawText)
-          if (!pageResult.projectComplete && (!pageResult.page || !Array.isArray(pageResult.modules) || pageResult.modules.length < 4)) {
-            pageResult = null
-            throw new Error('Incomplete page syllabus payload returned from model')
+          const isComplete = Boolean(pageResult.projectComplete)
+          if (isComplete) {
+            pageResult = { projectComplete: true }
+          } else {
+            if (!pageResult.page || !Array.isArray(pageResult.modules) || pageResult.modules.length < 4) {
+              const hadPage = Boolean(pageResult.page?.fileName)
+              const modCount = Array.isArray(pageResult.modules) ? pageResult.modules.length : 0
+              repairNote = `Your previous response returned projectComplete: false (${hadPage ? `for page ${pageResult.page.fileName}` : 'without page'}) with ${modCount} modules. You MUST include the full "modules" array containing 4 to 8 module objects (each with title, learningObjective, componentType) alongside "page".`
+              pageResult = null
+              throw new Error('Incomplete page syllabus payload returned from model')
+            }
+            const existingNames = new Set(completedPages.map(p => p.fileName.toLowerCase()))
+            if (isNextPage && existingNames.has(String(pageResult.page.fileName || '').toLowerCase())) {
+              const slugBase = String(pageResult.page.name || 'page').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `page-${completedPagesCount + 1}`
+              pageResult.page.fileName = `${slugBase}.html`
+            }
           }
         }
       } catch (e: any) {
@@ -1004,10 +1168,23 @@ STRICT ARCHITECTURE & SYLLABUS RULES:
 // 2. Checks MUST pass on solutionFiles (100% pass).
 // 3. One automated repair attempt if verification fails.
 // -------------------------------------------------------------
+function isAllowedReferenceUrl(rawUrl: string, allowTailwind: boolean): boolean {
+  try {
+    const parsed = new URL(rawUrl)
+    if (parsed.protocol !== 'https:') return false
+    const host = parsed.hostname.toLowerCase()
+    if (host === 'developer.mozilla.org') return true
+    if (allowTailwind && (host === 'tailwindcss.com' || host === 'www.tailwindcss.com')) return true
+    return false
+  } catch {
+    return false
+  }
+}
+
 app.post('/api/llm/generate-module-content', async (req: Request, res: Response) => {
   const startTime = Date.now()
   try {
-    const { spec, page, module, useTailwind, projectMemory, currentFiles } = req.body
+    const { spec, page, module, useTailwind, projectMemory, currentFiles, assets } = req.body
 
     if (!spec || !module || !module.title) {
       return res.status(400).json({ success: false, error: 'Valid spec and module are required', retryable: false })
@@ -1025,7 +1202,12 @@ app.post('/api/llm/generate-module-content', async (req: Request, res: Response)
 
     telemetry.geminiCalls++
 
-    // Determine learner's current baseline files
+    // Determine learner's current baseline files and binary assets
+    const normalizedAssets: Array<{ path: string; mimeType?: string; size?: number }> = Array.isArray(assets)
+      ? assets
+      : Array.isArray(projectMemory?.assets)
+        ? projectMemory.assets
+        : []
     const baselineFiles: { path: string; content: string }[] = []
     if (Array.isArray(currentFiles) && currentFiles.length > 0) {
       baselineFiles.push(...currentFiles)
@@ -1049,16 +1231,27 @@ app.post('/api/llm/generate-module-content', async (req: Request, res: Response)
     }
 
     const baselineJson = JSON.stringify(baselineFiles, null, 2)
+    const assetsListText = normalizedAssets.length > 0
+      ? normalizedAssets.map(a => `${a.path} (${a.mimeType || 'binary'})`).join(', ')
+      : 'None yet (live project starts with no binary assets)'
     const stylingDetail = useTailwind
       ? 'Tailwind CSS utility classes (use classContains in checks for utility classes)'
       : 'Plain semantic CSS (use styleEquals or elementExists for styled elements)'
+    const referenceHostGuidance = useTailwind
+      ? 'ONLY official MDN (`https://developer.mozilla.org/...`) or official Tailwind (`https://tailwindcss.com/docs/...`) URLs.'
+      : 'ONLY official MDN (`https://developer.mozilla.org/...`) URLs. Do NOT include any Tailwind or third-party blog URLs.'
+
+    const completedPagesText = Array.isArray(projectMemory?.completedPages) && projectMemory.completedPages.length > 0
+      ? `Completed Pages Already Built: ${projectMemory.completedPages.map((p: any) => `${p.name} (${p.fileName})`).join(', ')}`
+      : 'None yet (this is the first page)'
 
     const systemInstruction = `You are Ascent, an expert front-end coding instructor.
-Generate a complete lesson, task, starter/solution code, declarative DOM checks, and progressive hints for a single module in the learner's web application.
+Generate a complete lesson, structured task with explicit requirements, starter/solution code, monotonic declarative DOM checks, reference links, and progressive hints for a single module in the learner's web application.
 
 Application: "${spec.appName}" - ${spec.tagline}
 Summary: ${spec.summary}
 Target Page: ${page?.name || 'Home Page'} (${page?.fileName || 'index.html'})
+${completedPagesText}
 Current Module to Teach & Build:
 - Title: "${module.title}"
 - Objective: "${module.learningObjective}"
@@ -1066,6 +1259,7 @@ Current Module to Teach & Build:
 - Styling: ${stylingDetail}
 Assumptions: ${(spec.assumptions || []).join('; ')}
 Out of Scope: ${(spec.outOfScope || []).join('; ')}
+Available Binary Assets: ${assetsListText}
 
 LEARNER'S CURRENT FILES (BASELINE BEFORE THIS MODULE):
 ${baselineJson}
@@ -1074,17 +1268,26 @@ CRITICAL RULES FOR GENERATION:
 1. starterFiles: MUST match the learner's current baseline files above. Do NOT replace them with an idealized version.
 2. solutionFiles: Exactly the starterFiles plus the additions for THIS module's task.
 3. lesson: Markdown explaining the core front-end concept in 2-3 short, friendly paragraphs. Include a tiny code example showing how the concept works in general (unrelated to the student's exact project answer so they apply the knowledge).
-4. task: Concrete, step-by-step instructions specifying exactly what HTML elements, CSS styles, or JS behavior to add.
-5. checks: 3 to 5 declarative DOM checks.
-   - Allowed types: "elementExists" | "elementCount" | "textContains" | "attributeEquals" | "classContains" | "styleEquals" | "scriptDefines" | "eventResult".
-   - Each check MUST test the NEW work required in this module.
-   - Therefore, at least one check (and ideally all new-work checks) MUST FAIL when evaluated against starterFiles, and ALL checks MUST PASS when evaluated against solutionFiles.
+4. requirements: A precise array of bullet strings listing every required element, id, class, text snippet, attribute, style/behavior, or file path that checks rely on (no vague hints—state exact identifiers).
+5. expectedResult: 1-2 sentences describing what the live preview should look like or do when the learner finishes.
+6. task: Concrete markdown instructions organized as:
+   - Brief goal paragraph
+   - Exact requirements summary (naming every required id, class, tag, text, or asset path)
+   - Tiny unrelated code snippet illustrating the pattern
+   - "If you're stuck" pointer encouraging the learner to check the Hints or References below.
+7. references: 2 to 4 relevant documentation links ({ title, url, note }).
+   - ${referenceHostGuidance}
+8. checks: 3 to 5 monotonic, robust declarative DOM checks.
+   - Allowed types: "elementExists" | "elementCount" | "textContains" | "attributeEquals" | "classContains" | "styleEquals" | "scriptDefines" | "eventResult" | "imageLoaded" | "assetExists".
+   - Assert presence or behavior ONLY. NEVER assert absence or exact element counts or full-text equality unless explicitly specified in requirements.
+   - Include "requirementRef" (matching or summarizing the requirement item this check verifies).
+   - At least one check MUST FAIL when evaluated against starterFiles, and ALL checks MUST PASS when evaluated against solutionFiles.
    - For Tailwind projects, use "classContains" (with selector and expected class name like "flex", "bg-blue-600", "p-4").
    - For Plain CSS projects, use "styleEquals" (property and expected) or "elementExists".
-   - For interactive JavaScript behavior, use "eventResult" with action { type: "click"|"input", selector: "..." } or "scriptDefines".
-6. hints: 2 to 3 progressive hints:
+   - For interactive JavaScript behavior, prefer "eventResult" with action { type: "click"|"input"|"submit", selector: "..." } over raw source-text checks.
+9. hints: 2 to 3 progressive hints (never dump the complete solution verbatim):
    - Hint 1: Gentle nudge reminding of syntax or tag.
-   - Hint 2: More specific architectural clue with property/attribute name.
+   - Hint 2: Specific clue naming property/attribute/event pattern.
    - Hint 3: Near-solution structure or pseudo-code.`
 
     const promptText = `Generate module content for module "${module.title}" (${module.learningObjective}). Return structured JSON matching the ModuleContentSchema.`
@@ -1094,7 +1297,7 @@ CRITICAL RULES FOR GENERATION:
         ? `${promptText}\n\nIMPORTANT REPAIR REQUEST:\nThe previous attempt failed automated test harness verification:\n${repairContext}\nPlease adjust checks and solutionFiles so that checks FAIL on starterFiles and ALL PASS on solutionFiles.`
         : promptText
 
-      const response = await ai.models.generateContent({
+      const response = await generateContentWithRetry(ai, {
         model: GEMINI_MODEL,
         contents,
         config: {
@@ -1105,6 +1308,23 @@ CRITICAL RULES FOR GENERATION:
             properties: {
               lesson: { type: Type.STRING },
               task: { type: Type.STRING },
+              requirements: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING }
+              },
+              expectedResult: { type: Type.STRING },
+              references: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING },
+                    url: { type: Type.STRING },
+                    note: { type: Type.STRING }
+                  },
+                  required: ['title', 'url', 'note']
+                }
+              },
               starterFiles: {
                 type: Type.ARRAY,
                 items: {
@@ -1136,9 +1356,11 @@ CRITICAL RULES FOR GENERATION:
                     description: { type: Type.STRING },
                     type: { type: Type.STRING },
                     selector: { type: Type.STRING },
+                    path: { type: Type.STRING },
                     expected: { type: Type.STRING },
                     property: { type: Type.STRING },
                     message: { type: Type.STRING },
+                    requirementRef: { type: Type.STRING },
                     action: {
                       type: Type.OBJECT,
                       properties: {
@@ -1156,24 +1378,51 @@ CRITICAL RULES FOR GENERATION:
                 items: { type: Type.STRING }
               }
             },
-            required: ['lesson', 'task', 'starterFiles', 'solutionFiles', 'checks', 'hints']
+            required: ['lesson', 'task', 'requirements', 'expectedResult', 'references', 'starterFiles', 'solutionFiles', 'checks', 'hints']
           }
         }
       })
       return response
     }
 
+    const filterAllowedReferences = (raw: any) => {
+      if (Array.isArray(raw?.references)) {
+        raw.references = raw.references.filter(
+          (r: any) => r && typeof r.url === 'string' && isAllowedReferenceUrl(r.url, Boolean(useTailwind))
+        )
+      }
+    }
+
     let response = await generateContent()
     let rawText = response.text || ''
     let parsedResult = cleanAndParseJSON(rawText)
+    // Authoritative starterFiles must match learner's actual current files
+    parsedResult.starterFiles = baselineFiles
+    filterAllowedReferences(parsedResult)
 
-    let starterHarness = await runChecksOnFiles(parsedResult.checks || [], parsedResult.starterFiles || [])
-    let solutionHarness = await runChecksOnFiles(parsedResult.checks || [], parsedResult.solutionFiles || [])
+    const targetEntryHtml = page?.fileName || 'index.html'
+    let zodCheck = ModuleContentSchema.safeParse(parsedResult)
+    let starterHarness = zodCheck.success
+      ? await runChecksOnFiles(zodCheck.data.checks, zodCheck.data.starterFiles, normalizedAssets, { entryHtmlPath: targetEntryHtml })
+      : { allPassed: true, passedCount: 0, totalCount: 0, results: [] }
+    let solutionHarness = zodCheck.success
+      ? await runChecksOnFiles(zodCheck.data.checks, zodCheck.data.solutionFiles, normalizedAssets, { entryHtmlPath: targetEntryHtml })
+      : { allPassed: false, passedCount: 0, totalCount: 0, results: [] }
 
-    const needsRepair = !solutionHarness.allPassed || starterHarness.allPassed
+    const initialHarness = {
+      starterHarness,
+      solutionHarness
+    }
+
+    const needsRepair = !zodCheck.success || !solutionHarness.allPassed || starterHarness.allPassed
+    let repairAttempted = false
 
     if (needsRepair) {
+      repairAttempted = true
       const repairReasons: string[] = []
+      if (!zodCheck.success) {
+        repairReasons.push(`Schema validation failed: ${zodCheck.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ')}`)
+      }
       if (!solutionHarness.allPassed) {
         repairReasons.push(`Solution failed ${solutionHarness.totalCount - solutionHarness.passedCount} checks: ${solutionHarness.results.filter(r => !r.passed).map(r => r.message || r.id).join('; ')}`)
       }
@@ -1182,25 +1431,59 @@ CRITICAL RULES FOR GENERATION:
       }
 
       try {
+        telemetry.geminiCalls++
         response = await generateContent(repairReasons.join('\n'))
         rawText = response.text || ''
         parsedResult = cleanAndParseJSON(rawText)
+        parsedResult.starterFiles = baselineFiles
+        filterAllowedReferences(parsedResult)
 
-        starterHarness = await runChecksOnFiles(parsedResult.checks || [], parsedResult.starterFiles || [])
-        solutionHarness = await runChecksOnFiles(parsedResult.checks || [], parsedResult.solutionFiles || [])
+        zodCheck = ModuleContentSchema.safeParse(parsedResult)
+        if (zodCheck.success) {
+          starterHarness = await runChecksOnFiles(zodCheck.data.checks, zodCheck.data.starterFiles, normalizedAssets, { entryHtmlPath: targetEntryHtml })
+          solutionHarness = await runChecksOnFiles(zodCheck.data.checks, zodCheck.data.solutionFiles, normalizedAssets, { entryHtmlPath: targetEntryHtml })
+        }
       } catch (repairErr: any) {
-        // Fall back to first generation if repair threw API error
+        // Keep initial state so gate below returns explicit retryable error
       }
     }
 
-    const validated = ModuleContentSchema.parse(parsedResult)
+    if (!zodCheck.success || !solutionHarness.allPassed || starterHarness.allPassed) {
+      const failureDetails: string[] = []
+      if (!zodCheck.success) {
+        failureDetails.push(`Schema validation failed: ${zodCheck.error.issues[0]?.message || 'Invalid JSON structure'}`)
+      } else {
+        if (starterHarness.allPassed) {
+          failureDetails.push('All checks passed on starterFiles without requiring new work.')
+        }
+        if (!solutionHarness.allPassed) {
+          const failedList = solutionHarness.results.filter(r => !r.passed).map(r => r.message || r.id).join('; ')
+          failureDetails.push(`Solution failed verification: ${failedList}`)
+        }
+      }
+
+      return res.status(422).json({
+        success: false,
+        error: `Module generation failed automated JSDOM verification after ${repairAttempted ? 'repair attempt' : 'generation'}: ${failureDetails.join(' ')}`,
+        retryable: true,
+        model: GEMINI_MODEL,
+        verification: {
+          starterHarness,
+          solutionHarness,
+          initialHarness,
+          repairAttempted
+        }
+      })
+    }
 
     return res.json({
       success: true,
-      moduleContent: validated,
+      moduleContent: zodCheck.data,
       verification: {
         starterHarness,
-        solutionHarness
+        solutionHarness,
+        initialHarness,
+        repairAttempted
       },
       latencyMs: Date.now() - startTime,
       model: GEMINI_MODEL,
@@ -1261,9 +1544,9 @@ ${JSON.stringify(userFiles, null, 2)}
 
 Provide feedback explaining why the checks failed and actionable suggestions.`
 
-    const response = await ai.models.generateContent({
+    const callReview = (repairHint?: string) => generateContentWithRetry(ai, {
       model: GEMINI_MODEL,
-      contents,
+      contents: repairHint ? `${contents}\n\nREPAIR VALIDATION ERROR:\n${repairHint}` : contents,
       config: {
         systemInstruction,
         responseMimeType: 'application/json',
@@ -1281,13 +1564,31 @@ Provide feedback explaining why the checks failed and actionable suggestions.`
       }
     })
 
-    const rawText = response.text || ''
-    const parsed = cleanAndParseJSON(rawText)
-    const validated = ReviewSubmissionResponseSchema.parse(parsed)
+    let response = await callReview()
+    let rawText = response.text || ''
+    let parsed = cleanAndParseJSON(rawText)
+    let reviewCheck = ReviewSubmissionResponseSchema.safeParse(parsed)
+
+    if (!reviewCheck.success) {
+      telemetry.geminiCalls++
+      response = await callReview(reviewCheck.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; '))
+      rawText = response.text || ''
+      parsed = cleanAndParseJSON(rawText)
+      reviewCheck = ReviewSubmissionResponseSchema.safeParse(parsed)
+    }
+
+    if (!reviewCheck.success) {
+      return res.status(422).json({
+        success: false,
+        error: `Review output failed schema validation: ${reviewCheck.error.issues[0]?.message || 'Invalid format'}`,
+        retryable: true,
+        model: GEMINI_MODEL
+      })
+    }
 
     return res.json({
       success: true,
-      review: validated,
+      review: reviewCheck.data,
       latencyMs: Date.now() - startTime,
       model: GEMINI_MODEL,
       tokensUsed: response.usageMetadata?.totalTokenCount || 'N/A'

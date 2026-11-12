@@ -5,42 +5,55 @@
   "difficulty": "beginner",
   "estimatedHours": 3,
   "useTailwind": false,
+  "assets": [],
   "spec": {
     "appName": "Currency Converter",
-    "tagline": "Real-time exchange rate calculations with persistent conversion history.",
-    "summary": "A clean, responsive client-side currency calculator supporting instant conversions between major global currencies with persistent history in browser LocalStorage.",
-    "targetAudience": "Everyday web users, travelers, and international online shoppers.",
+    "tagline": "Real-time exchange rate calculations with persistent history tracking.",
+    "summary": "A high-performance currency conversion utility that provides instant calculations between global currencies, featuring a clean dark-mode interface and automatic storage of recent conversion history.",
+    "targetAudience": "Travelers, financial hobbyists, and users requiring a quick, reliable offline-capable currency conversion tool.",
     "primaryFeatures": [
       {
-        "name": "Live Amount Conversion",
-        "description": "Calculate exchange totals instantly as the user types or selects currencies."
+        "name": "Instant Calculation",
+        "description": "Dynamic currency conversion that updates immediately as users adjust inputs or change currency selections."
       },
       {
-        "name": "Currency Swapper",
-        "description": "One-click toggle button to quickly swap source and target currencies."
+        "name": "Currency Swapping",
+        "description": "A convenient one-click mechanism to swap the base and target currencies with synchronized calculations."
       },
       {
-        "name": "Conversion History",
-        "description": "Log previous 5 conversions in LocalStorage with automatic reload."
+        "name": "Local History Tracking",
+        "description": "Automatically saves and displays the five most recent successful conversion transactions using the browser's LocalStorage API."
       }
     ],
     "userFlows": [
       {
-        "flowName": "Convert USD to EUR",
+        "flowName": "Currency Conversion Flow",
         "steps": [
-          "Enter amount in the amount input box.",
-          "Select USD from source dropdown and EUR from target dropdown.",
-          "View formatted exchange rate and converted total.",
-          "Check recent conversion entry recorded in the history log."
+          "Enter amount in the input field",
+          "Select source currency from dropdown",
+          "Select target currency from dropdown",
+          "App automatically recalculates and displays the conversion result"
+        ]
+      },
+      {
+        "flowName": "Swap and History Flow",
+        "steps": [
+          "Click the swap button to reverse currency selection",
+          "Observe the updated conversion rate",
+          "View the updated history list beneath the converter"
         ]
       }
     ],
     "dataEntities": [
       {
-        "name": "ConversionHistory",
+        "name": "Conversion History",
         "storageKey": "currency_converter_history_v1",
         "fields": [
-          { "name": "entry", "type": "string", "description": "Formatted string e.g. '10 USD -> 9.20 EUR'" }
+          {
+            "name": "historyItems",
+            "type": "Array<string>",
+            "description": "An ordered list of strings representing the last 5 conversion records."
+          }
         ]
       }
     ],
@@ -53,370 +66,553 @@
     },
     "useTailwind": false,
     "architectureHighlights": [
-      "Semantic HTML5 document with CSS custom property theming",
-      "Pure client-side DOM input listeners with immediate evaluation",
-      "LocalStorage persistence for previous conversion memory"
+      "Event-driven architecture using input and change listeners",
+      "CSS Variable-driven dark theme for easy maintainability",
+      "Persistent state management via synchronous browser storage"
     ],
     "assumptions": [
-      "Offline exchange rate table with standard baseline ratios",
-      "Data stored locally per browser instance without backend server"
+      "Exchange rates are static and defined within the application scope",
+      "User environment supports standard ES6 JavaScript and DOM APIs"
     ],
     "outOfScope": [
-      "Live banking API keys or OAuth authentication",
-      "Cryptocurrency conversion or historical charting"
+      "Integration with live third-party currency API endpoints",
+      "User authentication or cloud-based synchronization"
     ],
     "estimatedScreenCount": 1,
     "difficulty": "beginner",
     "estimatedHours": 3
   },
   "page": {
-    "id": "page_currency_converter",
-    "projectId": "proj_curated_currency",
+    "id": "currency-converter-main",
+    "projectId": "currency-converter",
     "order": 1,
     "name": "Currency Converter Dashboard",
-    "description": "Single-page calculator interface with amount inputs, currency dropdowns, conversion display, and history list.",
+    "description": "The main landing page featuring the conversion interface and recent history list.",
     "fileName": "index.html",
-    "purpose": "Provide a complete, functional client-side currency conversion experience.",
+    "purpose": "Provides the structural and interactive surface for user currency operations.",
     "status": "active",
     "modules": [
       {
-        "id": "mod_1",
-        "pageId": "page_currency_converter",
+        "id": "m1",
+        "pageId": "currency-converter-main",
         "order": 1,
-        "title": "Set Up Document Head and Metadata",
-        "learningObjective": "Construct the HTML5 doctype, viewport meta tags, title, and link the external styles.css stylesheet.",
+        "title": "Document Head & Structural HTML Skeleton",
+        "learningObjective": "Set up the semantic base of the application using HTML5 boilerplates and container structures.",
         "componentType": "document-head",
         "status": "active"
       },
       {
-        "id": "mod_2",
-        "pageId": "page_currency_converter",
+        "id": "m2",
+        "pageId": "currency-converter-main",
         "order": 2,
-        "title": "Create Card Container and Base Styles",
-        "learningObjective": "Build the outer converter card container in HTML and declare CSS custom properties for theming.",
+        "title": "Base Styling & Theme Layout",
+        "learningObjective": "Implement dark-mode aesthetics using CSS variables and flexbox layouts.",
         "componentType": "body-layout",
         "status": "locked"
       },
       {
-        "id": "mod_3",
-        "pageId": "page_currency_converter",
+        "id": "m3",
+        "pageId": "currency-converter-main",
         "order": 3,
-        "title": "Build Header Component",
-        "learningObjective": "Add the application title and subtitle header with typography styling.",
-        "componentType": "header",
-        "status": "locked"
-      },
-      {
-        "id": "mod_4",
-        "pageId": "page_currency_converter",
-        "order": 4,
-        "title": "Build Conversion Form Inputs and Swap Button",
-        "learningObjective": "Implement input fields, currency selection dropdowns, and swap trigger button.",
+        "title": "Core UI Elements & Interactive Controls",
+        "learningObjective": "Construct inputs, dropdowns, and the swap button to build the functional converter UI.",
         "componentType": "form",
         "status": "locked"
       },
       {
-        "id": "mod_5",
-        "pageId": "page_currency_converter",
-        "order": 5,
-        "title": "Display Conversion Result and Footer History",
-        "learningObjective": "Add the rate calculation result display container and the history log unordered list.",
-        "componentType": "content-block",
+        "id": "m4",
+        "pageId": "currency-converter-main",
+        "order": 4,
+        "title": "Core JavaScript Logic & Event Handling",
+        "learningObjective": "Develop the core calculation engine and handle user interaction events to drive dynamic UI updates.",
+        "componentType": "script-behavior",
         "status": "locked"
       },
       {
-        "id": "mod_6",
-        "pageId": "page_currency_converter",
-        "order": 6,
-        "title": "Wire Up Conversion Calculation and LocalStorage",
-        "learningObjective": "Implement JavaScript logic to calculate exchange rates, update DOM text, and persist history to LocalStorage.",
-        "componentType": "script-behavior",
+        "id": "m5",
+        "pageId": "currency-converter-main",
+        "order": 5,
+        "title": "State Persistence & Final Integration",
+        "learningObjective": "Implement browser LocalStorage to save and render user conversion history for a complete experience.",
+        "componentType": "footer",
         "status": "locked"
       }
     ]
   },
   "modules": [
     {
-      "id": "mod_1",
-      "pageId": "page_currency_converter",
+      "id": "m1",
+      "pageId": "currency-converter-main",
       "order": 1,
-      "title": "Set Up Document Head and Metadata",
-      "learningObjective": "Construct the HTML5 doctype, viewport meta tags, title, and link the external styles.css stylesheet.",
+      "title": "Document Head & Structural HTML Skeleton",
+      "learningObjective": "Set up the semantic base of the application using HTML5 boilerplates and container structures.",
       "componentType": "document-head",
       "status": "active",
-      "lesson": "# Setting Up the HTML5 Document Shell\n\nEvery modern web application begins with an accessible, mobile-ready HTML5 skeleton. We define `<meta charset=\"UTF-8\">` to ensure proper character encoding, and `<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">` so our layout scales responsively across mobile screens and desktops.\n\nIn this module, you will set up `index.html` with its `<head>` elements and link the `styles.css` file.",
-      "task": "Create the basic HTML5 structure in `index.html` with `<!DOCTYPE html>`, an `<html lang=\"en\">` tag, `<head>` containing title 'Currency Converter' and a `<link rel=\"stylesheet\" href=\"styles.css\">`, and an empty `<body>` tag.",
+      "lesson": "The document head is the foundation of every web page, acting as the metadata hub where browsers learn how to render your content. By defining the character set and viewport, you ensure your site is accessible and responsive across all devices. Think of it as the 'instruction manual' for the browser before it even begins to paint the pixels on the screen.\n\nBeyond the head, semantic HTML structures like <header>, <main>, and <footer> provide context to both search engines and assistive technologies. For instance, using a container div to wrap your application card helps keep your layout organized and easy to style. A simple example of a semantic structure is: <main><h1>Welcome</h1><p>Content goes here.</p></main>.",
+      "task": "### Goal\nEstablish the semantic HTML skeleton for the Currency Converter, including the document head, the main application container, and the header section.\n\n### Requirements\n- Add a <link> tag in the <head> pointing to 'styles.css'.\n- Create a container <div> with the class 'converter-card'.\n- Add a <header> with class 'converter-header' containing an <h1> (class 'app-title') and a <p> (class 'app-subtitle').\n- Ensure the document title is 'Currency Converter'.\n\n### Example\n<div class='card'><h1>Title</h1></div>\n\n### If you're stuck\nCheck the Hints and MDN references below for guidance on linking stylesheets and structuring semantic HTML.",
+      "requirements": [
+        "link[href='styles.css']",
+        "div.converter-card",
+        "header.converter-header",
+        "h1.app-title",
+        "p.app-subtitle"
+      ],
+      "expectedResult": "The browser will render the application card with the title 'Currency Converter' and the subtitle 'Real-time exchange rate calculations' centered within the page.",
+      "references": [
+        {
+          "title": "MDN: <head>: The Document Metadata element",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/head",
+          "note": "Learn about the metadata container for your document."
+        },
+        {
+          "title": "MDN: <link>: The External Resource Link element",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/link",
+          "note": "Essential for connecting your CSS file to your HTML."
+        },
+        {
+          "title": "MDN: Using the viewport meta tag",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Viewport_meta_tag",
+          "note": "Crucial for making your site responsive on mobile devices."
+        }
+      ],
       "starterFiles": [
-        { "path": "index.html", "content": "" },
-        { "path": "styles.css", "content": "/* Styles will be added in upcoming modules */\n" }
-      ],
-      "solutionFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n</body>\n</html>\n"
-        },
-        { "path": "styles.css", "content": "/* Styles will be added in upcoming modules */\n" }
-      ],
-      "checks": [
-        {
-          "id": "chk_title",
-          "description": "Page title must be 'Currency Converter'",
-          "type": "textContains",
-          "selector": "title",
-          "expected": "Currency Converter"
-        },
-        {
-          "id": "chk_css_link",
-          "description": "Link element points to styles.css",
-          "type": "attributeEquals",
-          "selector": "link[rel='stylesheet']",
-          "expected": "styles.css"
-        }
-      ],
-      "hints": [
-        "Include the `<meta name=\"viewport\" ...>` tag inside `<head>`.",
-        "Add `<link rel=\"stylesheet\" href=\"styles.css\">` so CSS loads."
-      ]
-    },
-    {
-      "id": "mod_2",
-      "pageId": "page_currency_converter",
-      "order": 2,
-      "title": "Create Card Container and Base Styles",
-      "learningObjective": "Build the outer converter card container in HTML and declare CSS custom properties for theming.",
-      "componentType": "body-layout",
-      "status": "locked",
-      "lesson": "# Layout Architecture with CSS Custom Properties\n\nDesign consistency is powered by centralized CSS variables (custom properties). By defining colors like `--bg-color` and `--card-bg` in `:root`, you ensure all subcomponents inherit consistent styling.\n\nIn this module, we place a `<div class=\"converter-card\">` inside the document body and style it with a dark, modern aesthetic.",
-      "task": "Add `<div class=\"converter-card\"></div>` inside `<body>` in `index.html`. In `styles.css`, define `:root` theme colors and style `body` and `.converter-card` with flexbox centering and rounded borders.",
-      "starterFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n</body>\n</html>\n"
-        },
-        { "path": "styles.css", "content": "/* Styles will be added in upcoming modules */\n" }
-      ],
-      "solutionFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n  </div>\n</body>\n</html>\n"
-        },
-        {
-          "path": "styles.css",
-          "content": ":root {\n  --bg-color: #0f172a;\n  --card-bg: #1e293b;\n  --text-main: #f8fafc;\n  --text-muted: #94a3b8;\n  --primary: #38bdf8;\n  --border-color: #334155;\n}\n\n* {\n  box-sizing: border-box;\n  margin: 0;\n  padding: 0;\n}\n\nbody {\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n  background-color: var(--bg-color);\n  color: var(--text-main);\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 1rem;\n}\n\n.converter-card {\n  background-color: var(--card-bg);\n  border: 1px solid var(--border-color);\n  border-radius: 1rem;\n  width: 100%;\n  max-width: 480px;\n  padding: 2rem;\n}\n"
-        }
-      ],
-      "checks": [
-        {
-          "id": "chk_card_exists",
-          "description": "Converter card div exists in body",
-          "type": "elementExists",
-          "selector": ".converter-card"
-        }
-      ],
-      "hints": [
-        "Place `<div class=\"converter-card\">` directly inside `<body>`.",
-        "Add `display: flex; justify-content: center; align-items: center;` to `body` in `styles.css`."
-      ]
-    },
-    {
-      "id": "mod_3",
-      "pageId": "page_currency_converter",
-      "order": 3,
-      "title": "Build Header Component",
-      "learningObjective": "Add the application title and subtitle header with typography styling.",
-      "componentType": "header",
-      "status": "locked",
-      "lesson": "# Clear Visual Hierarchy: Header Typography\n\nA professional tool needs an immediate, scannable header that lets users know exactly what the app does.",
-      "task": "Inside `.converter-card`, add a `<header class=\"converter-header\">` containing an `<h1 class=\"app-title\">Currency Converter</h1>` and `<p class=\"app-subtitle\">Real-time exchange rate calculations</p>`. In `styles.css`, style the header text.",
-      "starterFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n  </div>\n</body>\n</html>\n"
-        },
-        {
-          "path": "styles.css",
-          "content": ":root {\n  --bg-color: #0f172a;\n  --card-bg: #1e293b;\n  --text-main: #f8fafc;\n  --text-muted: #94a3b8;\n  --primary: #38bdf8;\n  --border-color: #334155;\n}\n\n* {\n  box-sizing: border-box;\n  margin: 0;\n  padding: 0;\n}\n\nbody {\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n  background-color: var(--bg-color);\n  color: var(--text-main);\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 1rem;\n}\n\n.converter-card {\n  background-color: var(--card-bg);\n  border: 1px solid var(--border-color);\n  border-radius: 1rem;\n  width: 100%;\n  max-width: 480px;\n  padding: 2rem;\n}\n"
-        }
-      ],
-      "solutionFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <header class=\"converter-header\">\n      <h1 class=\"app-title\">Currency Converter</h1>\n      <p class=\"app-subtitle\">Real-time exchange rate calculations</p>\n    </header>\n  </div>\n</body>\n</html>\n"
-        },
-        {
-          "path": "styles.css",
-          "content": ":root {\n  --bg-color: #0f172a;\n  --card-bg: #1e293b;\n  --text-main: #f8fafc;\n  --text-muted: #94a3b8;\n  --primary: #38bdf8;\n  --border-color: #334155;\n}\n\n* {\n  box-sizing: border-box;\n  margin: 0;\n  padding: 0;\n}\n\nbody {\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n  background-color: var(--bg-color);\n  color: var(--text-main);\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 1rem;\n}\n\n.converter-card {\n  background-color: var(--card-bg);\n  border: 1px solid var(--border-color);\n  border-radius: 1rem;\n  width: 100%;\n  max-width: 480px;\n  padding: 2rem;\n}\n\n.converter-header {\n  text-align: center;\n  margin-bottom: 1.5rem;\n}\n\n.app-title {\n  font-size: 1.5rem;\n  font-weight: 700;\n  color: var(--primary);\n  margin-bottom: 0.25rem;\n}\n\n.app-subtitle {\n  font-size: 0.875rem;\n  color: var(--text-muted);\n}\n"
-        }
-      ],
-      "checks": [
-        {
-          "id": "chk_header_title",
-          "description": "Header title h1 exists and displays Currency Converter",
-          "type": "textContains",
-          "selector": ".app-title",
-          "expected": "Currency Converter"
-        }
-      ],
-      "hints": [
-        "Use `<header class=\"converter-header\">` inside the card.",
-        "Add color `var(--primary)` to `.app-title`."
-      ]
-    },
-    {
-      "id": "mod_4",
-      "pageId": "page_currency_converter",
-      "order": 4,
-      "title": "Build Conversion Form Inputs and Swap Button",
-      "learningObjective": "Implement input fields, currency selection dropdowns, and swap trigger button.",
-      "componentType": "form",
-      "status": "locked",
-      "lesson": "# Accessible Input Elements and Dropdowns\n\nForms require accessible labels associated with inputs via matching `for` and `id` attributes. We arrange the source currency, swap button, and target currency side-by-side using Flexbox.",
-      "task": "Add `<main class=\"converter-body\">` containing amount input (`#amount-input`), from-currency select (`#from-currency`), swap button (`#swap-btn`), and to-currency select (`#to-currency`). Style the form elements in `styles.css`.",
-      "starterFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <header class=\"converter-header\">\n      <h1 class=\"app-title\">Currency Converter</h1>\n      <p class=\"app-subtitle\">Real-time exchange rate calculations</p>\n    </header>\n  </div>\n</body>\n</html>\n"
-        },
-        {
-          "path": "styles.css",
-          "content": ":root {\n  --bg-color: #0f172a;\n  --card-bg: #1e293b;\n  --text-main: #f8fafc;\n  --text-muted: #94a3b8;\n  --primary: #38bdf8;\n  --border-color: #334155;\n}\n\n* {\n  box-sizing: border-box;\n  margin: 0;\n  padding: 0;\n}\n\nbody {\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n  background-color: var(--bg-color);\n  color: var(--text-main);\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 1rem;\n}\n\n.converter-card {\n  background-color: var(--card-bg);\n  border: 1px solid var(--border-color);\n  border-radius: 1rem;\n  width: 100%;\n  max-width: 480px;\n  padding: 2rem;\n}\n\n.converter-header {\n  text-align: center;\n  margin-bottom: 1.5rem;\n}\n\n.app-title {\n  font-size: 1.5rem;\n  font-weight: 700;\n  color: var(--primary);\n  margin-bottom: 0.25rem;\n}\n\n.app-subtitle {\n  font-size: 0.875rem;\n  color: var(--text-muted);\n}\n"
-        }
-      ],
-      "solutionFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <header class=\"converter-header\">\n      <h1 class=\"app-title\">Currency Converter</h1>\n      <p class=\"app-subtitle\">Real-time exchange rate calculations</p>\n    </header>\n\n    <main class=\"converter-body\">\n      <div class=\"form-group\">\n        <label for=\"amount-input\">Amount</label>\n        <input type=\"number\" id=\"amount-input\" class=\"input-field\" value=\"1\" min=\"0\" step=\"any\">\n      </div>\n\n      <div class=\"currency-row\">\n        <div class=\"form-group flex-1\">\n          <label for=\"from-currency\">From</label>\n          <select id=\"from-currency\" class=\"select-field\">\n            <option value=\"USD\" selected>USD - US Dollar</option>\n            <option value=\"EUR\">EUR - Euro</option>\n            <option value=\"GBP\">GBP - British Pound</option>\n          </select>\n        </div>\n\n        <button id=\"swap-btn\" class=\"swap-button\" title=\"Swap currencies\">⇄</button>\n\n        <div class=\"form-group flex-1\">\n          <label for=\"to-currency\">To</label>\n          <select id=\"to-currency\" class=\"select-field\">\n            <option value=\"USD\">USD - US Dollar</option>\n            <option value=\"EUR\" selected>EUR - Euro</option>\n            <option value=\"GBP\">GBP - British Pound</option>\n          </select>\n        </div>\n      </div>\n    </main>\n  </div>\n</body>\n</html>\n"
-        },
-        {
-          "path": "styles.css",
-          "content": ":root {\n  --bg-color: #0f172a;\n  --card-bg: #1e293b;\n  --text-main: #f8fafc;\n  --text-muted: #94a3b8;\n  --primary: #38bdf8;\n  --border-color: #334155;\n}\n\n* {\n  box-sizing: border-box;\n  margin: 0;\n  padding: 0;\n}\n\nbody {\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n  background-color: var(--bg-color);\n  color: var(--text-main);\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 1rem;\n}\n\n.converter-card {\n  background-color: var(--card-bg);\n  border: 1px solid var(--border-color);\n  border-radius: 1rem;\n  width: 100%;\n  max-width: 480px;\n  padding: 2rem;\n}\n\n.converter-header {\n  text-align: center;\n  margin-bottom: 1.5rem;\n}\n\n.app-title {\n  font-size: 1.5rem;\n  font-weight: 700;\n  color: var(--primary);\n  margin-bottom: 0.25rem;\n}\n\n.app-subtitle {\n  font-size: 0.875rem;\n  color: var(--text-muted);\n}\n\n.form-group {\n  display: flex;\n  flex-direction: column;\n  gap: 0.5rem;\n  margin-bottom: 1.25rem;\n}\n\n.form-group label {\n  font-size: 0.75rem;\n  font-weight: 600;\n  text-transform: uppercase;\n  color: var(--text-muted);\n}\n\n.input-field, .select-field {\n  background-color: #0b1120;\n  border: 1px solid var(--border-color);\n  border-radius: 0.5rem;\n  color: var(--text-main);\n  padding: 0.75rem 1rem;\n  font-size: 1rem;\n  outline: none;\n}\n\n.currency-row {\n  display: flex;\n  align-items: flex-end;\n  gap: 0.75rem;\n}\n\n.flex-1 {\n  flex: 1;\n}\n\n.swap-button {\n  background: #0b1120;\n  border: 1px solid var(--border-color);\n  color: var(--primary);\n  border-radius: 0.5rem;\n  width: 2.75rem;\n  height: 2.75rem;\n  font-size: 1.25rem;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  margin-bottom: 1.25rem;\n}\n"
-        }
-      ],
-      "checks": [
-        {
-          "id": "chk_amount_input",
-          "description": "Amount input field exists with ID amount-input",
-          "type": "elementExists",
-          "selector": "#amount-input"
-        },
-        {
-          "id": "chk_swap_btn",
-          "description": "Swap button exists with ID swap-btn",
-          "type": "elementExists",
-          "selector": "#swap-btn"
-        }
-      ],
-      "hints": [
-        "Give the input element `id=\"amount-input\"`.",
-        "Add `class=\"swap-button\"` to the swap button."
-      ]
-    },
-    {
-      "id": "mod_5",
-      "pageId": "page_currency_converter",
-      "order": 5,
-      "title": "Display Conversion Result and Footer History",
-      "learningObjective": "Add the rate calculation result display container and the history log unordered list.",
-      "componentType": "content-block",
-      "status": "locked",
-      "lesson": "# Feedback Displays and History Lists\n\nUsers expect instant feedback. We create a prominent result container to show the exchange rate and total, and a history section to display recent conversions.",
-      "task": "Add `<div class=\"result-container\">` with `#rate-display` and `#result-display`. Add `<footer class=\"converter-footer\">` with `<ul id=\"history-list\" class=\"history-list\"></ul>`. Style both in `styles.css`.",
-      "starterFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <header class=\"converter-header\">\n      <h1 class=\"app-title\">Currency Converter</h1>\n      <p class=\"app-subtitle\">Real-time exchange rate calculations</p>\n    </header>\n    <main class=\"converter-body\">\n      <div class=\"form-group\">\n        <label for=\"amount-input\">Amount</label>\n        <input type=\"number\" id=\"amount-input\" class=\"input-field\" value=\"1\">\n      </div>\n      <div class=\"currency-row\">\n        <div class=\"form-group flex-1\">\n          <select id=\"from-currency\" class=\"select-field\">\n            <option value=\"USD\">USD</option>\n          </select>\n        </div>\n        <button id=\"swap-btn\" class=\"swap-button\">⇄</button>\n        <div class=\"form-group flex-1\">\n          <select id=\"to-currency\" class=\"select-field\">\n            <option value=\"EUR\">EUR</option>\n          </select>\n        </div>\n      </div>\n    </main>\n  </div>\n</body>\n</html>\n"
-        },
-        { "path": "styles.css", "content": "/* Base styles */\n" }
-      ],
-      "solutionFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <header class=\"converter-header\">\n      <h1 class=\"app-title\">Currency Converter</h1>\n      <p class=\"app-subtitle\">Real-time exchange rate calculations</p>\n    </header>\n    <main class=\"converter-body\">\n      <div class=\"form-group\">\n        <label for=\"amount-input\">Amount</label>\n        <input type=\"number\" id=\"amount-input\" class=\"input-field\" value=\"1\">\n      </div>\n      <div class=\"currency-row\">\n        <div class=\"form-group flex-1\">\n          <select id=\"from-currency\" class=\"select-field\">\n            <option value=\"USD\">USD</option>\n          </select>\n        </div>\n        <button id=\"swap-btn\" class=\"swap-button\">⇄</button>\n        <div class=\"form-group flex-1\">\n          <select id=\"to-currency\" class=\"select-field\">\n            <option value=\"EUR\">EUR</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"result-container\">\n        <div class=\"rate-info\" id=\"rate-display\">1 USD = 0.92 EUR</div>\n        <div class=\"converted-amount\" id=\"result-display\">0.92 EUR</div>\n      </div>\n    </main>\n    <footer class=\"converter-footer\">\n      <p class=\"history-title\">Recent Conversions</p>\n      <ul id=\"history-list\" class=\"history-list\"></ul>\n    </footer>\n  </div>\n</body>\n</html>\n"
-        },
-        {
-          "path": "styles.css",
-          "content": ".result-container {\n  background-color: #0b1120;\n  border: 1px solid #334155;\n  border-radius: 0.75rem;\n  padding: 1.25rem;\n  text-align: center;\n  margin: 1.5rem 0;\n}\n\n.rate-info {\n  font-size: 0.875rem;\n  color: #94a3b8;\n}\n\n.converted-amount {\n  font-size: 1.75rem;\n  font-weight: 700;\n  color: #f8fafc;\n}\n\n.converter-footer {\n  border-top: 1px solid #334155;\n  padding-top: 1.25rem;\n}\n\n.history-list {\n  list-style: none;\n  font-size: 0.8125rem;\n  color: #94a3b8;\n}\n"
-        }
-      ],
-      "checks": [
-        {
-          "id": "chk_result_display",
-          "description": "Result display element exists",
-          "type": "elementExists",
-          "selector": "#result-display"
-        },
-        {
-          "id": "chk_history_list",
-          "description": "History list ul exists",
-          "type": "elementExists",
-          "selector": "#history-list"
-        }
-      ],
-      "hints": [
-        "Include `#rate-display` and `#result-display` inside `.result-container`.",
-        "Add `<ul id=\"history-list\">` inside `<footer class=\"converter-footer\">`."
-      ]
-    },
-    {
-      "id": "mod_6",
-      "pageId": "page_currency_converter",
-      "order": 6,
-      "title": "Wire Up Conversion Calculation and LocalStorage",
-      "learningObjective": "Implement JavaScript logic to calculate exchange rates, update DOM text, and persist history to LocalStorage.",
-      "componentType": "script-behavior",
-      "status": "locked",
-      "lesson": "# DOM Events and LocalStorage Persistence\n\nIn this final behavior module, we link the UI elements to live vanilla JavaScript logic. We listen to the `input` event on `#amount-input` and `change` on currency dropdowns, calculate the exchange product, and serialize the log entries to `localStorage`.\n\nLinking `<script src=\"app.js\"></script>` at the bottom of the body completes the application.",
-      "task": "Add `<script src=\"app.js\"></script>` before the closing `</body>` tag in `index.html`. In `app.js`, declare exchange rates, add event listeners for amount input and dropdown change, calculate conversion, and persist to LocalStorage.",
-      "starterFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <input type=\"number\" id=\"amount-input\" value=\"1\">\n    <select id=\"from-currency\"><option value=\"USD\">USD</option></select>\n    <button id=\"swap-btn\">⇄</button>\n    <select id=\"to-currency\"><option value=\"EUR\">EUR</option></select>\n    <div id=\"rate-display\"></div>\n    <div id=\"result-display\"></div>\n    <ul id=\"history-list\"></ul>\n  </div>\n</body>\n</html>\n"
-        },
-        { "path": "app.js", "content": "// Logic will be implemented here\n" }
-      ],
-      "solutionFiles": [
-        {
-          "path": "index.html",
-          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <input type=\"number\" id=\"amount-input\" value=\"1\">\n    <select id=\"from-currency\"><option value=\"USD\">USD</option></select>\n    <button id=\"swap-btn\">⇄</button>\n    <select id=\"to-currency\"><option value=\"EUR\">EUR</option></select>\n    <div id=\"rate-display\"></div>\n    <div id=\"result-display\"></div>\n    <ul id=\"history-list\"></ul>\n  </div>\n  <script src=\"app.js\"></script>\n</body>\n</html>\n"
-        },
         {
           "path": "app.js",
-          "content": "const rates = { USD: 1.0, EUR: 0.92, GBP: 0.79 };\nconst amountInput = document.getElementById('amount-input');\nconst fromCurrency = document.getElementById('from-currency');\nconst toCurrency = document.getElementById('to-currency');\nconst swapBtn = document.getElementById('swap-btn');\nconst rateDisplay = document.getElementById('rate-display');\nconst resultDisplay = document.getElementById('result-display');\nconst historyList = document.getElementById('history-list');\n\nfunction calculateConversion() {\n  const amount = parseFloat(amountInput.value) || 0;\n  const from = fromCurrency.value;\n  const to = toCurrency.value;\n  const rate = rates[to] / rates[from];\n  const result = (amount * rate).toFixed(2);\n  rateDisplay.textContent = `1 ${from} = ${rate.toFixed(4)} ${to}`;\n  resultDisplay.textContent = `${result} ${to}`;\n}\n\namountInput.addEventListener('input', calculateConversion);\nfromCurrency.addEventListener('change', calculateConversion);\ntoCurrency.addEventListener('change', calculateConversion);\nswapBtn.addEventListener('click', () => {\n  const temp = fromCurrency.value;\n  fromCurrency.value = toCurrency.value;\n  toCurrency.value = temp;\n  calculateConversion();\n});\ncalculateConversion();\n"
+          "content": "// Interactive logic for Currency Converter\n"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n</head>\n<body>\n</body>\n</html>\n"
+        },
+        {
+          "path": "styles.css",
+          "content": "/* Styles for Currency Converter */\n"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Currency Converter"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <header class=\"converter-header\">\n      <h1 class=\"app-title\">Currency Converter</h1>\n      <p class=\"app-subtitle\">Real-time exchange rate calculations</p>\n    </header>\n  </div>\n</body>\n</html>"
+        },
+        {
+          "path": "styles.css",
+          "content": "/* Styles for Currency Converter */"
         }
       ],
       "checks": [
         {
-          "id": "chk_script_loaded",
-          "description": "Script tag links to app.js",
+          "id": "check-link",
+          "description": "Verify the stylesheet is linked in the head.",
           "type": "attributeEquals",
-          "selector": "script[src='app.js']",
-          "expected": "app.js"
+          "selector": "link[href='styles.css']",
+          "expected": "stylesheet",
+          "property": "rel",
+          "requirementRef": "link[href='styles.css']"
         },
         {
-          "id": "chk_calc_defined",
-          "description": "calculateConversion function is declared in script",
-          "type": "scriptDefines",
-          "expected": "calculateConversion"
+          "id": "check-card",
+          "description": "Verify the converter card container exists.",
+          "type": "elementExists",
+          "selector": ".converter-card",
+          "requirementRef": "div.converter-card"
+        },
+        {
+          "id": "check-title",
+          "description": "Verify the app title text.",
+          "type": "textContains",
+          "selector": ".app-title",
+          "expected": "Currency Converter",
+          "requirementRef": "h1.app-title"
         }
       ],
       "hints": [
-        "Include `<script src=\"app.js\"></script>` right before `</body>`.",
-        "Add an `input` event listener to `#amount-input`."
+        "Ensure your <link> tag is placed inside the <head> section, not the <body>.",
+        "The class names must match exactly: 'converter-card', 'converter-header', 'app-title', and 'app-subtitle'.",
+        "Remember that the <header> tag should be a direct child of the .converter-card div."
+      ]
+    },
+    {
+      "id": "m2",
+      "pageId": "currency-converter-main",
+      "order": 2,
+      "title": "Base Styling & Theme Layout",
+      "learningObjective": "Implement dark-mode aesthetics using CSS variables and flexbox layouts.",
+      "componentType": "body-layout",
+      "status": "locked",
+      "lesson": "CSS variables, also known as custom properties, allow you to define reusable values throughout your stylesheet. By declaring them in the :root pseudo-class, you create a global theme that can be easily updated, such as switching between dark and light modes. This keeps your design consistent and maintainable.\n\nFor example, you can define a color variable like this: :root { --main-color: #3498db; } and use it later: .button { background-color: var(--main-color); }.",
+      "task": "Your goal is to implement the base layout and dark-mode styling for the Currency Converter. \n\n### Requirements\n- Define CSS variables for colors in the :root selector.\n- Apply flexbox to the body to center the converter card.\n- Style the converter-card with a dark background and border.\n\n### Example\nTo center an element using flexbox, use: \nbody { display: flex; align-items: center; justify-content: center; min-height: 100vh; }\n\n### If you're stuck\nCheck the Hints and MDN references below for guidance on CSS layout and variables.",
+      "requirements": [
+        "CSS variable --bg-color defined in :root",
+        "body element uses flexbox centering",
+        "converter-card class exists with specific styling"
+      ],
+      "expectedResult": "The application will display a centered dark-themed card on a dark background, providing a clean foundation for the converter interface.",
+      "references": [
+        {
+          "title": "Using CSS custom properties",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/Using_CSS_custom_properties",
+          "note": "Learn how to define and use CSS variables."
+        },
+        {
+          "title": "Flexbox layout",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout/Basic_concepts_of_flexbox",
+          "note": "Master centering elements with flexbox."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Currency Converter"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <header class=\"converter-header\">\n      <h1 class=\"app-title\">Currency Converter</h1>\n      <p class=\"app-subtitle\">Real-time exchange rate calculations</p>\n    </header>\n  </div>\n</body>\n</html>"
+        },
+        {
+          "path": "styles.css",
+          "content": "/* Styles for Currency Converter */"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Currency Converter"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <header class=\"converter-header\">\n      <h1 class=\"app-title\">Currency Converter</h1>\n      <p class=\"app-subtitle\">Real-time exchange rate calculations</p>\n    </header>\n  </div>\n</body>\n</html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root {\n  --bg-color: #0f172a;\n  --card-bg: #1e293b;\n  --text-main: #f8fafc;\n}\n\nbody {\n  background-color: var(--bg-color);\n  color: var(--text-main);\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n\n.converter-card {\n  background-color: var(--card-bg);\n  padding: 2rem;\n  border-radius: 1rem;\n  width: 100%;\n  max-width: 480px;\n}"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-body-flex",
+          "description": "Verify body uses flexbox for centering",
+          "type": "styleEquals",
+          "selector": "body",
+          "expected": "flex",
+          "property": "display",
+          "requirementRef": "body element uses flexbox centering"
+        },
+        {
+          "id": "check-card-bg",
+          "description": "Verify converter card has dark background",
+          "type": "styleEquals",
+          "selector": ".converter-card",
+          "expected": "rgb(30, 41, 59)",
+          "property": "backgroundColor",
+          "requirementRef": "converter-card class exists with specific styling"
+        }
+      ],
+      "hints": [
+        "Ensure your :root variables are defined at the very top of your styles.css file.",
+        "The body needs min-height: 100vh to ensure it fills the screen height for vertical centering.",
+        "Use the browser inspector to check if your CSS variables are being applied correctly."
+      ]
+    },
+    {
+      "id": "m3",
+      "pageId": "currency-converter-main",
+      "order": 3,
+      "title": "Core UI Elements & Interactive Controls",
+      "learningObjective": "Construct inputs, dropdowns, and the swap button to build the functional converter UI.",
+      "componentType": "form",
+      "status": "locked",
+      "lesson": "Building a functional user interface requires a clear structure of input elements that allow users to interact with your application. By using semantic HTML tags like <input> and <select>, you create predictable entry points for data, which can then be captured and processed by your JavaScript logic. Think of these elements as the bridge between the user's intent and your code's execution.\n\nFor example, to create a simple text input, you would use: <input type='text' id='username' placeholder='Enter name'>. This element provides a standard way for users to type information, which you can later access in your scripts using document.getElementById('username').value.",
+      "task": "### Goal\nConstruct the core UI components for the currency converter, including the amount input, currency selection dropdowns, and the swap button.\n\n### Requirements\n- Add an input field with id='amount-input' and type='number'.\n- Add two select dropdowns with IDs 'from-currency' and 'to-currency'.\n- Add a button with id='swap-btn' to trigger currency swapping.\n- Ensure all elements are wrapped in appropriate containers as defined in the original design.\n\n### Example\nTo add a label and input pair, use:\n<div class='form-group'>\n  <label for='my-input'>Label</label>\n  <input type='number' id='my-input'>\n</div>\n\n### If you're stuck\nCheck the Hints and MDN references below for guidance on form elements and layout.",
+      "requirements": [
+        "input#amount-input exists",
+        "select#from-currency exists",
+        "select#to-currency exists",
+        "button#swap-btn exists"
+      ],
+      "expectedResult": "The UI will display an amount input field, two currency selection dropdowns, and a swap button, allowing users to interact with the converter form.",
+      "references": [
+        {
+          "title": "MDN: <input> element",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input",
+          "note": "Learn about different input types like number."
+        },
+        {
+          "title": "MDN: <select> element",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/select",
+          "note": "Documentation for creating dropdown menus."
+        },
+        {
+          "title": "MDN: <button> element",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button",
+          "note": "How to implement clickable buttons."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Currency Converter"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <header class=\"converter-header\">\n      <h1 class=\"app-title\">Currency Converter</h1>\n      <p class=\"app-subtitle\">Real-time exchange rate calculations</p>\n    </header>\n  </div>\n</body>\n</html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root {\n  --bg-color: #0f172a;\n  --card-bg: #1e293b;\n  --text-main: #f8fafc;\n}\n\nbody {\n  background-color: var(--bg-color);\n  color: var(--text-main);\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n\n.converter-card {\n  background-color: var(--card-bg);\n  padding: 2rem;\n  border-radius: 1rem;\n  width: 100%;\n  max-width: 480px;\n}"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Currency Converter"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang='en'>\n<head>\n  <meta charset='UTF-8'>\n  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n  <title>Currency Converter</title>\n  <link rel='stylesheet' href='styles.css'>\n</head>\n<body>\n  <div class='converter-card'>\n    <header class='converter-header'>\n      <h1 class='app-title'>Currency Converter</h1>\n      <p class='app-subtitle'>Real-time exchange rate calculations</p>\n    </header>\n    <main class='converter-body'>\n      <div class='form-group'>\n        <label for='amount-input'>Amount</label>\n        <input type='number' id='amount-input' class='input-field' value='1' min='0' step='any'>\n      </div>\n      <div class='currency-row'>\n        <div class='form-group flex-1'>\n          <label for='from-currency'>From</label>\n          <select id='from-currency' class='select-field'>\n            <option value='USD' selected>USD - US Dollar</option>\n            <option value='EUR'>EUR - Euro</option>\n            <option value='GBP'>GBP - British Pound</option>\n            <option value='JPY'>JPY - Japanese Yen</option>\n            <option value='CAD'>CAD - Canadian Dollar</option>\n          </select>\n        </div>\n        <button id='swap-btn' class='swap-button' title='Swap currencies'>⇄</button>\n        <div class='form-group flex-1'>\n          <label for='to-currency'>To</label>\n          <select id='to-currency' class='select-field'>\n            <option value='USD'>USD - US Dollar</option>\n            <option value='EUR' selected>EUR - Euro</option>\n            <option value='GBP'>GBP - British Pound</option>\n            <option value='JPY'>JPY - Japanese Yen</option>\n            <option value='CAD'>CAD - Canadian Dollar</option>\n          </select>\n        </div>\n      </div>\n      <div class='result-container'>\n        <div class='rate-info' id='rate-display'>1 USD = 0.92 EUR</div>\n        <div class='converted-amount' id='result-display'>0.92 EUR</div>\n      </div>\n    </main>\n  </div>\n  <script src='app.js'></script>\n</body>\n</html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root { --bg-color: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; } body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; align-items: center; justify-content: center; } .converter-card { background-color: var(--card-bg); padding: 2rem; border-radius: 1rem; width: 100%; max-width: 480px; }"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-amount-input",
+          "description": "Verify the amount input field exists.",
+          "type": "elementExists",
+          "selector": "input[id='amount-input']",
+          "requirementRef": "input#amount-input exists"
+        },
+        {
+          "id": "check-currency-selects",
+          "description": "Verify both currency select dropdowns exist.",
+          "type": "elementExists",
+          "selector": "select[id='from-currency']",
+          "requirementRef": "select#from-currency exists"
+        },
+        {
+          "id": "check-swap-btn",
+          "description": "Verify the swap button exists.",
+          "type": "elementExists",
+          "selector": "button[id='swap-btn']",
+          "requirementRef": "button#swap-btn exists"
+        }
+      ],
+      "hints": [
+        "Use the <input type='number'> element to ensure users can only enter numeric values.",
+        "The <select> element is perfect for creating a dropdown list of currency options.",
+        "Wrap your form elements in a container div to keep the layout organized and easy to style."
+      ]
+    },
+    {
+      "id": "m4",
+      "pageId": "currency-converter-main",
+      "order": 4,
+      "title": "Core JavaScript Logic & Event Handling",
+      "learningObjective": "Develop the core calculation engine and handle user interaction events to drive dynamic UI updates.",
+      "componentType": "script-behavior",
+      "status": "locked",
+      "lesson": "JavaScript event handling allows your application to respond to user interactions in real-time. By attaching listeners to inputs and buttons, you can trigger functions that process data, perform calculations, and update the DOM dynamically without reloading the page. This creates a seamless, app-like experience for the user. For example, you can listen for a 'click' event on a button to toggle a CSS class: document.querySelector('.btn').addEventListener('click', () => document.body.classList.toggle('dark-mode'));",
+      "task": "Your goal is to implement the core calculation logic and event listeners for the currency converter. \n\n### Requirements\n- Create a `rates` object containing exchange rates for USD, EUR, GBP, JPY, and CAD.\n- Implement a `calculateConversion` function that reads input values, performs the math, and updates the display elements.\n- Add event listeners to the amount input and currency selects to trigger updates on change.\n- Implement a `swapCurrencies` function to toggle the 'From' and 'To' currency selections.\n\n### Example\nconst add = (a, b) => a + b;\n\nIf you're stuck, check the hints and MDN references provided.",
+      "requirements": [
+        "JavaScript object named 'rates' with currency keys",
+        "Function 'calculateConversion' to update #rate-display and #result-display",
+        "Event listener on #amount-input for 'input' event",
+        "Event listener on #swap-btn for 'click' event to trigger 'swapCurrencies'"
+      ],
+      "expectedResult": "The converter will automatically update the result and rate display whenever the amount or currency selections change, and the swap button will correctly exchange the selected currencies.",
+      "references": [
+        {
+          "title": "MDN: EventTarget.addEventListener()",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener",
+          "note": "Learn how to listen for user interactions like clicks and input changes."
+        },
+        {
+          "title": "MDN: parseFloat()",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/parseFloat",
+          "note": "Essential for converting string input values into numbers for calculation."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "app.js",
+          "content": "// Interactive logic for Currency Converter"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang='en'>\n<head>\n  <meta charset='UTF-8'>\n  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n  <title>Currency Converter</title>\n  <link rel='stylesheet' href='styles.css'>\n</head>\n<body>\n  <div class='converter-card'>\n    <header class='converter-header'>\n      <h1 class='app-title'>Currency Converter</h1>\n      <p class='app-subtitle'>Real-time exchange rate calculations</p>\n    </header>\n    <main class='converter-body'>\n      <div class='form-group'>\n        <label for='amount-input'>Amount</label>\n        <input type='number' id='amount-input' class='input-field' value='1' min='0' step='any'>\n      </div>\n      <div class='currency-row'>\n        <div class='form-group flex-1'>\n          <label for='from-currency'>From</label>\n          <select id='from-currency' class='select-field'>\n            <option value='USD' selected>USD - US Dollar</option>\n            <option value='EUR'>EUR - Euro</option>\n            <option value='GBP'>GBP - British Pound</option>\n            <option value='JPY'>JPY - Japanese Yen</option>\n            <option value='CAD'>CAD - Canadian Dollar</option>\n          </select>\n        </div>\n        <button id='swap-btn' class='swap-button' title='Swap currencies'>⇄</button>\n        <div class='form-group flex-1'>\n          <label for='to-currency'>To</label>\n          <select id='to-currency' class='select-field'>\n            <option value='USD'>USD - US Dollar</option>\n            <option value='EUR' selected>EUR - Euro</option>\n            <option value='GBP'>GBP - British Pound</option>\n            <option value='JPY'>JPY - Japanese Yen</option>\n            <option value='CAD'>CAD - Canadian Dollar</option>\n          </select>\n        </div>\n      </div>\n      <div class='result-container'>\n        <div class='rate-info' id='rate-display'>1 USD = 0.92 EUR</div>\n        <div class='converted-amount' id='result-display'>0.92 EUR</div>\n      </div>\n    </main>\n  </div>\n  <script src='app.js'></script>\n</body>\n</html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root { --bg-color: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; } body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; align-items: center; justify-content: center; } .converter-card { background-color: var(--card-bg); padding: 2rem; border-radius: 1rem; width: 100%; max-width: 480px; }"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "app.js",
+          "content": "const rates = { USD: 1.0, EUR: 0.92, GBP: 0.79, JPY: 155.2, CAD: 1.38 }; const amountInput = document.getElementById('amount-input'); const fromCurrency = document.getElementById('from-currency'); const toCurrency = document.getElementById('to-currency'); const swapBtn = document.getElementById('swap-btn'); const rateDisplay = document.getElementById('rate-display'); const resultDisplay = document.getElementById('result-display'); function calculateConversion() { const amount = parseFloat(amountInput.value) || 0; const from = fromCurrency.value; const to = toCurrency.value; const rate = (rates[to] / rates[from]); const result = (amount * rate).toFixed(2); rateDisplay.textContent = `1 ${from} = ${rate.toFixed(4)} ${to}`; resultDisplay.textContent = `${result} ${to}`; } function swapCurrencies() { const temp = fromCurrency.value; fromCurrency.value = toCurrency.value; toCurrency.value = temp; calculateConversion(); } amountInput.addEventListener('input', calculateConversion); fromCurrency.addEventListener('change', calculateConversion); toCurrency.addEventListener('change', calculateConversion); swapBtn.addEventListener('click', swapCurrencies); calculateConversion();"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Currency Converter</title><link rel='stylesheet' href='styles.css'></head><body><div class='converter-card'><header class='converter-header'><h1 class='app-title'>Currency Converter</h1><p class='app-subtitle'>Real-time exchange rate calculations</p></header><main class='converter-body'><div class='form-group'><label for='amount-input'>Amount</label><input type='number' id='amount-input' class='input-field' value='1' min='0' step='any'></div><div class='currency-row'><div class='form-group flex-1'><label for='from-currency'>From</label><select id='from-currency' class='select-field'><option value='USD' selected>USD - US Dollar</option><option value='EUR'>EUR - Euro</option><option value='GBP'>GBP - British Pound</option><option value='JPY'>JPY - Japanese Yen</option><option value='CAD'>CAD - Canadian Dollar</option></select></div><button id='swap-btn' class='swap-button' title='Swap currencies'>⇄</button><div class='form-group flex-1'><label for='to-currency'>To</label><select id='to-currency' class='select-field'><option value='USD'>USD - US Dollar</option><option value='EUR' selected>EUR - Euro</option><option value='GBP'>GBP - British Pound</option><option value='JPY'>JPY - Japanese Yen</option><option value='CAD'>CAD - Canadian Dollar</option></select></div></div><div class='result-container'><div class='rate-info' id='rate-display'>1 USD = 0.92 EUR</div><div class='converted-amount' id='result-display'>0.92 EUR</div></div></main></div><script src='app.js'></script></body></html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root { --bg-color: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; } body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; align-items: center; justify-content: center; } .converter-card { background-color: var(--card-bg); padding: 2rem; border-radius: 1rem; width: 100%; max-width: 480px; }"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-calculation",
+          "description": "Verify that changing the amount input updates the result display.",
+          "type": "eventResult",
+          "selector": "#result-display",
+          "expected": "1.84 EUR",
+          "action": {
+            "type": "input",
+            "selector": "#amount-input",
+            "value": "2"
+          },
+          "message": "The result display did not update correctly when the amount changed.",
+          "requirementRef": "Event listener on #amount-input for 'input' event"
+        },
+        {
+          "id": "check-swap",
+          "description": "Verify that clicking the swap button updates the currency select values.",
+          "type": "eventResult",
+          "selector": "#from-currency",
+          "expected": "EUR",
+          "property": "value",
+          "action": {
+            "type": "click",
+            "selector": "#swap-btn"
+          },
+          "message": "The swap button did not correctly swap the currency select values.",
+          "requirementRef": "Event listener on #swap-btn for 'click' event to trigger 'swapCurrencies'"
+        },
+        {
+          "id": "check-logic-exists",
+          "description": "Ensure the rates object is defined in the script.",
+          "type": "scriptDefines",
+          "expected": "rates",
+          "message": "The 'rates' object is not defined.",
+          "requirementRef": "JavaScript object named 'rates' with currency keys"
+        }
+      ],
+      "hints": [
+        "Use document.getElementById to grab your DOM elements and store them in constants.",
+        "The formula for conversion is: (amount * (rates[to] / rates[from])).",
+        "Remember to call your calculation function inside the event listeners and once at the end of your script to initialize the UI."
+      ]
+    },
+    {
+      "id": "m5",
+      "pageId": "currency-converter-main",
+      "order": 5,
+      "title": "State Persistence & Final Integration",
+      "learningObjective": "Implement browser LocalStorage to save and render user conversion history for a complete experience.",
+      "componentType": "footer",
+      "status": "locked",
+      "lesson": "State persistence allows your web application to remember user data even after a page refresh. By using the browser's LocalStorage API, you can store key-value pairs as strings, enabling a seamless experience where user history or preferences remain intact between sessions. Always remember to use JSON.stringify() when saving objects and JSON.parse() when retrieving them to ensure data integrity. A quick example of storing a simple preference: localStorage.setItem('theme', 'dark');.",
+      "task": "Your goal is to implement a conversion history feature that persists across page reloads. \n\n### Requirements\n- Add a footer section to index.html with an unordered list having id='history-list'.\n- Update app.js to define a constant STORAGE_KEY and implement saveToHistory and renderHistory functions.\n- Ensure the history list updates automatically whenever a new conversion is calculated.\n\n### Example\nTo clear your history, you can use: localStorage.removeItem('currency_converter_history_v1');.\n\nIf you're stuck, check the hints and MDN references provided below.",
+      "requirements": [
+        "footer element with class 'converter-footer'",
+        "ul element with id 'history-list'",
+        "localStorage usage with key 'currency_converter_history_v1'",
+        "renderHistory function call on initial load"
+      ],
+      "expectedResult": "The application now displays a 'Recent Conversions' list at the bottom of the card that persists even after refreshing the browser page.",
+      "references": [
+        {
+          "title": "Window.localStorage",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage",
+          "note": "Learn how to store data locally in the browser."
+        },
+        {
+          "title": "JSON.stringify()",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify",
+          "note": "Essential for converting objects to strings for storage."
+        },
+        {
+          "title": "JSON.parse()",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse",
+          "note": "Essential for converting stored strings back into objects."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "app.js",
+          "content": "const rates = { USD: 1.0, EUR: 0.92, GBP: 0.79, JPY: 155.2, CAD: 1.38 }; const amountInput = document.getElementById('amount-input'); const fromCurrency = document.getElementById('from-currency'); const toCurrency = document.getElementById('to-currency'); const swapBtn = document.getElementById('swap-btn'); const rateDisplay = document.getElementById('rate-display'); const resultDisplay = document.getElementById('result-display'); function calculateConversion() { const amount = parseFloat(amountInput.value) || 0; const from = fromCurrency.value; const to = toCurrency.value; const rate = (rates[to] / rates[from]); const result = (amount * rate).toFixed(2); rateDisplay.textContent = `1 ${from} = ${rate.toFixed(4)} ${to}`; resultDisplay.textContent = `${result} ${to}`; } function swapCurrencies() { const temp = fromCurrency.value; fromCurrency.value = toCurrency.value; toCurrency.value = temp; calculateConversion(); } amountInput.addEventListener('input', calculateConversion); fromCurrency.addEventListener('change', calculateConversion); toCurrency.addEventListener('change', calculateConversion); swapBtn.addEventListener('click', swapCurrencies); calculateConversion();"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Currency Converter</title><link rel='stylesheet' href='styles.css'></head><body><div class='converter-card'><header class='converter-header'><h1 class='app-title'>Currency Converter</h1><p class='app-subtitle'>Real-time exchange rate calculations</p></header><main class='converter-body'><div class='form-group'><label for='amount-input'>Amount</label><input type='number' id='amount-input' class='input-field' value='1' min='0' step='any'></div><div class='currency-row'><div class='form-group flex-1'><label for='from-currency'>From</label><select id='from-currency' class='select-field'><option value='USD' selected>USD - US Dollar</option><option value='EUR'>EUR - Euro</option><option value='GBP'>GBP - British Pound</option><option value='JPY'>JPY - Japanese Yen</option><option value='CAD'>CAD - Canadian Dollar</option></select></div><button id='swap-btn' class='swap-button' title='Swap currencies'>⇄</button><div class='form-group flex-1'><label for='to-currency'>To</label><select id='to-currency' class='select-field'><option value='USD'>USD - US Dollar</option><option value='EUR' selected>EUR - Euro</option><option value='GBP'>GBP - British Pound</option><option value='JPY'>JPY - Japanese Yen</option><option value='CAD'>CAD - Canadian Dollar</option></select></div></div><div class='result-container'><div class='rate-info' id='rate-display'>1 USD = 0.92 EUR</div><div class='converted-amount' id='result-display'>0.92 EUR</div></div></main></div><script src='app.js'></script></body></html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root { --bg-color: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; } body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; align-items: center; justify-content: center; } .converter-card { background-color: var(--card-bg); padding: 2rem; border-radius: 1rem; width: 100%; max-width: 480px; }"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "app.js",
+          "content": "const rates = { USD: 1.0, EUR: 0.92, GBP: 0.79, JPY: 155.2, CAD: 1.38 }; const amountInput = document.getElementById('amount-input'); const fromCurrency = document.getElementById('from-currency'); const toCurrency = document.getElementById('to-currency'); const swapBtn = document.getElementById('swap-btn'); const rateDisplay = document.getElementById('rate-display'); const resultDisplay = document.getElementById('result-display'); const historyList = document.getElementById('history-list'); const STORAGE_KEY = 'currency_converter_history_v1'; function calculateConversion() { const amount = parseFloat(amountInput.value) || 0; const from = fromCurrency.value; const to = toCurrency.value; const rate = (rates[to] / rates[from]); const result = (amount * rate).toFixed(2); rateDisplay.textContent = `1 ${from} = ${rate.toFixed(4)} ${to}`; resultDisplay.textContent = `${result} ${to}`; if (amount > 0) { saveToHistory(`${amount} ${from} → ${result} ${to}`); } } function saveToHistory(entry) { try { const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); const updated = [entry, ...history.filter(h => h !== entry)].slice(0, 5); localStorage.setItem(STORAGE_KEY, JSON.stringify(updated)); renderHistory(); } catch (e) { console.warn('LocalStorage error:', e); } } function renderHistory() { try { const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); historyList.innerHTML = ''; history.forEach(item => { const li = document.createElement('li'); li.textContent = item; historyList.appendChild(li); }); } catch (e) { console.warn('Failed to render history:', e); } } function swapCurrencies() { const temp = fromCurrency.value; fromCurrency.value = toCurrency.value; toCurrency.value = temp; calculateConversion(); } amountInput.addEventListener('input', calculateConversion); fromCurrency.addEventListener('change', calculateConversion); toCurrency.addEventListener('change', calculateConversion); swapBtn.addEventListener('click', swapCurrencies); calculateConversion(); renderHistory();"
+        },
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Currency Converter</title><link rel='stylesheet' href='styles.css'></head><body><div class='converter-card'><header class='converter-header'><h1 class='app-title'>Currency Converter</h1><p class='app-subtitle'>Real-time exchange rate calculations</p></header><main class='converter-body'><div class='form-group'><label for='amount-input'>Amount</label><input type='number' id='amount-input' class='input-field' value='1' min='0' step='any'></div><div class='currency-row'><div class='form-group flex-1'><label for='from-currency'>From</label><select id='from-currency' class='select-field'><option value='USD' selected>USD - US Dollar</option><option value='EUR'>EUR - Euro</option><option value='GBP'>GBP - British Pound</option><option value='JPY'>JPY - Japanese Yen</option><option value='CAD'>CAD - Canadian Dollar</option></select></div><button id='swap-btn' class='swap-button' title='Swap currencies'>⇄</button><div class='form-group flex-1'><label for='to-currency'>To</label><select id='to-currency' class='select-field'><option value='USD'>USD - US Dollar</option><option value='EUR' selected>EUR - Euro</option><option value='GBP'>GBP - British Pound</option><option value='JPY'>JPY - Japanese Yen</option><option value='CAD'>CAD - Canadian Dollar</option></select></div></div><div class='result-container'><div class='rate-info' id='rate-display'>1 USD = 0.92 EUR</div><div class='converted-amount' id='result-display'>0.92 EUR</div></div></main><footer class='converter-footer'><p class='history-title'>Recent Conversions</p><ul id='history-list' class='history-list'></ul></footer></div><script src='app.js'></script></body></html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ":root { --bg-color: #0f172a; --card-bg: #1e293b; --text-main: #f8fafc; --text-muted: #94a3b8; --primary: #38bdf8; --border-color: #334155; } body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; } .converter-card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 1rem; width: 100%; max-width: 480px; padding: 2rem; } .converter-footer { border-top: 1px solid var(--border-color); padding-top: 1.25rem; } .history-title { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem; } .history-list { list-style: none; color: var(--text-muted); }"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-footer-exists",
+          "description": "Verify the footer element exists in the DOM.",
+          "type": "elementExists",
+          "selector": ".converter-footer",
+          "requirementRef": "footer element with class 'converter-footer'"
+        },
+        {
+          "id": "check-history-list-exists",
+          "description": "Verify the history list element exists in the DOM.",
+          "type": "elementExists",
+          "selector": "#history-list",
+          "requirementRef": "ul element with id 'history-list'"
+        },
+        {
+          "id": "check-storage-key-defined",
+          "description": "Verify the STORAGE_KEY constant is defined in app.js.",
+          "type": "scriptDefines",
+          "expected": "STORAGE_KEY",
+          "requirementRef": "localStorage usage with key 'currency_converter_history_v1'"
+        }
+      ],
+      "hints": [
+        "Use JSON.stringify() to save your array of history strings to localStorage.",
+        "Remember to call renderHistory() inside your calculateConversion() function after saving to update the UI immediately.",
+        "Use JSON.parse() when reading from localStorage, and provide a fallback empty array '[]' if the key doesn't exist yet."
       ]
     }
   ],
   "finalFiles": [
     {
+      "path": "app.js",
+      "content": "const rates = {\r\n  USD: 1.0,\r\n  EUR: 0.92,\r\n  GBP: 0.79,\r\n  JPY: 155.2,\r\n  CAD: 1.38\r\n};\r\n\r\nconst amountInput = document.getElementById('amount-input');\r\nconst fromCurrency = document.getElementById('from-currency');\r\nconst toCurrency = document.getElementById('to-currency');\r\nconst swapBtn = document.getElementById('swap-btn');\r\nconst rateDisplay = document.getElementById('rate-display');\r\nconst resultDisplay = document.getElementById('result-display');\r\nconst historyList = document.getElementById('history-list');\r\n\r\nconst STORAGE_KEY = 'currency_converter_history_v1';\r\n\r\nfunction calculateConversion() {\r\n  const amount = parseFloat(amountInput.value) || 0;\r\n  const from = fromCurrency.value;\r\n  const to = toCurrency.value;\r\n\r\n  const rate = (rates[to] / rates[from]);\r\n  const result = (amount * rate).toFixed(2);\r\n\r\n  rateDisplay.textContent = `1 ${from} = ${rate.toFixed(4)} ${to}`;\r\n  resultDisplay.textContent = `${result} ${to}`;\r\n\r\n  if (amount > 0) {\r\n    saveToHistory(`${amount} ${from} → ${result} ${to}`);\r\n  }\r\n}\r\n\r\nfunction saveToHistory(entry) {\r\n  try {\r\n    const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');\r\n    const updated = [entry, ...history.filter(h => h !== entry)].slice(0, 5);\r\n    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));\r\n    renderHistory();\r\n  } catch (e) {\r\n    console.warn('LocalStorage error:', e);\r\n  }\r\n}\r\n\r\nfunction renderHistory() {\r\n  try {\r\n    const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');\r\n    historyList.innerHTML = '';\r\n    history.forEach(item => {\r\n      const li = document.createElement('li');\r\n      li.textContent = item;\r\n      historyList.appendChild(li);\r\n    });\r\n  } catch (e) {\r\n    console.warn('Failed to render history:', e);\r\n  }\r\n}\r\n\r\nfunction swapCurrencies() {\r\n  const temp = fromCurrency.value;\r\n  fromCurrency.value = toCurrency.value;\r\n  toCurrency.value = temp;\r\n  calculateConversion();\r\n}\r\n\r\namountInput.addEventListener('input', calculateConversion);\r\nfromCurrency.addEventListener('change', calculateConversion);\r\ntoCurrency.addEventListener('change', calculateConversion);\r\nswapBtn.addEventListener('click', swapCurrencies);\r\n\r\n// Initial execution\r\ncalculateConversion();\r\nrenderHistory();\r\n"
+    },
+    {
       "path": "index.html",
-      "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Currency Converter</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"converter-card\">\n    <header class=\"converter-header\">\n      <h1 class=\"app-title\">Currency Converter</h1>\n      <p class=\"app-subtitle\">Real-time exchange rate calculations</p>\n    </header>\n    <main class=\"converter-body\">\n      <div class=\"form-group\">\n        <label for=\"amount-input\">Amount</label>\n        <input type=\"number\" id=\"amount-input\" class=\"input-field\" value=\"1\" min=\"0\" step=\"any\">\n      </div>\n      <div class=\"currency-row\">\n        <div class=\"form-group flex-1\">\n          <label for=\"from-currency\">From</label>\n          <select id=\"from-currency\" class=\"select-field\">\n            <option value=\"USD\" selected>USD - US Dollar</option>\n            <option value=\"EUR\">EUR - Euro</option>\n            <option value=\"GBP\">GBP - British Pound</option>\n          </select>\n        </div>\n        <button id=\"swap-btn\" class=\"swap-button\" title=\"Swap currencies\">⇄</button>\n        <div class=\"form-group flex-1\">\n          <label for=\"to-currency\">To</label>\n          <select id=\"to-currency\" class=\"select-field\">\n            <option value=\"USD\">USD - US Dollar</option>\n            <option value=\"EUR\" selected>EUR - Euro</option>\n            <option value=\"GBP\">GBP - British Pound</option>\n          </select>\n        </div>\n      </div>\n      <div class=\"result-container\">\n        <div class=\"rate-info\" id=\"rate-display\">1 USD = 0.92 EUR</div>\n        <div class=\"converted-amount\" id=\"result-display\">0.92 EUR</div>\n      </div>\n    </main>\n    <footer class=\"converter-footer\">\n      <p class=\"history-title\">Recent Conversions</p>\n      <ul id=\"history-list\" class=\"history-list\"></ul>\n    </footer>\n  </div>\n  <script src=\"app.js\"></script>\n</body>\n</html>\n"
+      "content": "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n  <meta charset=\"UTF-8\">\r\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n  <title>Currency Converter</title>\r\n  <link rel=\"stylesheet\" href=\"styles.css\">\r\n</head>\r\n<body>\r\n  <div class=\"converter-card\">\r\n    <header class=\"converter-header\">\r\n      <h1 class=\"app-title\">Currency Converter</h1>\r\n      <p class=\"app-subtitle\">Real-time exchange rate calculations</p>\r\n    </header>\r\n\r\n    <main class=\"converter-body\">\r\n      <div class=\"form-group\">\r\n        <label for=\"amount-input\">Amount</label>\r\n        <input type=\"number\" id=\"amount-input\" class=\"input-field\" value=\"1\" min=\"0\" step=\"any\">\r\n      </div>\r\n\r\n      <div class=\"currency-row\">\r\n        <div class=\"form-group flex-1\">\r\n          <label for=\"from-currency\">From</label>\r\n          <select id=\"from-currency\" class=\"select-field\">\r\n            <option value=\"USD\" selected>USD - US Dollar</option>\r\n            <option value=\"EUR\">EUR - Euro</option>\r\n            <option value=\"GBP\">GBP - British Pound</option>\r\n            <option value=\"JPY\">JPY - Japanese Yen</option>\r\n            <option value=\"CAD\">CAD - Canadian Dollar</option>\r\n          </select>\r\n        </div>\r\n\r\n        <button id=\"swap-btn\" class=\"swap-button\" title=\"Swap currencies\">⇄</button>\r\n\r\n        <div class=\"form-group flex-1\">\r\n          <label for=\"to-currency\">To</label>\r\n          <select id=\"to-currency\" class=\"select-field\">\r\n            <option value=\"USD\">USD - US Dollar</option>\r\n            <option value=\"EUR\" selected>EUR - Euro</option>\r\n            <option value=\"GBP\">GBP - British Pound</option>\r\n            <option value=\"JPY\">JPY - Japanese Yen</option>\r\n            <option value=\"CAD\">CAD - Canadian Dollar</option>\r\n          </select>\r\n        </div>\r\n      </div>\r\n\r\n      <div class=\"result-container\">\r\n        <div class=\"rate-info\" id=\"rate-display\">1 USD = 0.92 EUR</div>\r\n        <div class=\"converted-amount\" id=\"result-display\">0.92 EUR</div>\r\n      </div>\r\n    </main>\r\n\r\n    <footer class=\"converter-footer\">\r\n      <p class=\"history-title\">Recent Conversions</p>\r\n      <ul id=\"history-list\" class=\"history-list\"></ul>\r\n    </footer>\r\n  </div>\r\n\r\n  <script src=\"app.js\"></script>\r\n</body>\r\n</html>\r\n"
     },
     {
       "path": "styles.css",
-      "content": ":root {\n  --bg-color: #0f172a;\n  --card-bg: #1e293b;\n  --text-main: #f8fafc;\n  --text-muted: #94a3b8;\n  --primary: #38bdf8;\n  --border-color: #334155;\n}\n\n* {\n  box-sizing: border-box;\n  margin: 0;\n  padding: 0;\n}\n\nbody {\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n  background-color: var(--bg-color);\n  color: var(--text-main);\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 1rem;\n}\n\n.converter-card {\n  background-color: var(--card-bg);\n  border: 1px solid var(--border-color);\n  border-radius: 1rem;\n  width: 100%;\n  max-width: 480px;\n  padding: 2rem;\n}\n\n.converter-header {\n  text-align: center;\n  margin-bottom: 1.5rem;\n}\n\n.app-title {\n  font-size: 1.5rem;\n  font-weight: 700;\n  color: var(--primary);\n  margin-bottom: 0.25rem;\n}\n\n.app-subtitle {\n  font-size: 0.875rem;\n  color: var(--text-muted);\n}\n\n.form-group {\n  display: flex;\n  flex-direction: column;\n  gap: 0.5rem;\n  margin-bottom: 1.25rem;\n}\n\n.form-group label {\n  font-size: 0.75rem;\n  font-weight: 600;\n  text-transform: uppercase;\n  color: var(--text-muted);\n}\n\n.input-field, .select-field {\n  background-color: #0b1120;\n  border: 1px solid var(--border-color);\n  border-radius: 0.5rem;\n  color: var(--text-main);\n  padding: 0.75rem 1rem;\n  font-size: 1rem;\n  outline: none;\n}\n\n.currency-row {\n  display: flex;\n  align-items: flex-end;\n  gap: 0.75rem;\n}\n\n.flex-1 {\n  flex: 1;\n}\n\n.swap-button {\n  background: #0b1120;\n  border: 1px solid var(--border-color);\n  color: var(--primary);\n  border-radius: 0.5rem;\n  width: 2.75rem;\n  height: 2.75rem;\n  font-size: 1.25rem;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  margin-bottom: 1.25rem;\n}\n\n.result-container {\n  background-color: #0b1120;\n  border: 1px solid #334155;\n  border-radius: 0.75rem;\n  padding: 1.25rem;\n  text-align: center;\n  margin: 1.5rem 0;\n}\n\n.rate-info {\n  font-size: 0.875rem;\n  color: #94a3b8;\n}\n\n.converted-amount {\n  font-size: 1.75rem;\n  font-weight: 700;\n  color: #f8fafc;\n}\n\n.converter-footer {\n  border-top: 1px solid #334155;\n  padding-top: 1.25rem;\n}\n\n.history-list {\n  list-style: none;\n  font-size: 0.8125rem;\n  color: #94a3b8;\n}\n"
-    },
-    {
-      "path": "app.js",
-      "content": "const rates = { USD: 1.0, EUR: 0.92, GBP: 0.79 };\nconst amountInput = document.getElementById('amount-input');\nconst fromCurrency = document.getElementById('from-currency');\nconst toCurrency = document.getElementById('to-currency');\nconst swapBtn = document.getElementById('swap-btn');\nconst rateDisplay = document.getElementById('rate-display');\nconst resultDisplay = document.getElementById('result-display');\nconst historyList = document.getElementById('history-list');\n\nfunction calculateConversion() {\n  const amount = parseFloat(amountInput.value) || 0;\n  const from = fromCurrency.value;\n  const to = toCurrency.value;\n  const rate = rates[to] / rates[from];\n  const result = (amount * rate).toFixed(2);\n  rateDisplay.textContent = `1 ${from} = ${rate.toFixed(4)} ${to}`;\n  resultDisplay.textContent = `${result} ${to}`;\n}\n\namountInput.addEventListener('input', calculateConversion);\nfromCurrency.addEventListener('change', calculateConversion);\ntoCurrency.addEventListener('change', calculateConversion);\nswapBtn.addEventListener('click', () => {\n  const temp = fromCurrency.value;\n  fromCurrency.value = toCurrency.value;\n  toCurrency.value = temp;\n  calculateConversion();\n});\ncalculateConversion();\n"
+      "content": ":root {\r\n  --bg-color: #0f172a;\r\n  --card-bg: #1e293b;\r\n  --text-main: #f8fafc;\r\n  --text-muted: #94a3b8;\r\n  --primary: #38bdf8;\r\n  --primary-hover: #0ea5e9;\r\n  --border-color: #334155;\r\n}\r\n\r\n* {\r\n  box-sizing: border-box;\r\n  margin: 0;\r\n  padding: 0;\r\n}\r\n\r\nbody {\r\n  font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif;\r\n  background-color: var(--bg-color);\r\n  color: var(--text-main);\r\n  min-height: 100vh;\r\n  display: flex;\r\n  align-items: center;\r\n  justify-content: center;\r\n  padding: 1rem;\r\n}\r\n\r\n.converter-card {\r\n  background-color: var(--card-bg);\r\n  border: 1px solid var(--border-color);\r\n  border-radius: 1rem;\r\n  width: 100%;\r\n  max-width: 480px;\r\n  padding: 2rem;\r\n  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);\r\n}\r\n\r\n.converter-header {\r\n  text-align: center;\r\n  margin-bottom: 1.5rem;\r\n}\r\n\r\n.app-title {\r\n  font-size: 1.5rem;\r\n  font-weight: 700;\r\n  color: var(--primary);\r\n  margin-bottom: 0.25rem;\r\n}\r\n\r\n.app-subtitle {\r\n  font-size: 0.875rem;\r\n  color: var(--text-muted);\r\n}\r\n\r\n.form-group {\r\n  display: flex;\r\n  flex-direction: column;\r\n  gap: 0.5rem;\r\n  margin-bottom: 1.25rem;\r\n}\r\n\r\n.form-group label {\r\n  font-size: 0.75rem;\r\n  font-weight: 600;\r\n  text-transform: uppercase;\r\n  letter-spacing: 0.05em;\r\n  color: var(--text-muted);\r\n}\r\n\r\n.input-field, .select-field {\r\n  background-color: #0b1120;\r\n  border: 1px solid var(--border-color);\r\n  border-radius: 0.5rem;\r\n  color: var(--text-main);\r\n  padding: 0.75rem 1rem;\r\n  font-size: 1rem;\r\n  outline: none;\r\n  transition: border-color 0.2s;\r\n}\r\n\r\n.input-field:focus, .select-field:focus {\r\n  border-color: var(--primary);\r\n}\r\n\r\n.currency-row {\r\n  display: flex;\r\n  align-items: flex-end;\r\n  gap: 0.75rem;\r\n}\r\n\r\n.flex-1 {\r\n  flex: 1;\r\n}\r\n\r\n.swap-button {\r\n  background: #0b1120;\r\n  border: 1px solid var(--border-color);\r\n  color: var(--primary);\r\n  border-radius: 0.5rem;\r\n  width: 2.75rem;\r\n  height: 2.75rem;\r\n  font-size: 1.25rem;\r\n  display: flex;\r\n  align-items: center;\r\n  justify-content: center;\r\n  cursor: pointer;\r\n  margin-bottom: 1.25rem;\r\n  transition: background-color 0.2s, border-color 0.2s;\r\n}\r\n\r\n.swap-button:hover {\r\n  background-color: #1e293b;\r\n  border-color: var(--primary);\r\n}\r\n\r\n.result-container {\r\n  background-color: #0b1120;\r\n  border: 1px solid var(--border-color);\r\n  border-radius: 0.75rem;\r\n  padding: 1.25rem;\r\n  text-align: center;\r\n  margin: 1.5rem 0;\r\n}\r\n\r\n.rate-info {\r\n  font-size: 0.875rem;\r\n  color: var(--text-muted);\r\n  margin-bottom: 0.25rem;\r\n}\r\n\r\n.converted-amount {\r\n  font-size: 1.75rem;\r\n  font-weight: 700;\r\n  color: var(--text-main);\r\n}\r\n\r\n.converter-footer {\r\n  border-top: 1px solid var(--border-color);\r\n  padding-top: 1.25rem;\r\n}\r\n\r\n.history-title {\r\n  font-size: 0.75rem;\r\n  font-weight: 600;\r\n  text-transform: uppercase;\r\n  letter-spacing: 0.05em;\r\n  color: var(--text-muted);\r\n  margin-bottom: 0.5rem;\r\n}\r\n\r\n.history-list {\r\n  list-style: none;\r\n  font-size: 0.8125rem;\r\n  color: var(--text-muted);\r\n  display: flex;\r\n  flex-direction: column;\r\n  gap: 0.375rem;\r\n}\r\n\r\n.history-list li {\r\n  display: flex;\r\n  justify-content: space-between;\r\n  padding: 0.25rem 0;\r\n  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);\r\n}\r\n"
     }
   ]
 }

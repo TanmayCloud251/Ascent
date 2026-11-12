@@ -21,7 +21,11 @@ import {
 
 export const LLMTracePanel: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const [trace, setTrace] = useState<LLMTraceEvent | null>(() => getLatestLLMTrace())
+  const [traceHistory, setTraceHistory] = useState<LLMTraceEvent[]>(() => {
+    const latest = getLatestLLMTrace()
+    return latest ? [latest] : []
+  })
+  const [selectedTraceIdx, setSelectedTraceIdx] = useState(0)
   const [activeTab, setActiveTab] = useState<'response' | 'request' | 'parsed'>('response')
   const [copied, setCopied] = useState(false)
   const [serverModelStatus, setServerModelStatus] = useState<{
@@ -31,9 +35,12 @@ export const LLMTracePanel: React.FC = () => {
     tested: boolean
   } | null>(null)
 
+  const trace = traceHistory[selectedTraceIdx] || traceHistory[0] || null
+
   useEffect(() => {
     const unsubscribe = subscribeToLLMTraces((newTrace) => {
-      setTrace(newTrace)
+      setTraceHistory(prev => [newTrace, ...prev].slice(0, 12))
+      setSelectedTraceIdx(0)
     })
     return unsubscribe
   }, [])
@@ -132,6 +139,21 @@ export const LLMTracePanel: React.FC = () => {
                   </span>
                 ) : null}
               </div>
+
+              {traceHistory.length > 1 && (
+                <select
+                  aria-label="Select Trace Entry"
+                  value={selectedTraceIdx}
+                  onChange={(e) => setSelectedTraceIdx(Number(e.target.value))}
+                  className="bg-black/70 border border-white/15 rounded px-2 py-0.5 text-[11px] text-slate-200 font-mono focus:outline-none focus:border-[#00F0FF]"
+                >
+                  {traceHistory.map((item, idx) => (
+                    <option key={item.id} value={idx}>
+                      #{traceHistory.length - idx} · {item.endpoint.replace('POST ', '').replace('CURATED ', 'CURATED ')} ({item.isCurated ? 'PRE-BUILT' : item.isCached ? 'CACHED' : item.error ? 'ERROR' : 'LIVE'})
+                    </option>
+                  ))}
+                </select>
+              )}
 
               {serverModelStatus && (
                 <div className="flex items-center gap-2 text-[11px] text-slate-400">

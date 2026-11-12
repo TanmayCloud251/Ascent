@@ -1,5 +1,6 @@
 import { Check, CheckResult } from '../schemas/course'
 import { JSDOM } from 'jsdom'
+import { resolveRelativeProjectPath } from './previewBuilder'
 
 export interface EvaluationSummary {
   allPassed: boolean
@@ -8,39 +9,132 @@ export interface EvaluationSummary {
   results: CheckResult[]
 }
 
+export interface CheckAssetEntry {
+  path: string
+  mimeType?: string
+  size?: number
+}
+
+function normalizeAssetLookupPath(raw: string): string {
+  return raw.trim().replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '')
+}
+
+function getTagAttr(attrs: string, attrName: string): string | null {
+  const re = new RegExp(`(?:^|\\s)${attrName}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`, 'i')
+  const match = attrs.match(re)
+  if (!match) return null
+  return match[1] ?? match[2] ?? match[3] ?? ''
+}
+
+function stripTagAttr(attrs: string, attrName: string): string {
+  const re = new RegExp(`\\s+${attrName}\\s*=\\s*(?:"[^"]*"|'[^']*'|[^\\s>]+)`, 'gi')
+  return attrs.replace(re, '')
+}
+
 /**
  * Runs declarative DOM checks against an array of virtual file objects using JSDOM.
- * Used on server for LLM generation verification and automated testing.
+ * Used on server for LLM generation verification, curated build verification, and automated testing.
  */
 export async function runChecksOnFiles(
   checks: Check[],
-  files: { path: string; content: string }[]
+  files: { path: string; content: string }[],
+  assets: CheckAssetEntry[] = [],
+  options?: { fixedRandom?: number; entryHtmlPath?: string }
 ): Promise<EvaluationSummary> {
-  const htmlFile = files.find(f => f.path.endsWith('.html'))
-  const cssFiles = files.filter(f => f.path.endsWith('.css'))
-  const jsFiles = files.filter(f => f.path.endsWith('.js'))
+  const normalizedFiles = files.map(f => ({
+    path: normalizeAssetLookupPath(f.path),
+    content: f.content
+  }))
+  const fileMap = new Map(normalizedFiles.map(f => [f.path, f.content]))
+  const assetMap = new Map(
+    assets.map(a => [normalizeAssetLookupPath(a.path), a])
+  )
+
+  const requestedHtml = options?.entryHtmlPath ? normalizeAssetLookupPath(options.entryHtmlPath) : ''
+  const htmlFile =
+    (requestedHtml ? normalizedFiles.find(f => f.path === requestedHtml) : undefined) ||
+    normalizedFiles.find(f => f.path === 'index.html') ||
+    normalizedFiles.find(f => f.path === 'index.htm') ||
+    normalizedFiles.find(f => f.path.endsWith('.html'))
+  const baseHtmlPath = htmlFile ? htmlFile.path : 'index.html'
+  const cssFiles = normalizedFiles
+    .filter(f => f.path.toLowerCase().endsWith('.css'))
+    .sort((a, b) => a.path.localeCompare(b.path))
+  const jsFiles = normalizedFiles
+    .filter(f => f.path.toLowerCase().endsWith('.js'))
+    .sort((a, b) => a.path.localeCompare(b.path))
 
   let htmlContent = htmlFile ? htmlFile.content : '<!DOCTYPE html><html><head></head><body></body></html>'
+  if (!/<html[\s>]/i.test(htmlContent)) {
+    htmlContent = `<!DOCTYPE html><html><head></head><body>${htmlContent}</body></html>`
+  }
+  if (!/<head[\s>]/i.test(htmlContent)) {
+    htmlContent = htmlContent.replace(/<html[^>]*>/i, '$&\n<head></head>')
+  }
+  if (!/<\/head>/i.test(htmlContent)) {
+    htmlContent = htmlContent.replace(/<body[^>]*>/i, '</head>\n$&')
+  }
 
-  // If HTML doesn't include CSS or JS in JSDOM, inline them for accurate DOM styling/script testing
-  if (cssFiles.length > 0) {
+  let sawLocalCssLink = false
+  htmlContent = htmlContent.replace(/<link\b([^>]*)>/gi, (full, attrs = '') => {
+    const rel = (getTagAttr(attrs, 'rel') || '').toLowerCase()
+    const rawHref = getTagAttr(attrs, 'href')
+    if (!rawHref) return full
+    const resolved = resolveRelativeProjectPath(rawHref, baseHtmlPath)
+    if (!resolved) return full
+    if (rel.includes('stylesheet') || resolved.toLowerCase().endsWith('.css')) {
+      sawLocalCssLink = true
+      const cssBody = fileMap.get(resolved)
+      if (cssBody !== undefined) {
+        return `${full}<style>${cssBody.replace(/<\/style/gi, '<\\/style')}</style>`
+      }
+      return full
+    }
+    return full
+  })
+
+  // Fallback CSS inlining if HTML has no local stylesheet link tags
+  if (!sawLocalCssLink && cssFiles.length > 0) {
     const combinedCSS = cssFiles.map(c => c.content).join('\n')
     if (!htmlContent.includes('<style>') && !htmlContent.includes(combinedCSS.slice(0, 20))) {
-      htmlContent = htmlContent.replace('</head>', `<style>${combinedCSS}</style></head>`)
+      htmlContent = htmlContent.replace(/<\/head>/i, `<style>${combinedCSS.replace(/<\/style/gi, '<\\/style')}</style></head>`)
+    }
+  }
+
+  // Determine ordered JS scripts to execute (either HTML-referenced script order or fallback all JS files)
+  // Keep original `<script src="...">` tags intact in JSDOM DOM so selectors like `script[src="app.js"]` match directly.
+  const orderedJsFiles: { path: string; content: string }[] = []
+  let sawLocalScriptSrc = false
+  const scriptSrcRe = /<script\b([^>]*)>([\s\S]*?)<\/script>/gi
+  let sm: RegExpExecArray | null
+  while ((sm = scriptSrcRe.exec(htmlContent)) !== null) {
+    const attrs = sm[1] || ''
+    const rawSrc = getTagAttr(attrs, 'src')
+    if (rawSrc !== null) {
+      const resolved = resolveRelativeProjectPath(rawSrc, baseHtmlPath)
+      if (resolved) {
+        sawLocalScriptSrc = true
+        const content = fileMap.get(resolved)
+        if (content !== undefined) {
+          orderedJsFiles.push({ path: resolved, content })
+        }
+      }
     }
   }
 
   const dom = new JSDOM(htmlContent, {
     runScripts: 'dangerously',
-    resources: 'usable',
     url: 'http://localhost/'
   })
 
   const window = dom.window
   const document = window.document
+  if (typeof options?.fixedRandom === 'number') {
+    window.Math.random = () => options.fixedRandom!
+  }
 
-  // Execute JS scripts in JSDOM window context
-  for (const js of jsFiles) {
+  const scriptsToRun = sawLocalScriptSrc ? orderedJsFiles : jsFiles
+  for (const js of scriptsToRun) {
     if (js.content && js.content.trim()) {
       try {
         window.eval(js.content)
@@ -50,11 +144,21 @@ export async function runChecksOnFiles(
     }
   }
 
+  const knownAllPaths = new Set<string>([
+    ...normalizedFiles.map(f => f.path),
+    ...assets.map(a => normalizeAssetLookupPath(a.path))
+  ])
+
   const results: CheckResult[] = []
 
   for (const check of checks) {
     try {
-      const res = await evaluateSingleCheck(check, document, window, jsFiles)
+      const res = await evaluateSingleCheck(check, document, window, normalizedFiles, {
+        knownPaths: knownAllPaths,
+        assetMap,
+        fileMap,
+        baseHtmlPath
+      })
       results.push(res)
     } catch (err: any) {
       results.push({
@@ -74,6 +178,13 @@ export async function runChecksOnFiles(
   }
 }
 
+export interface CheckEvalContext {
+  knownPaths?: Set<string>
+  assetMap?: Map<string, CheckAssetEntry>
+  fileMap?: Map<string, string>
+  baseHtmlPath?: string
+}
+
 /**
  * Evaluates a single check against a Document and Window object.
  */
@@ -81,9 +192,11 @@ export async function evaluateSingleCheck(
   check: Check,
   document: Document,
   window: any,
-  jsFiles: { path: string; content: string }[] = []
+  jsFiles: { path: string; content: string }[] = [],
+  context: CheckEvalContext = {}
 ): Promise<CheckResult> {
-  const { id, type, selector, expected, property, action, message } = check
+  const { id, type, selector, expected, property, action, message, path: checkPath } = check
+  const allJsFiles = jsFiles.filter(f => f.path.toLowerCase().endsWith('.js'))
 
   switch (type) {
     case 'elementExists': {
@@ -127,8 +240,9 @@ export async function evaluateSingleCheck(
       if (!selector) return { id, passed: false, message: 'Missing selector' }
       const el = document.querySelector(selector)
       if (!el) return { id, passed: false, message: message || `Element "${selector}" not found.` }
-      const attrName = property || extractAttributeNameFromSelector(selector) || 'src'
-      const actualVal = el.getAttribute(attrName)
+      const attrName = property || extractAttributeNameFromSelector(selector, el.tagName, expected) || 'src'
+      const origAttr = (attrName === 'src' || attrName === 'href') ? el.getAttribute(`data-ascent-orig-${attrName}`) : null
+      const actualVal = origAttr !== null ? origAttr : el.getAttribute(attrName)
       const passed = actualVal === expected
       return {
         id,
@@ -156,9 +270,11 @@ export async function evaluateSingleCheck(
       const el = document.querySelector(selector) as HTMLElement | null
       if (!el) return { id, passed: false, message: message || `Element "${selector}" not found.` }
       const prop = property || 'color'
-      const inlineStyle = el.style ? (el.style as any)[prop] : undefined
-      const computedStyle = window.getComputedStyle ? window.getComputedStyle(el).getPropertyValue(prop) : undefined
-      const actual = inlineStyle || computedStyle || ''
+      const kebabProp = prop.includes('-') ? prop : prop.replace(/[A-Z]/g, m => `-${m.toLowerCase()}`)
+      const inlineStyle = el.style ? ((el.style as any)[prop] || el.style.getPropertyValue(kebabProp)) : undefined
+      const cs = window.getComputedStyle ? window.getComputedStyle(el) : undefined
+      const computedStyle = cs ? (cs.getPropertyValue(kebabProp) || cs.getPropertyValue(prop) || (cs as any)[prop]) : undefined
+      const actual = String(inlineStyle || computedStyle || '')
       const passed = actual.toLowerCase().includes((expected || '').toLowerCase())
       return {
         id,
@@ -170,8 +286,10 @@ export async function evaluateSingleCheck(
     case 'scriptDefines': {
       const target = (expected || property || '').trim()
       const inWindow = Boolean(window[target])
-      const inSource = jsFiles.some(f => f.content.includes(target))
-      const passed = inWindow || inSource
+      const inJsFiles = allJsFiles.some(f => f.content.includes(target))
+      const inlineScripts = Array.from(document.querySelectorAll('script')).map(s => s.textContent || '').join('\n')
+      const inInlineScripts = inlineScripts.includes(target)
+      const passed = inWindow || inJsFiles || inInlineScripts
       return {
         id,
         passed,
@@ -179,12 +297,80 @@ export async function evaluateSingleCheck(
       }
     }
 
+    case 'imageLoaded': {
+      if (!selector) return { id, passed: false, message: 'Missing selector for imageLoaded' }
+      const el = document.querySelector(selector) as HTMLImageElement | null
+      if (!el) return { id, passed: false, message: message || `Image element "${selector}" not found.` }
+      if (el.tagName.toUpperCase() !== 'IMG') {
+        return { id, passed: false, message: message || `Element "${selector}" is not an <img>.` }
+      }
+      const origSrc = el.getAttribute('data-ascent-orig-src') || el.getAttribute('src') || ''
+      if (!origSrc.trim()) {
+        return { id, passed: false, message: message || `Image "${selector}" has an empty src attribute.` }
+      }
+      if ((el as any).naturalWidth > 0) {
+        return { id, passed: true }
+      }
+      if (/^data:image\/[a-z0-9.+-]+;base64,[A-Za-z0-9+/=]+/i.test(origSrc) || /^data:image\/svg\+xml/i.test(origSrc)) {
+        const commaIdx = origSrc.indexOf(',')
+        const payload = commaIdx >= 0 ? origSrc.slice(commaIdx + 1).trim() : ''
+        const passed = payload.length > 0
+        return {
+          id,
+          passed,
+          message: passed ? undefined : message || `Image "${selector}" has empty data URI payload.`
+        }
+      }
+      const resolved = resolveRelativeProjectPath(origSrc, context.baseHtmlPath || 'index.html')
+      if (resolved) {
+        const matchedAsset = context.assetMap?.get(resolved)
+        const matchedSvg = resolved.toLowerCase().endsWith('.svg') ? context.fileMap?.get(resolved) : undefined
+        const passed = Boolean(
+          (matchedAsset && (matchedAsset.size === undefined || matchedAsset.size > 0)) ||
+          (matchedSvg && matchedSvg.trim().length > 0)
+        )
+        return {
+          id,
+          passed,
+          message: passed ? undefined : message || `Image "${selector}" references missing asset "${origSrc}".`
+        }
+      }
+      return {
+        id,
+        passed: false,
+        message: message || `Image "${selector}" did not load (src="${origSrc}").`
+      }
+    }
+
+    case 'assetExists': {
+      const rawPath = String(checkPath || expected || property || selector || '').trim()
+      if (!rawPath) return { id, passed: false, message: 'Missing file path for assetExists' }
+      const normPath = normalizeAssetLookupPath(rawPath)
+      const existsInKnown = context.knownPaths?.has(normPath)
+      const existsInPassedFiles = jsFiles.some(f => normalizeAssetLookupPath(f.path) === normPath)
+      const passed = Boolean(existsInKnown || existsInPassedFiles)
+      return {
+        id,
+        passed,
+        message: passed ? undefined : message || `Project asset "${normPath}" does not exist.`
+      }
+    }
+
     case 'eventResult': {
       let actionObj: { type: string; selector: string; value?: string } | null = null
       if (typeof action === 'object' && action !== null) {
-        actionObj = action as any
+        actionObj = action as { type: string; selector: string; value?: string }
       } else if (typeof action === 'string') {
-        actionObj = { type: action, selector: selector || 'button' }
+        const trimmed = action.trim()
+        const inputEqMatch = trimmed.match(/^(input|change)\s+([^\s=]+)(?:\s*=\s*|\s+)(.*)$/i)
+        const simpleMatch = trimmed.match(/^(click|submit|focus|blur|input|change)\s+(.+)$/i)
+        if (inputEqMatch) {
+          actionObj = { type: inputEqMatch[1].toLowerCase(), selector: inputEqMatch[2], value: inputEqMatch[3] }
+        } else if (simpleMatch) {
+          actionObj = { type: simpleMatch[1].toLowerCase(), selector: simpleMatch[2].trim() }
+        } else {
+          actionObj = { type: trimmed.toLowerCase(), selector: selector || 'button' }
+        }
       }
 
       if (actionObj && actionObj.selector) {
@@ -195,7 +381,7 @@ export async function evaluateSingleCheck(
 
         if (actionObj.type === 'click') {
           triggerEl.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }))
-        } else if (actionObj.type === 'input') {
+        } else if (actionObj.type === 'input' || actionObj.type === 'change') {
           if ('value' in triggerEl && actionObj.value !== undefined) {
             (triggerEl as any).value = actionObj.value
           }
@@ -203,18 +389,68 @@ export async function evaluateSingleCheck(
           triggerEl.dispatchEvent(new window.Event('change', { bubbles: true }))
         } else if (actionObj.type === 'submit') {
           triggerEl.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }))
+        } else {
+          triggerEl.dispatchEvent(new window.Event(actionObj.type, { bubbles: true, cancelable: true }))
         }
 
-        // Allow microtask cycle for event handlers to execute
-        await new Promise(r => setTimeout(r, 20))
+        // Allow microtask/timer cycle for event handlers to execute
+        await new Promise(r => setTimeout(r, 25))
       }
 
       // Assert target outcome
       if (selector) {
         const targetEl = document.querySelector(selector)
         if (!targetEl) return { id, passed: false, message: message || `Target element "${selector}" not found after event.` }
+
+        if (property && expected !== undefined) {
+          if (property === 'class' || property === 'className') {
+            const passed = targetEl.classList.contains(expected) || (targetEl.className || '').split(/\s+/).includes(expected)
+            return {
+              id,
+              passed,
+              message: passed ? undefined : message || `Expected "${selector}" to have class "${expected}" after event.`
+            }
+          }
+          if (property === 'text' || property === 'textContent') {
+            const actualText = targetEl.textContent || ''
+            const passed = actualText.toLowerCase().includes(expected.toLowerCase())
+            return {
+              id,
+              passed,
+              message: passed ? undefined : message || `Expected text "${expected}" on "${selector}" after event (got "${actualText.trim()}").`
+            }
+          }
+          if (property === 'value') {
+            const actualVal = String((targetEl as any).value ?? targetEl.getAttribute('value') ?? '')
+            const passed = actualVal === expected || actualVal.toLowerCase().includes(expected.toLowerCase())
+            return {
+              id,
+              passed,
+              message: passed ? undefined : message || `Expected value "${expected}" on "${selector}" after event (got "${actualVal}").`
+            }
+          }
+          const attrVal = targetEl.getAttribute(property)
+          if (attrVal !== null) {
+            const passed = attrVal === expected
+            return {
+              id,
+              passed,
+              message: passed ? undefined : message || `Expected attribute "${property}"="${expected}" on "${selector}" after event (got "${attrVal}").`
+            }
+          }
+          const styleVal = window.getComputedStyle(targetEl).getPropertyValue(property) || (targetEl as HTMLElement).style?.getPropertyValue(property) || ''
+          const domProp = (targetEl as any)[property]
+          const actual = styleVal || (domProp !== undefined ? String(domProp) : '')
+          const passed = actual === expected || actual.toLowerCase() === expected.toLowerCase()
+          return {
+            id,
+            passed,
+            message: passed ? undefined : message || `Expected "${property}" to be "${expected}" on "${selector}" after event (got "${actual}").`
+          }
+        }
+
         if (expected) {
-          const text = (targetEl.textContent || '') + ' ' + (targetEl.getAttribute('value') || '')
+          const text = (targetEl.textContent || '') + ' ' + String((targetEl as any).value ?? targetEl.getAttribute('value') ?? '')
           const passed = text.toLowerCase().includes(expected.toLowerCase())
           return {
             id,
@@ -232,162 +468,19 @@ export async function evaluateSingleCheck(
   }
 }
 
-function extractAttributeNameFromSelector(selector: string): string | null {
+function extractAttributeNameFromSelector(selector: string, tagName?: string, expected?: string): string | null {
+  // Prefer a standalone attribute selector without a value comparison (e.g., input[placeholder])
+  const valueless = selector.match(/\[([a-zA-Z0-9_-]+)\]/)
+  if (valueless) return valueless[1]
+  const tag = (tagName || '').toLowerCase()
+  if (tag === 'link' || tag === 'a' || /^\s*(link|a)\b/i.test(selector) || (expected && expected.endsWith('.css'))) {
+    return 'href'
+  }
+  if (tag === 'script' || tag === 'img' || /^\s*(script|img)\b/i.test(selector)) {
+    return 'src'
+  }
   const match = selector.match(/\[([a-zA-Z0-9_-]+)/)
   return match ? match[1] : null
 }
 
-/**
- * Returns the client-side JavaScript snippet to inject into the sandboxed preview iframe.
- * The script listens for postMessage `{ type: 'RUN_CHECKS', checks }`, executes them against
- * the iframe's DOM, and posts back `{ type: 'CHECKS_RESULT', results }`.
- */
-export function getIframeCheckRunnerScript(): string {
-  return `
-(function() {
-  // Capture console messages and runtime errors
-  var originalLog = console.log;
-  var originalWarn = console.warn;
-  var originalError = console.error;
-
-  function sendConsole(level, args) {
-    try {
-      var text = Array.from(args).map(function(a) {
-        if (typeof a === 'object') {
-          try { return JSON.stringify(a); } catch(e) { return String(a); }
-        }
-        return String(a);
-      }).join(' ');
-      window.parent.postMessage({ type: 'CONSOLE_LOG', level: level, message: text }, '*');
-    } catch(e) {}
-  }
-
-  console.log = function() { sendConsole('info', arguments); originalLog.apply(console, arguments); };
-  console.warn = function() { sendConsole('warn', arguments); originalWarn.apply(console, arguments); };
-  console.error = function() { sendConsole('error', arguments); originalError.apply(console, arguments); };
-
-  window.addEventListener('error', function(event) {
-    window.parent.postMessage({
-      type: 'CONSOLE_LOG',
-      level: 'error',
-      message: (event.message || 'Error') + ' at line ' + (event.lineno || 0)
-    }, '*');
-  });
-
-  // Listen for parent check runner requests
-  window.addEventListener('message', async function(ev) {
-    var data = ev.data;
-    if (!data || data.type !== 'RUN_CHECKS') return;
-
-    var checks = data.checks || [];
-    var results = [];
-
-    for (var i = 0; i < checks.length; i++) {
-      var check = checks[i];
-      var checkResult = { id: check.id, passed: false, message: check.message };
-
-      try {
-        var timeoutPromise = new Promise(function(_, reject) {
-          setTimeout(function() { reject(new Error('Check timed out after 2000ms')); }, 2000);
-        });
-
-        var execPromise = (async function() {
-          var sel = check.selector;
-          var exp = check.expected;
-          var prop = check.property;
-
-          switch(check.type) {
-            case 'elementExists': {
-              var el = document.querySelector(sel);
-              return Boolean(el);
-            }
-            case 'elementCount': {
-              var count = document.querySelectorAll(sel).length;
-              var target = parseInt(exp || '1', 10);
-              return count === target;
-            }
-            case 'textContains': {
-              var el = document.querySelector(sel);
-              if (!el) return false;
-              var txt = (el.textContent || '').trim().toLowerCase();
-              return txt.indexOf((exp || '').trim().toLowerCase()) !== -1;
-            }
-            case 'attributeEquals': {
-              var el = document.querySelector(sel);
-              if (!el) return false;
-              var attrName = prop || (sel && sel.match(/\\[([a-zA-Z0-9_-]+)/) ? sel.match(/\\[([a-zA-Z0-9_-]+)/)[1] : 'src');
-              return el.getAttribute(attrName) === exp;
-            }
-            case 'classContains': {
-              var el = document.querySelector(sel);
-              if (!el) return false;
-              var targetCls = (exp || prop || '').trim();
-              return el.classList.contains(targetCls) || el.className.indexOf(targetCls) !== -1;
-            }
-            case 'styleEquals': {
-              var el = document.querySelector(sel);
-              if (!el) return false;
-              var p = prop || 'color';
-              var inline = el.style ? el.style[p] : '';
-              var comp = window.getComputedStyle ? window.getComputedStyle(el).getPropertyValue(p) : '';
-              var actual = (inline || comp || '').toLowerCase();
-              return actual.indexOf((exp || '').toLowerCase()) !== -1;
-            }
-            case 'scriptDefines': {
-              var target = (exp || prop || '').trim();
-              return Boolean(window[target]);
-            }
-            case 'eventResult': {
-              var act = check.action;
-              var triggerSel = (act && act.selector) || sel;
-              var triggerEl = triggerSel ? document.querySelector(triggerSel) : null;
-              if (triggerEl) {
-                var actType = (act && act.type) || (typeof act === 'string' ? act : 'click');
-                if (actType === 'click') {
-                  triggerEl.click();
-                } else if (actType === 'input') {
-                  if ('value' in triggerEl && act && act.value !== undefined) {
-                    triggerEl.value = act.value;
-                  }
-                  triggerEl.dispatchEvent(new Event('input', { bubbles: true }));
-                  triggerEl.dispatchEvent(new Event('change', { bubbles: true }));
-                } else if (actType === 'submit') {
-                  triggerEl.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
-                }
-                await new Promise(function(r) { setTimeout(r, 60); });
-              }
-
-              if (sel && exp) {
-                var targetEl = document.querySelector(sel);
-                if (!targetEl) return false;
-                var content = (targetEl.textContent || '') + ' ' + (targetEl.value || '');
-                return content.toLowerCase().indexOf(exp.toLowerCase()) !== -1;
-              }
-              return true;
-            }
-            default:
-              return false;
-          }
-        })();
-
-        var passed = await Promise.race([execPromise, timeoutPromise]);
-        checkResult.passed = Boolean(passed);
-        if (!checkResult.passed && !checkResult.message) {
-          checkResult.message = check.description || 'Check assertion failed';
-        }
-      } catch (err) {
-        checkResult.passed = false;
-        checkResult.message = err.message || 'Execution error during check';
-      }
-
-      results.push(checkResult);
-    }
-
-    window.parent.postMessage({ type: 'CHECKS_RESULT', results: results }, '*');
-  });
-
-  // Ready signal
-  window.parent.postMessage({ type: 'PREVIEW_READY' }, '*');
-})();
-`
-}
+export { getIframeCheckRunnerScript } from './iframeCheckScript'

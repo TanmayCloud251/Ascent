@@ -1,0 +1,550 @@
+{
+  "slug": "login-greeting",
+  "title": "Login Greeting Form",
+  "shortDescription": "Interactive username login form that validates input and displays a personalized greeting.",
+  "difficulty": "beginner",
+  "estimatedHours": 0.3,
+  "useTailwind": false,
+  "assets": [],
+  "spec": {
+    "appName": "Login Greeting Form",
+    "tagline": "Simple interactive user identity greeting application",
+    "summary": "A lightweight, single-page application that captures a user's name via an input field and displays a personalized greeting upon interaction, utilizing browser-native capabilities.",
+    "targetAudience": "Beginners learning fundamental DOM manipulation, event handling, and modern CSS layout techniques.",
+    "primaryFeatures": [
+      {
+        "name": "Identity Capture",
+        "description": "An input field that accepts text-based username entries from the user."
+      },
+      {
+        "name": "Interactive Greeting Trigger",
+        "description": "A button-driven event listener that parses input and updates the DOM dynamically."
+      },
+      {
+        "name": "Input Validation",
+        "description": "Logic that checks for non-empty input strings before updating the greeting display."
+      }
+    ],
+    "userFlows": [
+      {
+        "flowName": "Successful Greeting Display",
+        "steps": [
+          "User types name in input field",
+          "User clicks Log in button",
+          "System validates non-empty input",
+          "System updates greeting paragraph with personalized message"
+        ]
+      },
+      {
+        "flowName": "Empty Input Handling",
+        "steps": [
+          "User leaves input field empty",
+          "User clicks Log in button",
+          "System identifies empty string",
+          "System displays specific error message to user"
+        ]
+      }
+    ],
+    "dataEntities": [
+      {
+        "name": "User Profile",
+        "storageKey": "login-data",
+        "fields": [
+          {
+            "name": "username",
+            "type": "string",
+            "description": "The text content provided by the user in the input field."
+          }
+        ]
+      }
+    ],
+    "techStack": {
+      "runtime": "HTML + CSS + JavaScript",
+      "styling": "Plain CSS",
+      "stateManagement": "Browser In-Memory State / DOM",
+      "backendSim": "In-Browser LocalStorage / IndexedDB",
+      "useTailwind": false
+    },
+    "useTailwind": false,
+    "architectureHighlights": [
+      "Zero-dependency single-file architecture for portability",
+      "Event-driven DOM updates using standard addEventListener",
+      "Centralized styling using CSS Flexbox for centering and alignment"
+    ],
+    "assumptions": [
+      "The application will be served from a standard modern web browser environment",
+      "User interaction is limited to standard click events via mouse or touch"
+    ],
+    "outOfScope": [
+      "Persisting user data to local storage or external databases",
+      "Complex form validation or authentication security protocols"
+    ],
+    "estimatedScreenCount": 1,
+    "difficulty": "beginner",
+    "estimatedHours": 0.3
+  },
+  "page": {
+    "id": "login-greeting-index",
+    "projectId": "login-greeting",
+    "order": 1,
+    "name": "Login Interface",
+    "description": "The main entry point for the user identity capture and greeting display.",
+    "fileName": "index.html",
+    "purpose": "Provide a clean, focused user interface for name entry and interactive feedback.",
+    "status": "active",
+    "modules": [
+      {
+        "id": "mod-1",
+        "pageId": "login-greeting-index",
+        "order": 1,
+        "title": "Document Head Setup",
+        "learningObjective": "Establish base HTML5 boilerplate including character encoding and responsive viewport settings.",
+        "componentType": "document-head",
+        "status": "active"
+      },
+      {
+        "id": "mod-2",
+        "pageId": "login-greeting-index",
+        "order": 2,
+        "title": "Body Layout & Heading",
+        "learningObjective": "Implement structural layout using flex containers to center the content.",
+        "componentType": "body-layout",
+        "status": "locked"
+      },
+      {
+        "id": "mod-3",
+        "pageId": "login-greeting-index",
+        "order": 3,
+        "title": "Login Form Markup",
+        "learningObjective": "Create interactive form elements including labels, inputs, and a submission trigger.",
+        "componentType": "form",
+        "status": "locked"
+      },
+      {
+        "id": "mod-4",
+        "pageId": "login-greeting-index",
+        "order": 4,
+        "title": "Inline CSS Styling",
+        "learningObjective": "Apply dark-themed modern aesthetic styles using CSS properties within the head.",
+        "componentType": "main-section",
+        "status": "locked"
+      },
+      {
+        "id": "mod-5",
+        "pageId": "login-greeting-index",
+        "order": 5,
+        "title": "Inline JavaScript Behavior",
+        "learningObjective": "Script the logic to capture input value and conditionally update the DOM greeting output.",
+        "componentType": "script-behavior",
+        "status": "locked"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "id": "mod-1",
+      "pageId": "login-greeting-index",
+      "order": 1,
+      "title": "Document Head Setup",
+      "learningObjective": "Establish base HTML5 boilerplate including character encoding and responsive viewport settings.",
+      "componentType": "document-head",
+      "status": "active",
+      "lesson": "The document head acts as the metadata container for your web page. It does not display content directly to the user but provides essential instructions to the browser, such as character encoding, responsive design scaling, and the page title shown in the browser tab. Setting these up correctly ensures your site renders consistently across different devices and search engines. For example, you can define the language of your content by adding the lang attribute to the html tag: <html lang='en'>.",
+      "task": "Your goal is to configure the document head for the Login Greeting Form. Ensure the character set is UTF-8, the viewport is set for mobile responsiveness, and the title is set to 'Login'.\n\n### Requirements\n- Set the charset to UTF-8.\n- Set the viewport meta tag to width=device-width, initial-scale=1.0.\n- Set the document title to 'Login'.\n\n### Example\n<meta name='viewport' content='width=device-width, initial-scale=1.0'>\n\n### If you're stuck\nCheck the Hints and References sections for guidance on meta tags.",
+      "requirements": [
+        "meta charset='UTF-8'",
+        "meta name='viewport' content='width=device-width, initial-scale=1.0'",
+        "title tag with text 'Login'"
+      ],
+      "expectedResult": "The browser tab will display the title 'Login', and the page will be correctly configured for responsive scaling on mobile devices.",
+      "references": [
+        {
+          "title": "MDN: <head>",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/head",
+          "note": "Learn about the container for machine-readable information."
+        },
+        {
+          "title": "MDN: <meta>",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/meta",
+          "note": "Understand how to define metadata like charset and viewport."
+        },
+        {
+          "title": "MDN: <title>",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/title",
+          "note": "Learn how to set the document title."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n</head>\n<body>\n</body>\n</html>\n"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang='en'>\n<head>\n  <meta charset='UTF-8'>\n  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n  <title>Login</title>\n</head>\n<body>\n</body>\n</html>"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-charset",
+          "description": "Verify the charset meta tag is set to UTF-8",
+          "type": "attributeEquals",
+          "selector": "meta[charset='UTF-8']",
+          "expected": "UTF-8",
+          "property": "charset",
+          "requirementRef": "meta charset='UTF-8'"
+        },
+        {
+          "id": "check-viewport",
+          "description": "Verify the viewport meta tag is configured correctly",
+          "type": "attributeEquals",
+          "selector": "meta[name='viewport']",
+          "expected": "width=device-width, initial-scale=1.0",
+          "property": "content",
+          "requirementRef": "meta name='viewport' content='width=device-width, initial-scale=1.0'"
+        },
+        {
+          "id": "check-title",
+          "description": "Verify the document title is 'Login'",
+          "type": "textContains",
+          "selector": "title",
+          "expected": "Login",
+          "requirementRef": "title tag with text 'Login'"
+        }
+      ],
+      "hints": [
+        "The meta tag for the viewport requires both a name and a content attribute.",
+        "Ensure the charset attribute is placed directly inside the meta tag without a name attribute.",
+        "The title element should contain the text 'Login' exactly as specified."
+      ]
+    },
+    {
+      "id": "mod-2",
+      "pageId": "login-greeting-index",
+      "order": 2,
+      "title": "Body Layout & Heading",
+      "learningObjective": "Implement structural layout using flex containers to center the content.",
+      "componentType": "body-layout",
+      "status": "locked",
+      "lesson": "Flexbox is a powerful layout module that allows you to align items within a container effortlessly. By setting 'display: flex' on a parent element, you can control the distribution of space and the alignment of its children using properties like 'justify-content' and 'align-items'. This is the standard way to center content both horizontally and vertically on a page.\n\nFor example, to center a box in the middle of the screen, you apply 'display: flex', 'justify-content: center', and 'align-items: center' to the body element. Remember to set 'min-height: 100vh' so the body takes up the full height of the viewport. A quick snippet: const container = document.querySelector('.box'); container.style.display = 'flex';",
+      "task": "### Goal\nImplement the base layout for the login page by centering a container on the screen using CSS Flexbox.\n\n### Requirements\n- Add a `<style>` block to the `<head>`.\n- Apply Flexbox styles to the `body` element to center content.\n- Create a `<main>` element with the class `login-card`.\n- Add an `<h1>` element with the text 'Welcome' inside the `login-card`.\n\n### Example\n```css\n.container { display: flex; justify-content: center; }\n```\n\n### If you're stuck\nCheck the Hints and MDN references below for guidance on Flexbox properties.",
+      "requirements": [
+        "body element has display: flex",
+        "body element has justify-content: center",
+        "body element has align-items: center",
+        "main element exists with class login-card",
+        "h1 element exists with text Welcome"
+      ],
+      "expectedResult": "The page will display a centered card container with the heading 'Welcome' positioned in the middle of the browser window.",
+      "references": [
+        {
+          "title": "MDN Flexbox Layout",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout/Basic_concepts_of_flexbox",
+          "note": "Learn the fundamentals of flex containers."
+        },
+        {
+          "title": "MDN Aligning Items",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_flexible_box_layout/Aligning_items_in_a_flex_container",
+          "note": "Understand how to center items using justify-content and align-items."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang='en'>\n<head>\n  <meta charset='UTF-8'>\n  <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n  <title>Login</title>\n</head>\n<body>\n</body>\n</html>"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Login</title><style>body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }.login-card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 300px; display: flex; flex-direction: column; gap: 0.75rem; }</style></head><body><main class='login-card'><h1>Welcome</h1></main></body></html>"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-body-flex",
+          "description": "Verify body uses flexbox for centering",
+          "type": "styleEquals",
+          "selector": "body",
+          "expected": "flex",
+          "property": "display",
+          "requirementRef": "body element has display: flex"
+        },
+        {
+          "id": "check-main-exists",
+          "description": "Verify login-card main element exists",
+          "type": "elementExists",
+          "selector": "main.login-card",
+          "requirementRef": "main element exists with class login-card"
+        },
+        {
+          "id": "check-heading-text",
+          "description": "Verify Welcome heading exists",
+          "type": "textContains",
+          "selector": "h1",
+          "expected": "Welcome",
+          "requirementRef": "h1 element exists with text Welcome"
+        }
+      ],
+      "hints": [
+        "Ensure your body style includes 'min-height: 100vh' to allow vertical centering.",
+        "The 'justify-content' property controls horizontal alignment in a flex container.",
+        "The 'align-items' property controls vertical alignment in a flex container."
+      ]
+    },
+    {
+      "id": "mod-3",
+      "pageId": "login-greeting-index",
+      "order": 3,
+      "title": "Login Form Markup",
+      "learningObjective": "Create interactive form elements including labels, inputs, and a submission trigger.",
+      "componentType": "form",
+      "status": "locked",
+      "lesson": "Forms are the primary way users interact with web applications. By using semantic elements like <label>, <input>, and <button>, you ensure that your interface is accessible and predictable. Labels are particularly important as they provide context for screen readers and improve usability by increasing the clickable area for inputs.\n\nWhen building forms, always consider the user experience. For example, using the correct input type helps mobile browsers display the appropriate keyboard. A simple snippet for a label and input pair looks like this: <label for='email'>Email</label><input type='email' id='email'>.",
+      "task": "Your goal is to add the necessary form controls to the login card. \n\n### Requirements\n- Add a <label> element with the text 'Username' and a 'for' attribute pointing to the input ID.\n- Add an <input> element with type 'text', ID 'username', and a placeholder 'Enter your name'.\n- Add a <button> element with type 'button' and ID 'greet-btn' containing the text 'Log in'.\n- Add an empty <p> element with ID 'greeting' to display future messages.\n\n### Example\n<label for='user'>User</label><input id='user' type='text'>\n\nIf you're stuck, check the hints and MDN references provided.",
+      "requirements": [
+        "Label with text 'Username' and for='username'",
+        "Input element with id='username' and type='text'",
+        "Button element with id='greet-btn' and type='button'",
+        "Paragraph element with id='greeting'"
+      ],
+      "expectedResult": "The login card now contains a username label, a text input field, a login button, and a placeholder paragraph for the greeting message.",
+      "references": [
+        {
+          "title": "MDN: <label>",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/label",
+          "note": "Learn how to associate labels with form controls."
+        },
+        {
+          "title": "MDN: <input>",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input",
+          "note": "Explore different input types and attributes."
+        },
+        {
+          "title": "MDN: <button>",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/HTML/Element/button",
+          "note": "Understand the different button types."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Login</title><style>body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }.login-card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 300px; display: flex; flex-direction: column; gap: 0.75rem; }</style></head><body><main class='login-card'><h1>Welcome</h1></main></body></html>"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Login</title><style>body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }.login-card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 300px; display: flex; flex-direction: column; gap: 0.75rem; }</style></head><body><main class='login-card'><h1>Welcome</h1><label for='username'>Username</label><input type='text' id='username' placeholder='Enter your name'><button type='button' id='greet-btn'>Log in</button><p id='greeting'></p></main></body></html>"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-label",
+          "description": "Verify the username label exists",
+          "type": "elementExists",
+          "selector": "label[for='username']",
+          "requirementRef": "Label with text 'Username' and for='username'"
+        },
+        {
+          "id": "check-input",
+          "description": "Verify the username input exists",
+          "type": "elementExists",
+          "selector": "input#username",
+          "requirementRef": "Input element with id='username' and type='text'"
+        },
+        {
+          "id": "check-button",
+          "description": "Verify the login button exists",
+          "type": "elementExists",
+          "selector": "button#greet-btn",
+          "requirementRef": "Button element with id='greet-btn' and type='button'"
+        },
+        {
+          "id": "check-greeting",
+          "description": "Verify the greeting paragraph exists",
+          "type": "elementExists",
+          "selector": "p#greeting",
+          "requirementRef": "Paragraph element with id='greeting'"
+        }
+      ],
+      "hints": [
+        "Place the new elements inside the <main class='login-card'> container.",
+        "Ensure the 'for' attribute on the label matches the 'id' attribute on the input exactly.",
+        "The button type should be set to 'button' to prevent default form submission behavior."
+      ]
+    },
+    {
+      "id": "mod-4",
+      "pageId": "login-greeting-index",
+      "order": 4,
+      "title": "Inline CSS Styling",
+      "learningObjective": "Apply dark-themed modern aesthetic styles using CSS properties within the head.",
+      "componentType": "main-section",
+      "status": "locked",
+      "lesson": "CSS allows you to transform plain HTML elements into polished, user-friendly interfaces. By targeting specific tags like inputs and buttons, you can define consistent padding, borders, and color schemes that align with your brand identity. This separation of presentation from structure keeps your code clean and maintainable.\n\nFor example, to style a button, you might use: button { background-color: blue; border: none; padding: 10px; }.",
+      "task": "Your goal is to enhance the login card by adding specific styles for the input and button elements. \n\n### Requirements\n- Add a CSS rule for the `input` tag with padding, border-radius, border, background, and color.\n- Add a CSS rule for the `button` tag with padding, border, border-radius, background, color, font-weight, and cursor.\n- Add a CSS rule for the `#greeting` element to ensure it has a minimum height and no margin.\n\n### Example\n```css\ninput { padding: 0.5rem; border: 1px solid #ccc; }\n```\n\nIf you're stuck, check the hints and MDN references provided below.",
+      "requirements": [
+        "input element has padding, border-radius, border, background, and color styles",
+        "button element has padding, border, border-radius, background, color, font-weight, and cursor styles",
+        "#greeting element has min-height and margin styles"
+      ],
+      "expectedResult": "The login form now features a styled input field and a prominent cyan button, with a reserved space for the greeting message below.",
+      "references": [
+        {
+          "title": "MDN CSS Box Model",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_box_model/Introduction_to_the_CSS_box_model",
+          "note": "Learn how padding and borders affect element sizing."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Login</title><style>body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }.login-card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 300px; display: flex; flex-direction: column; gap: 0.75rem; }</style></head><body><main class='login-card'><h1>Welcome</h1><label for='username'>Username</label><input type='text' id='username' placeholder='Enter your name'><button type='button' id='greet-btn'>Log in</button><p id='greeting'></p></main></body></html>"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Login</title><style>body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }.login-card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 300px; display: flex; flex-direction: column; gap: 0.75rem; }input { padding: 0.6rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: inherit; }button { padding: 0.6rem; border: none; border-radius: 6px; background: #22d3ee; color: #0f172a; font-weight: 600; cursor: pointer; }#greeting { min-height: 1.5rem; margin: 0; }</style></head><body><main class='login-card'><h1>Welcome</h1><label for='username'>Username</label><input type='text' id='username' placeholder='Enter your name'><button type='button' id='greet-btn'>Log in</button><p id='greeting'></p></main></body></html>"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-input-style",
+          "description": "Verify input has specific border styling",
+          "type": "styleEquals",
+          "selector": "input",
+          "expected": "1px solid rgb(71, 85, 105)",
+          "property": "border",
+          "requirementRef": "input element has padding, border-radius, border, background, and color styles"
+        },
+        {
+          "id": "check-button-style",
+          "description": "Verify button has cyan background",
+          "type": "styleEquals",
+          "selector": "button",
+          "expected": "rgb(34, 211, 238)",
+          "property": "backgroundColor",
+          "requirementRef": "button element has padding, border, border-radius, background, color, font-weight, and cursor styles"
+        },
+        {
+          "id": "check-greeting-style",
+          "description": "Verify greeting has min-height",
+          "type": "styleEquals",
+          "selector": "#greeting",
+          "expected": "24px",
+          "property": "minHeight",
+          "requirementRef": "#greeting element has min-height and margin styles"
+        }
+      ],
+      "hints": [
+        "Use the CSS selector 'input' to target the text field and apply the required padding and border properties.",
+        "The button background color should be set to #22d3ee to match the design.",
+        "Ensure the #greeting element has a min-height of 1.5rem to prevent layout shifts when text appears."
+      ]
+    },
+    {
+      "id": "mod-5",
+      "pageId": "login-greeting-index",
+      "order": 5,
+      "title": "Inline JavaScript Behavior",
+      "learningObjective": "Script the logic to capture input value and conditionally update the DOM greeting output.",
+      "componentType": "script-behavior",
+      "status": "locked",
+      "lesson": "JavaScript allows you to make your web pages interactive by responding to user actions. By selecting DOM elements and attaching event listeners, you can capture input data and dynamically update the content of your page without needing to refresh the browser. This creates a seamless experience where the interface reacts to the user in real-time.\n\nFor example, you can change the color of a button when it is clicked: `button.addEventListener('click', () => { button.style.backgroundColor = 'red'; });`.",
+      "task": "### Goal\nImplement the logic to capture the username from the input field and display a personalized greeting when the 'Log in' button is clicked.\n\n### Requirements\n- Use `document.getElementById` to reference the input, button, and greeting elements.\n- Add a 'click' event listener to the button.\n- Use `input.value.trim()` to get the user's name.\n- Update `greeting.textContent` to 'Hello, <name>!' if a name is provided, or 'Please enter your username.' if the input is empty.\n\n### Example\n```javascript\nconst btn = document.querySelector('#my-btn');\nbtn.addEventListener('click', () => console.log('Clicked!'));\n```\n\nIf you're stuck, check the hints and MDN references provided below.",
+      "requirements": [
+        "Add <script> tag to index.html",
+        "Select #username, #greet-btn, and #greeting elements",
+        "Attach 'click' event listener to #greet-btn",
+        "Update #greeting.textContent based on input value"
+      ],
+      "expectedResult": "The application will display 'Hello, [Name]!' when a user enters a name and clicks 'Log in', or 'Please enter your username.' if the field is left blank.",
+      "references": [
+        {
+          "title": "Document: getElementById method",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById",
+          "note": "Used to select elements by their unique ID."
+        },
+        {
+          "title": "EventTarget: addEventListener method",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener",
+          "note": "Used to listen for user interactions like clicks."
+        },
+        {
+          "title": "Node: textContent property",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/API/Node/textContent",
+          "note": "Used to update the text displayed in the paragraph element."
+        }
+      ],
+      "starterFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>Login</title><style>body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }.login-card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 300px; display: flex; flex-direction: column; gap: 0.75rem; }input { padding: 0.6rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: inherit; }button { padding: 0.6rem; border: none; border-radius: 6px; background: #22d3ee; color: #0f172a; font-weight: 600; cursor: pointer; }#greeting { min-height: 1.5rem; margin: 0; }</style></head><body><main class='login-card'><h1>Welcome</h1><label for='username'>Username</label><input type='text' id='username' placeholder='Enter your name'><button type='button' id='greet-btn'>Log in</button><p id='greeting'></p></main></body></html>"
+        }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Login</title>\n  <style>\n    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }\n    .login-card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 300px; display: flex; flex-direction: column; gap: 0.75rem; }\n    input { padding: 0.6rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: inherit; }\n    button { padding: 0.6rem; border: none; border-radius: 6px; background: #22d3ee; color: #0f172a; font-weight: 600; cursor: pointer; }\n    #greeting { min-height: 1.5rem; margin: 0; }\n  </style>\n</head>\n<body>\n  <main class=\"login-card\">\n    <h1>Welcome</h1>\n    <label for=\"username\">Username</label>\n    <input type=\"text\" id=\"username\" placeholder=\"Enter your name\">\n    <button type=\"button\" id=\"greet-btn\">Log in</button>\n    <p id=\"greeting\"></p>\n  </main>\n  <script>\n    const input = document.getElementById('username');\n    const button = document.getElementById('greet-btn');\n    const greeting = document.getElementById('greeting');\n\n    button.addEventListener('click', () => {\n      const name = input.value.trim();\n      greeting.textContent = name ? `Hello, ${name}!` : 'Please enter your username.';\n    });\n  </script>\n</body>\n</html>"
+        }
+      ],
+      "checks": [
+        {
+          "id": "check-empty-greeting",
+          "description": "Verify that clicking the button without input shows the error message.",
+          "type": "eventResult",
+          "selector": "#greeting",
+          "expected": "Please enter your username.",
+          "property": "text",
+          "action": {
+            "type": "click",
+            "selector": "#greet-btn"
+          },
+          "requirementRef": "Update #greeting.textContent based on the input value"
+        },
+        {
+          "id": "check-input-value",
+          "description": "Verify that typing into the input updates the value.",
+          "type": "eventResult",
+          "selector": "#username",
+          "expected": "Alice",
+          "property": "value",
+          "action": {
+            "type": "input",
+            "selector": "#username",
+            "value": "Alice"
+          },
+          "requirementRef": "Update #greeting.textContent based on the input value"
+        },
+        {
+          "id": "check-valid-greeting",
+          "description": "Verify that clicking the button with input shows the personalized greeting.",
+          "type": "eventResult",
+          "selector": "#greeting",
+          "expected": "Hello, Alice!",
+          "property": "text",
+          "action": {
+            "type": "click",
+            "selector": "#greet-btn"
+          },
+          "requirementRef": "Update #greeting.textContent based on the input value"
+        }
+      ],
+      "hints": [
+        "Use document.getElementById to grab your elements before adding the event listener.",
+        "Remember to use .trim() on the input value to handle accidental whitespace.",
+        "Use a ternary operator or an if-else statement to check if the name variable has content."
+      ]
+    }
+  ],
+  "finalFiles": [
+    {
+      "path": "index.html",
+      "content": "<!DOCTYPE html>\r\n<html lang=\"en\">\r\n<head>\r\n  <meta charset=\"UTF-8\">\r\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n  <title>Login</title>\r\n  <style>\r\n    body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }\r\n    .login-card { background: #1e293b; padding: 2rem; border-radius: 12px; width: 300px; display: flex; flex-direction: column; gap: 0.75rem; }\r\n    input { padding: 0.6rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: inherit; }\r\n    button { padding: 0.6rem; border: none; border-radius: 6px; background: #22d3ee; color: #0f172a; font-weight: 600; cursor: pointer; }\r\n    #greeting { min-height: 1.5rem; margin: 0; }\r\n  </style>\r\n</head>\r\n<body>\r\n  <main class=\"login-card\">\r\n    <h1>Welcome</h1>\r\n    <label for=\"username\">Username</label>\r\n    <input type=\"text\" id=\"username\" placeholder=\"Enter your name\">\r\n    <button type=\"button\" id=\"greet-btn\">Log in</button>\r\n    <p id=\"greeting\"></p>\r\n  </main>\r\n  <script>\r\n    const input = document.getElementById('username');\r\n    const button = document.getElementById('greet-btn');\r\n    const greeting = document.getElementById('greeting');\r\n\r\n    button.addEventListener('click', () => {\r\n      const name = input.value.trim();\r\n      greeting.textContent = name ? `Hello, ${name}!` : 'Please enter your username.';\r\n    });\r\n  </script>\r\n</body>\r\n</html>"
+    }
+  ]
+}

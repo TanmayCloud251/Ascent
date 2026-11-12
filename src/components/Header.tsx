@@ -3,15 +3,13 @@ import { useApp } from '../context/AppContext'
 import {
   Terminal,
   Cpu,
-  Activity,
-  Layers,
+  Flame,
   Sparkles,
   ChevronDown,
-  User,
-  Shield,
   Check
 } from 'lucide-react'
 import { UserTier } from '../types/ascent'
+import { getUserInitials } from '../utils/learnerStats'
 
 export const Header: React.FC = () => {
   const {
@@ -19,13 +17,14 @@ export const Header: React.FC = () => {
     setScreen,
     currentUser,
     updateCurrentUser,
-    activeSpec,
-    activeProject,
+    streakMetrics,
     loadPresetProject
   } = useApp()
 
   const [isPresetsOpen, setIsPresetsOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+
+  const initials = getUserInitials(currentUser)
 
   const tiers: { id: UserTier; label: string; desc: string }[] = [
     { id: 'tier1', label: 'Tier 1: Guided', desc: 'Step-by-step hints & syntax scaffolding' },
@@ -114,7 +113,7 @@ export const Header: React.FC = () => {
 
       {/* Right User Actions & Profile Session */}
       <div className="flex items-center gap-3">
-        {/* Demo Presets Dropdown */}
+        {/* Preset Ideas Dropdown */}
         <div className="relative">
           <button
             onClick={() => setIsPresetsOpen(!isPresetsOpen)}
@@ -128,7 +127,7 @@ export const Header: React.FC = () => {
           {isPresetsOpen && (
             <div className="absolute right-0 mt-2 w-72 cyber-card p-2 bg-[#10101C] border-[#00F0FF]/40 rounded-xl shadow-2xl z-50 font-mono text-xs space-y-1">
               <div className="px-2 py-1 text-[10px] text-slate-500 uppercase tracking-wider">
-                RAPID DEMO BLUEPRINTS
+                QUICK BLUEPRINTS
               </div>
               <button
                 onClick={() => {
@@ -170,20 +169,37 @@ export const Header: React.FC = () => {
           )}
         </div>
 
-        {/* User Streak */}
-        <div className="hidden sm:flex items-center gap-1.5 bg-[#12121A] border border-white/10 px-2.5 py-1 rounded-full text-xs font-mono">
-          <Activity className="w-3 h-3 text-[#00F0FF]" />
-          <span className="text-slate-400">{currentUser.streakDays}d streak</span>
-        </div>
+        {/* Computed Local-Calendar Current Streak Badge */}
+        <button
+          onClick={() => setScreen(6)}
+          title={streakMetrics.statusLabel}
+          data-testid="navbar-streak-badge"
+          className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono border transition-colors cursor-pointer ${
+            streakMetrics.currentStreak > 0
+              ? 'bg-amber-500/10 border-amber-500/35 text-amber-300 hover:border-amber-400'
+              : 'bg-[#12121A] border-white/10 text-slate-400 hover:border-[#00F0FF]/40'
+          }`}
+        >
+          <Flame
+            className={`w-3.5 h-3.5 ${
+              streakMetrics.currentStreak > 0 ? 'text-amber-400 fill-amber-400' : 'text-slate-500'
+            }`}
+          />
+          <span>{streakMetrics.currentStreak}d streak</span>
+        </button>
 
         {/* User Profile Session Trigger */}
         <div className="relative">
           <button
             onClick={() => setIsProfileOpen(!isProfileOpen)}
+            data-testid="navbar-profile-trigger"
             className="flex items-center gap-2 bg-[#12121A] hover:bg-[#161622] border border-white/10 hover:border-[#00F0FF]/40 pl-2 pr-3 py-1 rounded-full text-xs font-mono transition-colors cursor-pointer"
           >
-            <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 border border-white/20 flex items-center justify-center text-white text-[10px] font-bold">
-              {currentUser.name.substring(0, 2).toUpperCase()}
+            <div
+              data-testid="navbar-avatar-initials"
+              className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 border border-white/20 flex items-center justify-center text-white text-[10px] font-bold"
+            >
+              {initials}
             </div>
             <div className="text-left hidden md:block">
               <span className="text-white font-medium block leading-none">{currentUser.name}</span>
@@ -199,18 +215,33 @@ export const Header: React.FC = () => {
                   ACTIVE PROFILE SESSION
                 </span>
                 <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[9px] border border-emerald-500/30">
-                  INSTANT ONBOARD
+                  PERSISTED
                 </span>
               </div>
 
-              <div>
-                <label className="text-slate-400 text-[11px] block mb-1">Developer Name</label>
-                <input
-                  type="text"
-                  value={currentUser.name}
-                  onChange={(e) => updateCurrentUser({ name: e.target.value })}
-                  className="cyber-input w-full text-xs py-1 px-2"
-                />
+              <div className="grid grid-cols-3 gap-2">
+                <div className="col-span-2">
+                  <label className="text-slate-400 text-[11px] block mb-1">Display Name</label>
+                  <input
+                    type="text"
+                    value={currentUser.name}
+                    onChange={(e) => updateCurrentUser({ name: e.target.value })}
+                    className="cyber-input w-full text-xs py-1 px-2"
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-400 text-[11px] block mb-1">Initials</label>
+                  <input
+                    type="text"
+                    maxLength={3}
+                    placeholder={initials}
+                    value={currentUser.avatarInitials || ''}
+                    onChange={(e) =>
+                      updateCurrentUser({ avatarInitials: e.target.value.toUpperCase().slice(0, 3) })
+                    }
+                    className="cyber-input w-full text-xs py-1 px-2 uppercase text-center"
+                  />
+                </div>
               </div>
 
               <div>

@@ -328,14 +328,40 @@ export const llmService = {
   async generatePage(options: GeneratePageOptions): Promise<GeneratePageResult> {
     const { spec, useTailwind = true, projectMemory, forceRefresh = false } = options
     const requestPayload = { spec, useTailwind, projectMemory }
-    const cacheKey = hashExactPayload('page_1', {
+    const completedPagesCount = projectMemory?.completedPages?.length || 0
+    const pageOrder = completedPagesCount + 1
+    const cacheKey = hashExactPayload(`page_${pageOrder}`, {
       appName: spec.appName,
       useTailwind,
-      fileTree: projectMemory?.fileTree || []
+      fileTree: projectMemory?.fileTree || [],
+      completedPages: (projectMemory?.completedPages || []).map(p => p.fileName),
+      decisionsMade: projectMemory?.decisionsMade || []
     })
 
     if (!forceRefresh) {
-      const cached = storageService.getCachedLLMResponse<PageItem>(cacheKey)
+      const cached = storageService.getCachedLLMResponse<any>(cacheKey)
+      if (cached && cached.projectComplete === true) {
+        const trace: LLMTraceEvent = {
+          id: `tr_${Date.now()}_cache_done`,
+          timestamp: new Date().toISOString(),
+          endpoint: 'POST /api/llm/generate-page',
+          model: 'LLM',
+          requestPayload,
+          rawResponseText: JSON.stringify(cached, null, 2),
+          parsedResult: cached,
+          validationSuccess: true,
+          latencyMs: 0,
+          tokensUsed: '0 (cache hit)',
+          isCached: true
+        }
+        broadcastTrace(trace)
+        return {
+          projectComplete: true,
+          fromCache: true,
+          latencyMs: 0,
+          trace
+        }
+      }
       if (cached && cached.modules && cached.modules.length >= 4) {
         const trace: LLMTraceEvent = {
           id: `tr_${Date.now()}_cache`,
@@ -424,7 +450,10 @@ export const llmService = {
       throw error
     }
 
-    const validation = PageResponseSchema.safeParse(payload)
+    const normalizedPayload = payload?.projectComplete
+      ? { ...payload, projectComplete: true, page: undefined, modules: undefined }
+      : payload
+    const validation = PageResponseSchema.safeParse(normalizedPayload)
     if (!validation.success) {
       const validationErrorMsg = JSON.stringify(validation.error.format(), null, 2)
       const trace: LLMTraceEvent = {
@@ -447,6 +476,7 @@ export const llmService = {
     }
 
     if (validation.data.projectComplete || !validation.data.page) {
+      storageService.setCachedLLMResponse(cacheKey, { projectComplete: true })
       const trace: LLMTraceEvent = {
         id: `tr_${Date.now()}_done`,
         timestamp: new Date().toISOString(),
@@ -470,10 +500,10 @@ export const llmService = {
     }
 
     const pageData = validation.data.page
-    const pageId = `page_${(pageData.fileName || 'index.html').replace(/[^a-z0-9]/gi, '_')}`
+    const pageId = `page_${pageOrder}_${(pageData.fileName || 'index.html').replace(/[^a-z0-9]/gi, '_')}`
 
     const validatedModules: PageModuleItem[] = (validation.data.modules || []).map((m, idx) => ({
-      id: `mod_${idx + 1}`,
+      id: `p${pageOrder}_mod_${idx + 1}`,
       pageId,
       order: idx + 1,
       title: m.title,
@@ -485,7 +515,7 @@ export const llmService = {
     const pageItem: PageItem = {
       id: pageId,
       projectId: projectMemory?.projectId || 'current_project',
-      order: 1,
+      order: pageOrder,
       name: pageData.name,
       description: pageData.description,
       fileName: pageData.fileName,
@@ -535,6 +565,7 @@ export const llmService = {
     const cacheKey = hashExactPayload(`mod_content_${module.id}`, {
       specAppName: spec.appName,
       pageName: page?.name,
+      pageFileName: page?.fileName,
       moduleTitle: module.title,
       useTailwind,
       currentFiles
@@ -590,6 +621,7 @@ export const llmService = {
         validationError: errorMsg,
         latencyMs,
         isCached: false,
+        harnessResults: payload.verification,
         error: errorMsg
       }
       broadcastTrace(trace)
@@ -611,6 +643,7 @@ export const llmService = {
         validationError: errorMsg,
         latencyMs,
         isCached: false,
+        harnessResults: payload.verification,
         error: errorMsg
       }
       broadcastTrace(trace)
@@ -677,6 +710,7 @@ export const llmService = {
         validationError: errorMsg,
         latencyMs,
         isCached: false,
+        harnessResults: payload.verification,
         error: errorMsg
       }
       broadcastTrace(trace)
