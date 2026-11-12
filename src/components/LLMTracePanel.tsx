@@ -15,7 +15,8 @@ import {
   Check,
   Server,
   Zap,
-  Clock
+  Clock,
+  Sparkles
 } from 'lucide-react'
 
 export const LLMTracePanel: React.FC = () => {
@@ -59,7 +60,9 @@ export const LLMTracePanel: React.FC = () => {
           <button
             onClick={() => setIsOpen(!isOpen)}
             className={`px-3 py-1.5 rounded-t-lg border border-b-0 font-mono text-xs flex items-center gap-2 shadow-2xl transition-all cursor-pointer ${
-              trace?.isCached
+              trace?.isCurated
+                ? 'bg-[#180B1E] border-purple-500/40 text-purple-300 hover:bg-[#220f2b]'
+                : trace?.isCached
                 ? 'bg-[#18140B] border-amber-500/40 text-amber-300 hover:bg-[#221c0f]'
                 : trace
                 ? 'bg-[#0B151A] border-[#00F0FF]/40 text-[#00F0FF] hover:bg-[#0f1f26]'
@@ -74,17 +77,19 @@ export const LLMTracePanel: React.FC = () => {
                 <span className="text-slate-600">|</span>
                 <span
                   className={`px-1.5 py-0.2 rounded text-[10px] font-bold tracking-wider ${
-                    trace.isCached
+                    trace.isCurated
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                      : trace.isCached
                       ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
                       : trace.error
                       ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                       : 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30'
                   }`}
                 >
-                  {trace.isCached ? 'CACHED' : trace.error ? 'ERROR' : 'LIVE'}
+                  {trace.isCurated ? 'PRE-BUILT' : trace.isCached ? 'CACHED' : trace.error ? 'ERROR' : 'LIVE'}
                 </span>
                 <span className="text-slate-400 text-[11px] hidden sm:inline">
-                  {trace.latencyMs}ms
+                  {trace.isCurated ? 'STATIC' : `${trace.latencyMs}ms`}
                 </span>
                 <span className="text-slate-500 text-[10px] hidden md:inline">
                   {trace.model}
@@ -109,7 +114,11 @@ export const LLMTracePanel: React.FC = () => {
                   <span className="text-white font-bold text-sm">LLM Execution Inspector</span>
                 </div>
 
-                {trace?.isCached ? (
+                {trace?.isCurated ? (
+                  <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold text-[11px] flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-purple-400" /> PRE-BUILT CURATED CONTENT (NO LLM CALL)
+                  </span>
+                ) : trace?.isCached ? (
                   <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[11px] flex items-center gap-1">
                     <Zap className="w-3 h-3" /> CACHED RESPONSE (0 TOKENS)
                   </span>
