@@ -1,0 +1,361 @@
+{
+  "slug": "rock-paper-scissors",
+  "title": "Rock Paper Scissors",
+  "shortDescription": "Classic interactive game against computer AI with score tracking and animations.",
+  "difficulty": "beginner",
+  "estimatedHours": 2.5,
+  "useTailwind": false,
+  "spec": {
+    "appName": "Rock Paper Scissors",
+    "tagline": "Classic hand showdown against an automated opponent with score tracking.",
+    "summary": "An engaging, responsive Rock Paper Scissors arcade web game. Features player move selection, computer choice generation, instant victory resolution, and score persistence in LocalStorage.",
+    "targetAudience": "Gamers and learners exploring interactive DOM manipulation and randomized state handling.",
+    "primaryFeatures": [
+      {
+        "name": "Interactive Choice Arena",
+        "description": "Large responsive buttons for Rock, Paper, and Scissors with tactile hover feedback."
+      },
+      {
+        "name": "Battle Outcome Resolver",
+        "description": "Instant comparison between player and computer choices with colored win/lose feedback."
+      },
+      {
+        "name": "Persistent Score Tracker",
+        "description": "Running win counters stored in browser LocalStorage with reset capability."
+      }
+    ],
+    "userFlows": [
+      {
+        "flowName": "Play a Round",
+        "steps": [
+          "Click on one of the move buttons (Rock, Paper, or Scissors).",
+          "Observe computer move reveal and round verdict.",
+          "Check updated score tracker at the top.",
+          "Click Reset Score when ready to start fresh."
+        ]
+      }
+    ],
+    "dataEntities": [
+      {
+        "name": "GameScores",
+        "storageKey": "rps_game_scores_v1",
+        "fields": [
+          { "name": "player", "type": "number", "description": "Total player wins" },
+          { "name": "computer", "type": "number", "description": "Total computer wins" }
+        ]
+      }
+    ],
+    "techStack": {
+      "runtime": "HTML + CSS + JavaScript",
+      "styling": "Plain CSS",
+      "stateManagement": "Browser In-Memory State / DOM",
+      "backendSim": "In-Browser LocalStorage / IndexedDB",
+      "useTailwind": false
+    },
+    "useTailwind": false,
+    "architectureHighlights": [
+      "Semantic HTML structure with decoupled CSS design tokens",
+      "Deterministic game resolution mapping using pure JS functions",
+      "State synchronization between DOM text nodes and LocalStorage"
+    ],
+    "assumptions": [
+      "Randomized computer opponent using Math.random()",
+      "Single-player offline gameplay stored on local device"
+    ],
+    "outOfScope": [
+      "Multiplayer WebSockets networking",
+      "Complex audio synthesizers or 3D animations"
+    ],
+    "estimatedScreenCount": 1,
+    "difficulty": "beginner",
+    "estimatedHours": 2.5
+  },
+  "page": {
+    "id": "page_rock_paper_scissors",
+    "projectId": "proj_curated_rps",
+    "order": 1,
+    "name": "Rock Paper Scissors Arena",
+    "description": "Single-page arcade game arena featuring score board, player choice buttons, battle display, and game controls.",
+    "fileName": "index.html",
+    "purpose": "Provide a complete browser-based Rock Paper Scissors game.",
+    "status": "active",
+    "modules": [
+      {
+        "id": "mod_1",
+        "pageId": "page_rock_paper_scissors",
+        "order": 1,
+        "title": "Set Up HTML5 Doctype and Stylesheet Link",
+        "learningObjective": "Create the document skeleton with viewport metadata and external CSS linking.",
+        "componentType": "document-head",
+        "status": "active"
+      },
+      {
+        "id": "mod_2",
+        "pageId": "page_rock_paper_scissors",
+        "order": 2,
+        "title": "Build Game Container and Scoreboard",
+        "learningObjective": "Construct the outer container and score board elements displaying player and computer scores.",
+        "componentType": "header",
+        "status": "locked"
+      },
+      {
+        "id": "mod_3",
+        "pageId": "page_rock_paper_scissors",
+        "order": 3,
+        "title": "Build Interactive Move Selection Buttons",
+        "learningObjective": "Implement button elements with data-choice attributes for Rock, Paper, and Scissors.",
+        "componentType": "form",
+        "status": "locked"
+      },
+      {
+        "id": "mod_4",
+        "pageId": "page_rock_paper_scissors",
+        "order": 4,
+        "title": "Create Battle Arena Display and Reset Button",
+        "learningObjective": "Build hand reveal display boxes, round status text, and the game reset action button.",
+        "componentType": "content-block",
+        "status": "locked"
+      },
+      {
+        "id": "mod_5",
+        "pageId": "page_rock_paper_scissors",
+        "order": 5,
+        "title": "Wire Game Logic, Outcome Evaluation, and LocalStorage",
+        "learningObjective": "Implement JavaScript round evaluation, DOM updates, and score persistence in LocalStorage.",
+        "componentType": "script-behavior",
+        "status": "locked"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "id": "mod_1",
+      "pageId": "page_rock_paper_scissors",
+      "order": 1,
+      "title": "Set Up HTML5 Doctype and Stylesheet Link",
+      "learningObjective": "Create the document skeleton with viewport metadata and external CSS linking.",
+      "componentType": "document-head",
+      "status": "active",
+      "lesson": "# Initializing the Game Shell\n\nResponsive gaming experiences require an accurate viewport setup. In this first module, you create the HTML shell linking `styles.css`.",
+      "task": "In `index.html`, set up the doctype, html tag, head tag with title 'Rock Paper Scissors' and link to `styles.css`, and an empty body.",
+      "starterFiles": [
+        { "path": "index.html", "content": "" },
+        { "path": "styles.css", "content": "/* Arcade Theme */\n" }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Rock Paper Scissors</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n</body>\n</html>\n"
+        },
+        { "path": "styles.css", "content": "/* Arcade Theme */\n" }
+      ],
+      "checks": [
+        {
+          "id": "chk_title_rps",
+          "description": "Title tag says Rock Paper Scissors",
+          "type": "textContains",
+          "selector": "title",
+          "expected": "Rock Paper Scissors"
+        }
+      ],
+      "hints": [
+        "Include `<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">`."
+      ]
+    },
+    {
+      "id": "mod_2",
+      "pageId": "page_rock_paper_scissors",
+      "order": 2,
+      "title": "Build Game Container and Scoreboard",
+      "learningObjective": "Construct the outer container and score board elements displaying player and computer scores.",
+      "componentType": "header",
+      "status": "locked",
+      "lesson": "# Designing the Arcade Scoreboard\n\nA prominent scoreboard at the top of the interface provides instant motivation and shows real-time progress.",
+      "task": "Inside `<body>`, add `.game-container` with a `<header class=\"game-header\">` containing an `h1` and `.score-board` with `#player-score` and `#computer-score`.",
+      "starterFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Rock Paper Scissors</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n</body>\n</html>\n"
+        },
+        { "path": "styles.css", "content": "/* Base */\n" }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <title>Rock Paper Scissors</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"game-container\">\n    <header class=\"game-header\">\n      <h1 class=\"game-title\">Rock Paper Scissors</h1>\n      <div class=\"score-board\">\n        <div class=\"score-card\">\n          <span class=\"score-label\">Player</span>\n          <span id=\"player-score\" class=\"score-value\">0</span>\n        </div>\n        <span class=\"score-divider\">:</span>\n        <div class=\"score-card\">\n          <span class=\"score-label\">Computer</span>\n          <span id=\"computer-score\" class=\"score-value\">0</span>\n        </div>\n      </div>\n    </header>\n  </div>\n</body>\n</html>\n"
+        },
+        {
+          "path": "styles.css",
+          "content": "body {\n  font-family: sans-serif;\n  background-color: #0b0f19;\n  color: #f8fafc;\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  margin: 0;\n}\n.game-container {\n  background: #151c2e;\n  padding: 2rem;\n  border-radius: 1rem;\n  text-align: center;\n  max-width: 480px;\n  width: 100%;\n}\n.game-title {\n  color: #a855f7;\n  margin-bottom: 1rem;\n}\n.score-board {\n  display: flex;\n  justify-content: center;\n  gap: 1.5rem;\n  font-size: 1.25rem;\n}\n"
+        }
+      ],
+      "checks": [
+        {
+          "id": "chk_score_player",
+          "description": "Player score element exists with ID player-score",
+          "type": "elementExists",
+          "selector": "#player-score"
+        },
+        {
+          "id": "chk_score_computer",
+          "description": "Computer score element exists with ID computer-score",
+          "type": "elementExists",
+          "selector": "#computer-score"
+        }
+      ],
+      "hints": [
+        "Create spans with IDs `#player-score` and `#computer-score`."
+      ]
+    },
+    {
+      "id": "mod_3",
+      "pageId": "page_rock_paper_scissors",
+      "order": 3,
+      "title": "Build Interactive Move Selection Buttons",
+      "learningObjective": "Implement button elements with data-choice attributes for Rock, Paper, and Scissors.",
+      "componentType": "form",
+      "status": "locked",
+      "lesson": "# Data Attributes for Event Delegation\n\nUsing `data-choice=\"rock\"` attributes on action buttons allows clean, DRY event delegation in JavaScript.",
+      "task": "Add `<main class=\"game-arena\">` containing `<div class=\"choices-container\">` with three buttons having `class=\"choice-btn\"` and `data-choice` values 'rock', 'paper', and 'scissors'.",
+      "starterFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><title>RPS</title></head>\n<body>\n  <div class=\"game-container\">\n    <header class=\"game-header\">\n      <span id=\"player-score\">0</span>\n      <span id=\"computer-score\">0</span>\n    </header>\n  </div>\n</body>\n</html>\n"
+        },
+        { "path": "styles.css", "content": "/* Styles */\n" }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><title>RPS</title></head>\n<body>\n  <div class=\"game-container\">\n    <header class=\"game-header\">\n      <span id=\"player-score\">0</span>\n      <span id=\"computer-score\">0</span>\n    </header>\n    <main class=\"game-arena\">\n      <div class=\"choices-container\">\n        <button class=\"choice-btn\" data-choice=\"rock\">✊</button>\n        <button class=\"choice-btn\" data-choice=\"paper\">✋</button>\n        <button class=\"choice-btn\" data-choice=\"scissors\">✌️</button>\n      </div>\n    </main>\n  </div>\n</body>\n</html>\n"
+        },
+        {
+          "path": "styles.css",
+          "content": ".choices-container {\n  display: flex;\n  justify-content: center;\n  gap: 1rem;\n  margin: 1.5rem 0;\n}\n.choice-btn {\n  font-size: 2rem;\n  padding: 1rem;\n  background: #0b0f19;\n  border: 2px solid #232f48;\n  border-radius: 0.75rem;\n  cursor: pointer;\n}\n"
+        }
+      ],
+      "checks": [
+        {
+          "id": "chk_choice_rock",
+          "description": "Choice button for rock exists",
+          "type": "elementExists",
+          "selector": ".choice-btn[data-choice='rock']"
+        },
+        {
+          "id": "chk_choice_paper",
+          "description": "Choice button for paper exists",
+          "type": "elementExists",
+          "selector": ".choice-btn[data-choice='paper']"
+        }
+      ],
+      "hints": [
+        "Set `data-choice=\"rock\"`, `data-choice=\"paper\"`, `data-choice=\"scissors\"`."
+      ]
+    },
+    {
+      "id": "mod_4",
+      "pageId": "page_rock_paper_scissors",
+      "order": 4,
+      "title": "Create Battle Arena Display and Reset Button",
+      "learningObjective": "Build hand reveal display boxes, round status text, and the game reset action button.",
+      "componentType": "content-block",
+      "status": "locked",
+      "lesson": "# Reveal Cards & Battle Feedback\n\nVisual feedback turns inputs into game excitement. We create hand icons and round result text.",
+      "task": "Add `<div class=\"battle-display\">` with `#player-hand`, `#round-result`, and `#computer-hand`. Add `<footer class=\"game-footer\">` with `<button id=\"reset-btn\" class=\"reset-button\">Reset Score</button>`.",
+      "starterFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html><body><div class=\"game-container\"><main class=\"game-arena\"><div class=\"choices-container\"><button class=\"choice-btn\" data-choice=\"rock\">✊</button></div></main></div></body></html>"
+        },
+        { "path": "styles.css", "content": "/* Battle */" }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html><body><div class=\"game-container\">\n<main class=\"game-arena\">\n  <div class=\"choices-container\"><button class=\"choice-btn\" data-choice=\"rock\">✊</button></div>\n  <div class=\"battle-display\">\n    <span id=\"player-hand\">❓</span>\n    <p id=\"round-result\">Choose your move!</p>\n    <span id=\"computer-hand\">❓</span>\n  </div>\n</main>\n<footer class=\"game-footer\">\n  <button id=\"reset-btn\" class=\"reset-button\">Reset Score</button>\n</footer>\n</div></body></html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ".battle-display { display: flex; justify-content: space-around; align-items: center; margin: 1rem 0; }\n#round-result { font-weight: bold; }\n"
+        }
+      ],
+      "checks": [
+        {
+          "id": "chk_round_result",
+          "description": "Round result text element exists",
+          "type": "elementExists",
+          "selector": "#round-result"
+        },
+        {
+          "id": "chk_reset_button",
+          "description": "Reset score button exists",
+          "type": "elementExists",
+          "selector": "#reset-btn"
+        }
+      ],
+      "hints": [
+        "Include `#round-result` and `#reset-btn`."
+      ]
+    },
+    {
+      "id": "mod_5",
+      "pageId": "page_rock_paper_scissors",
+      "order": 5,
+      "title": "Wire Game Logic, Outcome Evaluation, and LocalStorage",
+      "learningObjective": "Implement JavaScript round evaluation, DOM updates, and score persistence in LocalStorage.",
+      "componentType": "script-behavior",
+      "status": "locked",
+      "lesson": "# Game Logic and Outcome Resolution\n\nWe connect event listeners to calculate the winner according to classic rules: Rock crushes Scissors, Scissors cut Paper, Paper covers Rock.",
+      "task": "Link `<script src=\"app.js\"></script>` in `index.html`. Implement computer move selection, round winner calculation, DOM text updating, and score persistence to `localStorage` in `app.js`.",
+      "starterFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html><body><div class=\"game-container\"><span id=\"player-score\">0</span><span id=\"computer-score\">0</span><button class=\"choice-btn\" data-choice=\"rock\">✊</button><span id=\"player-hand\"></span><p id=\"round-result\"></p><span id=\"computer-hand\"></span><button id=\"reset-btn\"></button></div></body></html>"
+        },
+        { "path": "app.js", "content": "// Logic" }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html><body><div class=\"game-container\"><span id=\"player-score\">0</span><span id=\"computer-score\">0</span><button class=\"choice-btn\" data-choice=\"rock\">✊</button><span id=\"player-hand\"></span><p id=\"round-result\"></p><span id=\"computer-hand\"></span><button id=\"reset-btn\"></button></div><script src=\"app.js\"></script></body></html>"
+        },
+        {
+          "path": "app.js",
+          "content": "const choices = ['rock', 'paper', 'scissors'];\nconst playerScoreEl = document.getElementById('player-score');\nconst computerScoreEl = document.getElementById('computer-score');\nconst roundResultEl = document.getElementById('round-result');\nlet scores = { player: 0, computer: 0 };\n\nfunction playRound(playerChoice) {\n  const comp = choices[Math.floor(Math.random() * choices.length)];\n  if (playerChoice === comp) {\n    roundResultEl.textContent = 'Tie!';\n  } else if ((playerChoice==='rock'&&comp==='scissors')||(playerChoice==='paper'&&comp==='rock')||(playerChoice==='scissors'&&comp==='paper')) {\n    scores.player++;\n    playerScoreEl.textContent = scores.player;\n    roundResultEl.textContent = 'You win!';\n  } else {\n    scores.computer++;\n    computerScoreEl.textContent = scores.computer;\n    roundResultEl.textContent = 'You lose!';\n  }\n}\ndocument.querySelectorAll('.choice-btn').forEach(b => b.addEventListener('click', () => playRound(b.dataset.choice)));\n"
+        }
+      ],
+      "checks": [
+        {
+          "id": "chk_script_rps",
+          "description": "Script tag links to app.js",
+          "type": "attributeEquals",
+          "selector": "script[src='app.js']",
+          "expected": "app.js"
+        },
+        {
+          "id": "chk_playround_def",
+          "description": "playRound function is declared",
+          "type": "scriptDefines",
+          "expected": "playRound"
+        }
+      ],
+      "hints": [
+        "Use `document.querySelectorAll('.choice-btn')` to add click listeners."
+      ]
+    }
+  ],
+  "finalFiles": [
+    {
+      "path": "index.html",
+      "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Rock Paper Scissors</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"game-container\">\n    <header class=\"game-header\">\n      <h1 class=\"game-title\">Rock Paper Scissors</h1>\n      <div class=\"score-board\">\n        <div class=\"score-card\">\n          <span class=\"score-label\">Player</span>\n          <span id=\"player-score\" class=\"score-value\">0</span>\n        </div>\n        <span class=\"score-divider\">:</span>\n        <div class=\"score-card\">\n          <span class=\"score-label\">Computer</span>\n          <span id=\"computer-score\" class=\"score-value\">0</span>\n        </div>\n      </div>\n    </header>\n    <main class=\"game-arena\">\n      <div class=\"choices-container\">\n        <button class=\"choice-btn\" data-choice=\"rock\" title=\"Rock\">✊</button>\n        <button class=\"choice-btn\" data-choice=\"paper\" title=\"Paper\">✋</button>\n        <button class=\"choice-btn\" data-choice=\"scissors\" title=\"Scissors\">✌️</button>\n      </div>\n      <div class=\"battle-display\">\n        <div class=\"hand-box\">\n          <span class=\"hand-label\">You Picked</span>\n          <span id=\"player-hand\" class=\"hand-icon\">❓</span>\n        </div>\n        <div class=\"status-box\">\n          <p id=\"round-result\" class=\"round-result\">Choose your move to start!</p>\n        </div>\n        <div class=\"hand-box\">\n          <span class=\"hand-label\">Computer Picked</span>\n          <span id=\"computer-hand\" class=\"hand-icon\">❓</span>\n        </div>\n      </div>\n    </main>\n    <footer class=\"game-footer\">\n      <button id=\"reset-btn\" class=\"reset-button\">Reset Score</button>\n    </footer>\n  </div>\n  <script src=\"app.js\"></script>\n</body>\n</html>\n"
+    },
+    {
+      "path": "styles.css",
+      "content": ":root {\n  --bg-color: #0b0f19;\n  --card-bg: #151c2e;\n  --primary: #a855f7;\n  --text-main: #f8fafc;\n  --text-muted: #94a3b8;\n  --border: #232f48;\n}\n* { box-sizing: border-box; margin: 0; padding: 0; }\nbody {\n  font-family: sans-serif;\n  background-color: var(--bg-color);\n  color: var(--text-main);\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 1rem;\n}\n.game-container {\n  background-color: var(--card-bg);\n  border: 1px solid var(--border);\n  border-radius: 1.25rem;\n  width: 100%;\n  max-width: 500px;\n  padding: 2rem;\n  text-align: center;\n}\n.game-title {\n  font-size: 1.5rem;\n  font-weight: 800;\n  color: var(--primary);\n  margin-bottom: 1.25rem;\n}\n.score-board {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 1.5rem;\n  background: #0b0f19;\n  border: 1px solid var(--border);\n  border-radius: 0.75rem;\n  padding: 0.75rem 1.5rem;\n  width: fit-content;\n  margin: 0 auto;\n}\n.score-card { display: flex; flex-direction: column; }\n.score-label { font-size: 0.75rem; color: var(--text-muted); }\n.score-value { font-size: 1.75rem; font-weight: 800; }\n.score-divider { font-size: 1.5rem; color: var(--border); }\n.choices-container {\n  display: flex;\n  justify-content: center;\n  gap: 1rem;\n  margin-bottom: 2rem;\n}\n.choice-btn {\n  background: #0b0f19;\n  border: 2px solid var(--border);\n  border-radius: 1rem;\n  width: 5rem;\n  height: 5rem;\n  font-size: 2.25rem;\n  cursor: pointer;\n}\n.battle-display {\n  background: #0b0f19;\n  border: 1px solid var(--border);\n  border-radius: 0.75rem;\n  padding: 1.25rem;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  margin-bottom: 1.5rem;\n}\n.hand-box { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; flex: 1; }\n.hand-label { font-size: 0.7rem; color: var(--text-muted); }\n.hand-icon { font-size: 2.5rem; }\n.status-box { flex: 1.2; }\n.round-result { font-size: 0.95rem; font-weight: 600; }\n.game-footer { border-top: 1px solid var(--border); padding-top: 1.25rem; }\n.reset-button {\n  background: transparent;\n  border: 1px solid var(--border);\n  color: var(--text-muted);\n  padding: 0.5rem 1.25rem;\n  border-radius: 0.5rem;\n  cursor: pointer;\n}\n"
+    },
+    {
+      "path": "app.js",
+      "content": "const choices = ['rock', 'paper', 'scissors'];\nconst icons = { rock: '✊', paper: '✋', scissors: '✌️' };\nconst playerScoreEl = document.getElementById('player-score');\nconst computerScoreEl = document.getElementById('computer-score');\nconst playerHandEl = document.getElementById('player-hand');\nconst computerHandEl = document.getElementById('computer-hand');\nconst roundResultEl = document.getElementById('round-result');\nconst resetBtn = document.getElementById('reset-btn');\nlet scores = { player: 0, computer: 0 };\n\nfunction playRound(playerChoice) {\n  const computerChoice = choices[Math.floor(Math.random() * choices.length)];\n  playerHandEl.textContent = icons[playerChoice];\n  computerHandEl.textContent = icons[computerChoice];\n  if (playerChoice === computerChoice) {\n    roundResultEl.textContent = \"It's a tie!\";\n  } else if ((playerChoice === 'rock' && computerChoice === 'scissors') || (playerChoice === 'paper' && computerChoice === 'rock') || (playerChoice === 'scissors' && computerChoice === 'paper')) {\n    scores.player++;\n    playerScoreEl.textContent = scores.player;\n    roundResultEl.textContent = `You win! ${playerChoice} beats ${computerChoice}.`;\n  } else {\n    scores.computer++;\n    computerScoreEl.textContent = scores.computer;\n    roundResultEl.textContent = `You lose! ${computerChoice} beats ${playerChoice}.`;\n  }\n}\ndocument.querySelectorAll('.choice-btn').forEach(btn => btn.addEventListener('click', () => playRound(btn.dataset.choice)));\nresetBtn.addEventListener('click', () => {\n  scores = { player: 0, computer: 0 };\n  playerScoreEl.textContent = '0';\n  computerScoreEl.textContent = '0';\n  roundResultEl.textContent = 'Choose your move to start!';\n});\n"
+    }
+  ]
+}

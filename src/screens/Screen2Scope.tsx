@@ -1,360 +1,504 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useApp } from '../context/AppContext'
-import { ArrowLeft, ArrowRight, Check, Plus, X, Layers, Clock, Sparkles, HelpCircle } from 'lucide-react'
-
-const CLARIFYING_OPTIONS = [
-  {
-    id: 'a',
-    title: 'Stripe Embedded Checkout',
-    badge: 'RECOMMENDED',
-    description: 'Full PCI-compliant modal flow with hosted secure elements and Apple Pay/Google Pay integration.'
-  },
-  {
-    id: 'b',
-    title: 'Custom Multi-Step Cart & API',
-    description: 'Direct server-side payment intent orchestrator paired with custom tailored checkout steps and analytics hooks.'
-  },
-  {
-    id: 'c',
-    title: 'External Redirect',
-    tag: 'Shopify / LemonSqueezy',
-    description: 'Hands off cart inventory and customer billing sessions entirely to a trusted 3rd-party checkout host.'
-  },
-  {
-    id: 'd',
-    title: 'Mock / Sandbox Mode',
-    badge: 'Zero Setup',
-    description: 'Local browser state simulation for rapid UX wireframing without requiring live gateway credentials.'
-  }
-]
+import {
+  ArrowLeft,
+  ArrowRight,
+  Sparkles,
+  Cpu,
+  Layers,
+  Code2,
+  RefreshCw,
+  CheckCircle2,
+  BookmarkCheck,
+  Zap,
+  Terminal,
+  ShieldAlert,
+  Database,
+  GitBranch,
+  Clock,
+  Gauge,
+  AlertTriangle,
+  Ban
+} from 'lucide-react'
 
 export const Screen2Scope: React.FC = () => {
   const {
-    activeProject,
-    confirmScope,
-    addScreenToScope,
-    removeScreenFromScope,
+    activeSpec,
+    activePrompt,
+    specStage,
+    specError,
+    isGeneratingSpec,
+    lastGenerationFromCache,
+    retryGenerateSpec,
+    generateProjectSpec,
+    confirmProjectSpec,
     setScreen,
-    clarifyingQuestionAnswered,
-    setClarifyingAnswered
+    activeProject,
+    loadCuratedProject
   } = useApp()
 
-  const [selectedClarifyingId, setSelectedClarifyingId] = useState('a')
-  const [newScreenName, setNewScreenName] = useState('')
-  const [newScreenDesc, setNewScreenDesc] = useState('')
-  const [isAddingScreen, setIsAddingScreen] = useState(false)
-  const [techStackTags, setTechStackTags] = useState<string[]>(
-    activeProject?.techStack || ['React 19', 'Next.js (App Router)', 'Tailwind CSS', 'Stripe API', 'SQLite / Drizzle']
-  )
-  const [newTagInput, setNewTagInput] = useState('')
-  const [isAddingTag, setIsAddingTag] = useState(false)
+  // =========================================================================
+  // STATE 1: ACTIVE GENERATION TELEMETRY & LOADING CONSOLE
+  // =========================================================================
+  if (isGeneratingSpec) {
+    const stageDetails: Record<string, string> = {
+      idle: 'Initializing request...',
+      analyzing: 'Parsing domain requirements & constraints...',
+      synthesizing: 'Calling LLM with structured spec schema...',
+      validating: 'Verifying Zod runtime contracts & schema integrity...',
+      done: 'Specification compiled successfully.',
+      error: 'An error occurred during generation.'
+    }
 
-  const plannedScreens = activeProject?.plannedScreens || []
-
-  const handleAddScreenSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newScreenName.trim()) return
-    addScreenToScope(newScreenName, newScreenDesc || 'Custom screen component and logic')
-    setNewScreenName('')
-    setNewScreenDesc('')
-    setIsAddingScreen(false)
-  }
-
-  const handleAddTagSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newTagInput.trim()) return
-    setTechStackTags([...techStackTags, newTagInput.trim()])
-    setNewTagInput('')
-    setIsAddingTag(false)
-  }
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTechStackTags(techStackTags.filter(t => t !== tagToRemove))
-  }
-
-  // Render Clarifying Question view first if not answered yet
-  if (!clarifyingQuestionAnswered) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
-        <div className="w-full max-w-3xl space-y-8">
-          
-          {/* Header Bar */}
-          <div className="flex items-center justify-between text-xs font-mono text-slate-400">
-            <button
-              onClick={() => setScreen(1)}
-              className="flex items-center gap-1.5 hover:text-white transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> BACK TO PROMPT
-            </button>
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00F0FF]"></span>
-                SYS.STATE // AWAITING_INPUT
-              </span>
-              <span>STEP <strong className="text-[#00F0FF]">02</strong> / 04</span>
-            </div>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden bg-[#0A0A0F]">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[300px] bg-[#00F0FF]/10 blur-[130px] pointer-events-none rounded-full" />
+
+        <div className="w-full max-w-2xl space-y-6 relative z-10 font-mono">
+          <div className="flex items-center justify-between text-xs text-slate-400 pb-2 border-b border-white/10">
+            <span className="flex items-center gap-2 text-[#00F0FF]">
+              <Cpu className="w-4 h-4 animate-spin text-[#00F0FF]" />
+              <span>ORCHESTRATOR // SPECIFICATION SYNTHESIS</span>
+            </span>
+            <span className="text-slate-500 text-[11px]">MODEL: LLM</span>
           </div>
 
-          {/* Question Title */}
-          <div className="text-center space-y-2">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-[#00F0FF]/10 text-[#00F0FF] border border-[#00F0FF]/30 text-xs font-mono">
-              <HelpCircle className="w-3.5 h-3.5" /> QUESTION 01 // ARCHITECTURAL SCOPE
+          <div className="cyber-card p-6 bg-[#0B0B14] border-[#00F0FF]/40 space-y-5 shadow-2xl rounded-xl">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-display font-bold text-white tracking-tight flex items-center gap-2">
+                  <span>Synthesizing Spec for</span>
+                  <span className="text-[#00F0FF]">"{activePrompt ? activePrompt.slice(0, 32) + '...' : 'Project'}"</span>
+                </h3>
+                <span className="px-2 py-0.5 rounded bg-[#00F0FF]/10 text-[#00F0FF] text-[10px] font-mono border border-[#00F0FF]/30">
+                  REAL RUNTIME LLM
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-sans">
+                Ascent is inferring architecture details, data entities, user flows, and boundary constraints.
+              </p>
             </div>
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight leading-tight">
-              How will customers complete<br />purchases on this store?
-            </h2>
-          </div>
 
-          {/* Options Cards List */}
-          <div className="space-y-3">
-            {CLARIFYING_OPTIONS.map((opt) => (
-              <button
-                key={opt.id}
-                onClick={() => setSelectedClarifyingId(opt.id)}
-                className={`w-full text-left p-4 rounded-xl border transition-all flex items-start justify-between gap-4 ${
-                  selectedClarifyingId === opt.id
-                    ? 'bg-[#141424] border-[#00F0FF] shadow-lg shadow-[#00F0FF]/10'
-                    : 'bg-[#101018] border-white/10 hover:border-white/20'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <span className={`w-6 h-6 rounded flex items-center justify-center font-mono text-xs font-bold shrink-0 mt-0.5 ${
-                    selectedClarifyingId === opt.id ? 'bg-[#00F0FF] text-black' : 'bg-white/10 text-slate-400'
-                  }`}>
-                    {opt.id.toUpperCase()}
-                  </span>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="text-base font-semibold text-white">{opt.title}</h4>
-                      {opt.badge && (
-                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
-                          opt.badge === 'RECOMMENDED' ? 'bg-[#00F0FF]/20 text-[#00F0FF] border border-[#00F0FF]/40' : 'bg-emerald-500/20 text-emerald-400'
-                        }`}>
-                          {opt.badge}
-                        </span>
-                      )}
-                      {opt.tag && (
-                        <span className="text-[10px] font-mono text-slate-500">{opt.tag}</span>
+            <div className="space-y-3 text-xs">
+              {[
+                { stage: 'analyzing', title: '1. Domain & Constraint Inference', desc: 'Analyzing prompt, user flows, and vanilla web requirements' },
+                { stage: 'synthesizing', title: '2. Gemini Structured Spec Synthesis', desc: 'Generating features, data entities, assumptions, and out-of-scope boundaries' },
+                { stage: 'validating', title: '3. Zod Runtime Validation', desc: 'Verifying payload against strict ProjectSpecSchema' }
+              ].map((step, idx) => {
+                const isCurrent = specStage === step.stage
+                const isPast = (specStage === 'synthesizing' && idx === 0) || (specStage === 'validating' && idx <= 1)
+
+                return (
+                  <div
+                    key={step.title}
+                    className={`p-3 rounded-lg border transition-all flex items-start gap-3 ${
+                      isCurrent
+                        ? 'bg-[#00F0FF]/10 border-[#00F0FF]/50 text-white'
+                        : isPast
+                        ? 'bg-black/40 border-emerald-500/30 text-slate-300'
+                        : 'bg-black/20 border-white/5 text-slate-500'
+                    }`}
+                  >
+                    <div className="shrink-0 mt-0.5">
+                      {isPast ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                      ) : isCurrent ? (
+                        <div className="w-4 h-4 rounded-full border-2 border-[#00F0FF] border-t-transparent animate-spin" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border border-slate-700 flex items-center justify-center text-[10px]">
+                          {idx + 1}
+                        </div>
                       )}
                     </div>
-                    <p className="text-xs text-slate-400 leading-relaxed font-sans">{opt.description}</p>
+                    <div className="space-y-0.5">
+                      <div className="font-semibold flex items-center gap-2">
+                        <span>{step.title}</span>
+                        {isCurrent && <span className="text-[10px] text-[#00F0FF] animate-pulse">In Progress...</span>}
+                      </div>
+                      <p className="text-[11px] text-slate-400 font-sans">{step.desc}</p>
+                    </div>
                   </div>
-                </div>
+                )
+              })}
+            </div>
 
-                <div className="shrink-0 mt-1">
-                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                    selectedClarifyingId === opt.id ? 'border-[#00F0FF] bg-[#00F0FF]' : 'border-slate-600'
-                  }`}>
-                    {selectedClarifyingId === opt.id && <Check className="w-3.5 h-3.5 text-black stroke-[3]" />}
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          {/* Action Confirm Button */}
-          <div className="text-center space-y-3 pt-2">
-            <button
-              onClick={() => setClarifyingAnswered(true)}
-              className="cyber-btn-primary px-8 py-3.5 text-base w-full max-w-md mx-auto justify-center"
-            >
-              <span>CONFIRM & GENERATE PLAN</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            <p>
-              <button
-                onClick={() => setClarifyingAnswered(true)}
-                className="text-xs font-mono text-slate-500 hover:text-slate-300 underline underline-offset-4"
-              >
-                Skip for now (use recommended default)
-              </button>
-            </p>
+            <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500">
+              <span className="flex items-center gap-2 text-cyan-300">
+                <span className="w-2 h-2 rounded-full bg-[#00F0FF] animate-ping" />
+                {stageDetails[specStage] || 'Synthesizing specification...'}
+              </span>
+              <span>NO MOCK DATA</span>
+            </div>
           </div>
         </div>
       </div>
     )
   }
 
-  // Render Plan Confirmation Screen after clarifying step
-  return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 relative">
-      <div className="w-full max-w-4xl space-y-8">
-        
-        {/* Header Synth Bar */}
-        <div className="flex items-center justify-between text-xs font-mono text-slate-400 pb-2 border-b border-white/10">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-[#00F0FF]" />
-            <span>SPECIFICATION SYNTHESIS • PRD-8821 // v1.2</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <span className="text-slate-300">{plannedScreens.length} screens planned</span>
-            <span className="text-slate-600">|</span>
-            <span className="flex items-center gap-1 text-slate-400">
-              <Clock className="w-3.5 h-3.5 text-amber-400" /> Est. build time ~3h 45m
-            </span>
-            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px]">
-              Alt Flow: Clarifying Prompt
-            </span>
-          </div>
-        </div>
-
-        {/* Title */}
-        <div>
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight">
-            Here's what we'll build
-          </h2>
-        </div>
-
-        {/* Screens Roadmap List */}
-        <div className="space-y-2">
-          {plannedScreens.map((screen, idx) => (
-            <div
-              key={screen.id}
-              className="cyber-card p-4 flex items-center justify-between gap-4 group hover:bg-[#141422] transition-colors"
-            >
-              <div className="flex items-center gap-4">
-                <span className="font-mono text-xs font-bold text-slate-500">
-                  {String(idx + 1).padStart(2, '0')}
-                </span>
-                <div>
-                  <h4 className="text-sm font-semibold text-white group-hover:text-[#00F0FF] transition-colors">
-                    {screen.name}
-                  </h4>
-                  <p className="text-xs text-slate-400 mt-0.5 font-sans">
-                    {screen.description}
-                  </p>
-                </div>
+  // =========================================================================
+  // STATE 2: ERROR SCREEN WITH RETRY AFFORDANCE
+  // =========================================================================
+  if (specError || (!activeSpec && !isGeneratingSpec)) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-6 md:p-12 relative overflow-hidden bg-[#0A0A0F]">
+        <div className="w-full max-w-xl space-y-6 relative z-10 font-mono">
+          <div className="cyber-card p-6 bg-[#160B0F] border-rose-500/50 rounded-xl space-y-5 shadow-2xl">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/30 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-5 h-5 text-rose-400" />
               </div>
+              <div>
+                <h3 className="text-lg font-bold text-white font-display">
+                  Specification Synthesis Notice
+                </h3>
+                <p className="text-xs text-rose-300/80">
+                  LLM_STRUCTURED_API_ERROR
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-lg bg-black/60 border border-rose-500/20 text-xs text-rose-200/90 leading-relaxed font-sans">
+              {specError || 'No active specification found. Please enter a prompt on Screen 1.'}
+            </div>
+
+            <div className="text-xs text-slate-300 font-sans space-y-2 bg-black/40 p-3.5 rounded-lg border border-white/5">
+              <p className="font-semibold text-white">How to connect your Gemini API key:</p>
+              <ol className="list-decimal pl-5 space-y-1 text-slate-400 font-mono text-[11px]">
+                <li>Click <span className="text-cyan-300 font-semibold">Settings &gt; Secrets</span> in the AI Studio header.</li>
+                <li>Verify your key is set under <code className="text-[#00F0FF] font-bold">ASCENT_API_KEY</code> or <code className="text-[#00F0FF] font-bold">GEMINI_API_KEY</code>.</li>
+                <li>Click the <strong className="text-white">Retry Generation</strong> button below to resume.</li>
+              </ol>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between gap-3">
+              <button
+                onClick={() => setScreen(1)}
+                className="cyber-btn-secondary flex items-center gap-1.5"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Prompt</span>
+              </button>
 
               <button
-                onClick={() => removeScreenFromScope(screen.id)}
-                className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-rose-500/10 transition-colors opacity-0 group-hover:opacity-100"
-                title="Remove screen"
+                onClick={() => retryGenerateSpec()}
+                className="cyber-btn-primary flex items-center gap-1.5 bg-rose-600 hover:bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-900/30"
               >
-                <X className="w-4 h-4" />
+                <RefreshCw className="w-4 h-4" />
+                <span>Retry Generation</span>
               </button>
             </div>
-          ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-          {/* Add Screen Affordance */}
-          {isAddingScreen ? (
-            <form onSubmit={handleAddScreenSubmit} className="cyber-card p-4 space-y-3 border-[#00F0FF]/40 bg-[#0E0E18]">
-              <div className="flex items-center gap-3">
-                <input
-                  type="text"
-                  placeholder="Screen Name (e.g., User Profile & Settings)"
-                  value={newScreenName}
-                  onChange={(e) => setNewScreenName(e.target.value)}
-                  className="cyber-input flex-1 text-sm"
-                  autoFocus
-                />
-                <button type="submit" className="cyber-btn-primary text-xs py-2">
-                  Add Screen
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsAddingScreen(false)}
-                  className="cyber-btn-secondary text-xs py-2"
-                >
-                  Cancel
-                </button>
-              </div>
-              <input
-                type="text"
-                placeholder="Short description of UI components & features..."
-                value={newScreenDesc}
-                onChange={(e) => setNewScreenDesc(e.target.value)}
-                className="cyber-input w-full text-xs font-sans text-slate-300"
-              />
-            </form>
+  // =========================================================================
+  // STATE 3: FULL ONE-PAGE READ-ONLY SPECIFICATION REVIEW (DOCS STYLE)
+  // =========================================================================
+  const {
+    appName,
+    tagline,
+    summary,
+    targetAudience,
+    primaryFeatures = [],
+    userFlows = [],
+    dataEntities = [],
+    techStack,
+    useTailwind,
+    architectureHighlights = [],
+    assumptions = [],
+    outOfScope = [],
+    estimatedScreenCount = 1,
+    difficulty = 'beginner',
+    estimatedHours = 4
+  } = activeSpec!
+
+  const isCurated = activeProject?.source === 'curated'
+
+  const handleConfirm = () => {
+    confirmProjectSpec()
+  }
+
+  const handleRegenerate = () => {
+    if (isCurated && activeProject?.curatedSlug) {
+      loadCuratedProject(activeProject.curatedSlug)
+    } else {
+      generateProjectSpec(activePrompt, undefined, true)
+    }
+  }
+
+  return (
+    <div className="flex-1 flex flex-col h-[calc(100vh-3.5rem)] overflow-hidden bg-[#0A0A0F]">
+      {/* Top Document Header Bar */}
+      <div className="border-b border-white/10 px-6 py-2.5 bg-[#0D0D14]/90 flex items-center justify-between shrink-0 font-mono text-xs">
+        <div className="flex items-center gap-2">
+          <Terminal className="w-3.5 h-3.5 text-[#00F0FF]" />
+          <span className="text-white font-semibold">2. SPECIFICATION REVIEW</span>
+          <span className="text-slate-600">·</span>
+          <span className="text-[#00F0FF] truncate max-w-[200px]">{appName}</span>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {isCurated ? (
+            <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] flex items-center gap-1 font-bold">
+              <Sparkles className="w-3 h-3 text-purple-400" /> PRE-BUILT (CURATED)
+            </span>
+          ) : lastGenerationFromCache ? (
+            <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 text-[10px] flex items-center gap-1">
+              <Zap className="w-3 h-3 text-[#00F0FF]" /> CACHED SPEC
+            </span>
           ) : (
-            <button
-              onClick={() => setIsAddingScreen(true)}
-              className="w-full p-3 rounded-xl border border-dashed border-white/15 text-xs font-mono text-slate-400 hover:text-white hover:border-[#00F0FF]/50 hover:bg-[#12121E] transition-all flex items-center justify-center gap-2"
-            >
-              <Plus className="w-4 h-4 text-[#00F0FF]" />
-              <span>Add a screen to specification</span>
-            </button>
+            <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[10px] flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" /> LIVE LLM
+            </span>
           )}
+          <span className="text-slate-500 text-[11px] hidden sm:inline">READ-ONLY ONE-PAGE SPEC</span>
         </div>
+      </div>
 
-        {/* Inferred Stack Tags Section */}
-        <div className="space-y-2 pt-2">
-          <div className="text-xs font-mono text-slate-500 uppercase tracking-wider">
-            INFERRED STACK
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {techStackTags.map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 rounded bg-[#12121C] border border-white/10 text-xs font-mono text-slate-300 flex items-center gap-1.5 group"
-              >
-                <span>{tag}</span>
-                <button
-                  onClick={() => handleRemoveTag(tag)}
-                  className="text-slate-500 hover:text-rose-400"
-                >
-                  ✕
-                </button>
+      {/* Scrollable Document Container (Docs View) */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center">
+        {/* Document "Paper" Sheet */}
+        <div className="w-full max-w-4xl bg-[#0D0D18] border border-white/15 rounded-2xl shadow-2xl p-6 sm:p-10 md:p-12 space-y-8 font-sans text-slate-200">
+
+          {/* Doc Title & Identity */}
+          <div className="border-b border-white/10 pb-6 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="px-2.5 py-0.5 rounded bg-[#00F0FF]/10 text-[#00F0FF] text-[11px] font-mono border border-[#00F0FF]/30 font-semibold tracking-wider uppercase">
+                Software Specification Document
               </span>
-            ))}
+              <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                <span className="flex items-center gap-1">
+                  <Gauge className="w-3.5 h-3.5 text-[#00F0FF]" />
+                  <span className="capitalize">{difficulty}</span>
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-cyan-300" />
+                  <span>~{estimatedHours} hours</span>
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1">
+                  <Layers className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{estimatedScreenCount} page{estimatedScreenCount > 1 ? 's' : ''}</span>
+                </span>
+              </div>
+            </div>
 
-            {isAddingTag ? (
-              <form onSubmit={handleAddTagSubmit} className="inline-flex items-center gap-1">
-                <input
-                  type="text"
-                  placeholder="e.g. Prisma"
-                  value={newTagInput}
-                  onChange={(e) => setNewTagInput(e.target.value)}
-                  className="cyber-input text-xs py-1 px-2 w-28"
-                  autoFocus
-                />
-                <button type="submit" className="text-xs text-[#00F0FF] hover:underline">Add</button>
-                <button type="button" onClick={() => setIsAddingTag(false)} className="text-xs text-slate-500">✕</button>
-              </form>
-            ) : (
-              <button
-                onClick={() => setIsAddingTag(true)}
-                className="px-2.5 py-1 rounded border border-dashed border-white/20 text-xs font-mono text-slate-400 hover:text-white hover:border-[#00F0FF]/40 inline-flex items-center gap-1"
-              >
-                <Plus className="w-3 h-3 text-[#00F0FF]" /> Add tag
-              </button>
-            )}
+            <h1 className="text-3xl md:text-4xl font-display font-bold text-white tracking-tight">
+              {appName}
+            </h1>
+            <p className="text-base md:text-lg text-cyan-300 font-medium">
+              {tagline}
+            </p>
+
+            {/* Target Audience & Stack Badges */}
+            <div className="pt-2 flex flex-wrap items-center gap-2 text-xs font-mono">
+              <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-300">
+                Audience: <strong className="text-white font-semibold">{targetAudience}</strong>
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-[#00F0FF]/10 border border-[#00F0FF]/30 text-[#00F0FF]">
+                HTML + CSS + JavaScript
+              </span>
+              <span className={`px-2.5 py-1 rounded-md border ${
+                useTailwind
+                  ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                  : 'bg-white/5 border-white/10 text-slate-400'
+              }`}>
+                {useTailwind ? 'Tailwind CSS Utilities' : 'Plain Semantic CSS'}
+              </span>
+              <span className="px-2.5 py-1 rounded-md bg-white/5 border border-white/10 text-slate-400">
+                Client LocalStorage
+              </span>
+            </div>
           </div>
+
+          {/* Section 1: Executive Summary */}
+          <section className="space-y-2">
+            <h2 className="text-xs font-mono uppercase tracking-wider text-[#00F0FF] font-semibold flex items-center gap-1.5">
+              <span>1. Executive Summary</span>
+            </h2>
+            <p className="text-sm md:text-base text-slate-200 leading-relaxed font-sans">
+              {summary}
+            </p>
+          </section>
+
+          {/* Section 2: Primary Features */}
+          <section className="space-y-3">
+            <h2 className="text-xs font-mono uppercase tracking-wider text-[#00F0FF] font-semibold flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5" />
+              <span>2. Primary Features ({primaryFeatures.length})</span>
+            </h2>
+            <div className="grid grid-cols-1 gap-2.5">
+              {primaryFeatures.map((feat, idx) => {
+                const isObject = typeof feat === 'object' && feat !== null
+                const name = isObject ? feat.name : `Feature ${idx + 1}`
+                const desc = isObject ? feat.description : String(feat)
+
+                return (
+                  <div
+                    key={idx}
+                    className="p-3.5 rounded-xl bg-black/40 border border-white/10 flex items-start gap-3 hover:border-white/20 transition-colors"
+                  >
+                    <span className="w-6 h-6 rounded-md bg-[#00F0FF]/10 text-[#00F0FF] font-mono text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">
+                      {idx + 1}
+                    </span>
+                    <div className="space-y-0.5">
+                      <h4 className="text-sm font-semibold text-white font-sans">{name}</h4>
+                      <p className="text-xs text-slate-300 leading-relaxed">{desc}</p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+
+          {/* Section 3: User Flows */}
+          {userFlows && userFlows.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-xs font-mono uppercase tracking-wider text-[#00F0FF] font-semibold flex items-center gap-1.5">
+                <GitBranch className="w-3.5 h-3.5" />
+                <span>3. Key User Flows</span>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {userFlows.map((flow, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
+                    <h4 className="text-xs font-mono font-bold text-cyan-300 uppercase tracking-wide">
+                      {flow.flowName}
+                    </h4>
+                    <ol className="space-y-1.5 text-xs text-slate-300 list-decimal pl-4">
+                      {flow.steps.map((st, sIdx) => (
+                        <li key={sIdx} className="leading-relaxed pl-1 text-slate-300">
+                          {st}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Section 4: Data Entities & Client Storage */}
+          {dataEntities && dataEntities.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-xs font-mono uppercase tracking-wider text-[#00F0FF] font-semibold flex items-center gap-1.5">
+                <Database className="w-3.5 h-3.5" />
+                <span>4. Data Entities & Browser Storage</span>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {dataEntities.map((entity, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-black/40 border border-white/10 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-white">{entity.name}</span>
+                      <code className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[#00F0FF] text-[11px] font-mono">
+                        {entity.storageKey}
+                      </code>
+                    </div>
+                    <div className="space-y-1 pt-1 border-t border-white/5">
+                      {entity.fields.map((f, fIdx) => (
+                        <div key={fIdx} className="flex items-baseline justify-between text-xs font-mono">
+                          <span className="text-slate-300">{f.name}</span>
+                          <span className="text-slate-500 text-[11px]">{f.type}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Section 5: Architecture Highlights */}
+          {architectureHighlights && architectureHighlights.length > 0 && (
+            <section className="space-y-3">
+              <h2 className="text-xs font-mono uppercase tracking-wider text-[#00F0FF] font-semibold flex items-center gap-1.5">
+                <Code2 className="w-3.5 h-3.5" />
+                <span>5. Architecture Highlights</span>
+              </h2>
+              <div className="space-y-2">
+                {architectureHighlights.map((hl, idx) => (
+                  <div key={idx} className="p-3 rounded-lg bg-black/30 border border-white/5 flex items-start gap-2.5 text-xs text-slate-300">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#00F0FF] shrink-0 mt-1.5" />
+                    <span className="leading-relaxed">{hl}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Section 6 & 7: Assumptions and Out of Scope (VISIBLY HIGHLIGHTED CALLOUTS) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+            {/* Architectural Assumptions (Decisions model made on user's behalf) */}
+            <div className="p-5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2.5">
+              <div className="flex items-center gap-2 text-amber-300 font-mono text-xs font-bold">
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+                <span>ARCHITECTURAL ASSUMPTIONS</span>
+              </div>
+              <p className="text-[11px] text-amber-200/80 font-sans">
+                Decisions inferred on your behalf to maintain a clean, zero-friction front-end project:
+              </p>
+              <ul className="space-y-1.5 text-xs text-amber-100/90 font-sans list-disc pl-4">
+                {assumptions.map((assump, idx) => (
+                  <li key={idx} className="leading-relaxed">
+                    {assump}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Deliberately Out of Scope (Front-End Boundary) */}
+            <div className="p-5 rounded-xl bg-rose-500/10 border border-rose-500/30 space-y-2.5">
+              <div className="flex items-center gap-2 text-rose-300 font-mono text-xs font-bold">
+                <Ban className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>OUT OF SCOPE (DELIBERATELY EXCLUDED)</span>
+              </div>
+              <p className="text-[11px] text-rose-200/80 font-sans">
+                Excluded to ensure a self-contained, client-side curriculum with zero server complexity:
+              </p>
+              <ul className="space-y-1.5 text-xs text-rose-100/90 font-sans list-disc pl-4">
+                {outOfScope.map((item, idx) => (
+                  <li key={idx} className="leading-relaxed">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
         </div>
+      </div>
 
-        {/* Action Footer Bar */}
-        <div className="pt-6 border-t border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-4 text-xs font-mono text-slate-400">
-            <button
-              onClick={() => {
-                setClarifyingAnswered(false)
-                setScreen(1)
-              }}
-              className="hover:text-white flex items-center gap-1"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" /> Edit initial prompt
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => setScreen(1)}
-              className="hover:text-white"
-            >
-              Start over
-            </button>
-          </div>
+      {/* Sticky Bottom Action Bar with TWO BUTTONS ONLY + Back Link */}
+      <footer className="sticky bottom-0 bg-[#0B0B14]/95 backdrop-blur-md border-t border-white/10 px-6 py-3.5 z-20 flex flex-wrap items-center justify-between gap-4 font-mono text-xs">
+        <button
+          onClick={() => setScreen(1)}
+          className="text-slate-400 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back / Edit prompt</span>
+        </button>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleRegenerate}
+            className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-200 border border-white/15 flex items-center gap-2 transition-colors cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isCurated ? 'text-purple-400' : 'text-[#00F0FF]'}`} />
+            <span>{isCurated ? 'Reload Course' : 'Regenerate'}</span>
+          </button>
 
           <button
-            onClick={() => confirmScope(plannedScreens)}
-            className="cyber-btn-primary px-8 py-3 text-base shadow-xl shadow-[#00F0FF]/20"
+            onClick={handleConfirm}
+            className="cyber-btn-primary px-6 py-2.5 text-sm shadow-xl shadow-[#00F0FF]/20 flex items-center gap-2 cursor-pointer font-bold"
           >
-            <span>LOOKS GOOD, LET'S BUILD</span>
-            <ArrowRight className="w-5 h-5" />
+            <BookmarkCheck className="w-4 h-4 text-black" />
+            <span>Confirm Spec & Continue</span>
+            <ArrowRight className="w-4 h-4 text-black" />
           </button>
         </div>
-
-      </div>
+      </footer>
     </div>
   )
 }

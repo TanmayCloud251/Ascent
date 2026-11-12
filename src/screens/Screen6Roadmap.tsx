@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { ArrowLeft, Plus, CheckCircle2, Circle, Clock, Flame, Calendar, ChevronDown, ChevronUp, Layers, Sparkles } from 'lucide-react'
+import { ArrowLeft, Plus, CheckCircle2, Clock, Flame, Calendar, ChevronDown, ChevronUp, Layers, Sparkles, Code2, ArrowRight, Download } from 'lucide-react'
 
 export const Screen6Roadmap: React.FC = () => {
-  const { activeProject, setScreen, addScreenToScope } = useApp()
-  const [expandedPageId, setExpandedPageId] = useState<string | null>('p3')
+  const { activeProject, setScreen, addScreenToScope, setActiveComponentIndex, downloadProjectZip } = useApp()
+  const [expandedPageId, setExpandedPageId] = useState<string | null>('page-1')
   const [newScreenTitle, setNewScreenTitle] = useState('')
   const [newScreenDesc, setNewScreenDesc] = useState('')
   const [isAdding, setIsAdding] = useState(false)
@@ -20,6 +20,11 @@ export const Screen6Roadmap: React.FC = () => {
     setIsAdding(false)
   }
 
+  const handleOpenComponent = (compIdx: number) => {
+    setActiveComponentIndex(compIdx)
+    setScreen(4)
+  }
+
   // Generate 52 weeks x 7 days contribution grid data
   const contributionGrid = Array.from({ length: 140 }, (_, i) => {
     const level = i % 11 === 0 ? 3 : i % 5 === 0 ? 2 : i % 3 === 0 ? 1 : 0
@@ -31,7 +36,7 @@ export const Screen6Roadmap: React.FC = () => {
       <div className="w-full max-w-4xl space-y-8">
         
         {/* Header Row */}
-        <div className="flex items-center justify-between pb-4 border-b border-white/10">
+        <div className="flex items-center justify-between pb-4 border-b border-white/10 flex-wrap gap-4">
           <div>
             <span className="text-xs font-mono text-[#00F0FF] uppercase tracking-wider flex items-center gap-1.5 mb-1">
               <Layers className="w-3.5 h-3.5" /> PROJECT ROADMAP // SYLLABUS
@@ -41,13 +46,24 @@ export const Screen6Roadmap: React.FC = () => {
             </h2>
           </div>
 
-          <button
-            onClick={() => setScreen(4)}
-            className="cyber-btn-secondary text-xs"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Back to course workspace</span>
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={downloadProjectZip}
+              className="cyber-btn-secondary text-xs flex items-center gap-1.5 hover:text-[#00F0FF]"
+              title="Download clean Vite + React project codebase (.zip)"
+            >
+              <Download className="w-3.5 h-3.5 text-[#00F0FF]" />
+              <span>Export Production ZIP</span>
+            </button>
+
+            <button
+              onClick={() => setScreen(4)}
+              className="cyber-btn-primary text-xs flex items-center gap-1.5"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to IDE Workspace</span>
+            </button>
+          </div>
         </div>
 
         {/* Linear Progress Timeline Graph */}
@@ -58,8 +74,9 @@ export const Screen6Roadmap: React.FC = () => {
 
           {plannedScreens.map((page, idx) => {
             const isComplete = page.status === 'completed'
-            const isActive = page.status === 'active'
-            const isExpanded = expandedPageId === page.id
+            const isActive = page.status === 'active' || idx === 0
+            const isExpanded = expandedPageId === page.id || (idx === 0 && expandedPageId === 'page-1')
+            const components = page.components || []
 
             return (
               <div key={page.id} className="relative z-10 flex items-start gap-4 group">
@@ -97,7 +114,7 @@ export const Screen6Roadmap: React.FC = () => {
                         <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
                           isComplete ? 'badge-pass' : isActive ? 'badge-cyan' : 'bg-white/5 text-slate-500'
                         }`}>
-                          {page.status.toUpperCase()}
+                          {isComplete ? 'COMPLETED' : isActive ? 'IN PROGRESS' : 'PENDING'}
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 font-sans">{page.description}</p>
@@ -111,29 +128,30 @@ export const Screen6Roadmap: React.FC = () => {
                   {/* Expanded Modules Breakdown */}
                   {isExpanded && (
                     <div className="mt-4 pt-4 border-t border-white/10 space-y-2 font-mono text-xs">
-                      <div className="text-slate-500 uppercase tracking-wider text-[10px]">INCLUDED LEARNING MODULES</div>
-                      <div className="space-y-1.5">
-                        <div className="p-2.5 rounded bg-black/40 border border-white/5 flex items-center justify-between text-slate-300">
-                          <span className="flex items-center gap-2">
-                            <span className="text-emerald-400 font-bold">✓</span>
-                            <span>01. Shell & App LayoutScaffolding</span>
-                          </span>
-                          <span className="text-emerald-400 text-[10px]">PASSED</span>
-                        </div>
-                        <div className="p-2.5 rounded bg-[#00F0FF]/10 border border-[#00F0FF]/30 flex items-center justify-between text-[#00F0FF]">
-                          <span className="flex items-center gap-2">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#00F0FF] animate-pulse"></span>
-                            <span>02. Cart Drawer & Optimistic Zustand State</span>
-                          </span>
-                          <span className="text-[10px]">IN PROGRESS</span>
-                        </div>
-                        <div className="p-2.5 rounded bg-black/20 border border-white/5 flex items-center justify-between text-slate-500">
-                          <span className="flex items-center gap-2">
-                            <span>•</span>
-                            <span>03. Stripe Payment Intent & Webhooks</span>
-                          </span>
-                          <span className="text-[10px]">LOCKED</span>
-                        </div>
+                      <div className="text-slate-500 uppercase tracking-wider text-[10px]">INCLUDED TEACHABLE UNITS</div>
+                      <div className="space-y-2">
+                        {components.length > 0 ? (
+                          components.map((c, cIdx) => (
+                            <div
+                              key={c.id}
+                              onClick={() => handleOpenComponent(cIdx)}
+                              className="p-3 rounded bg-black/40 border border-white/5 hover:border-[#00F0FF]/40 flex items-center justify-between text-slate-300 cursor-pointer group/comp transition-all"
+                            >
+                              <div className="flex items-center gap-2.5">
+                                <span className="text-[#00F0FF] font-bold">0{cIdx + 1}.</span>
+                                <span className="group-hover/comp:text-white transition-colors">{c.name}</span>
+                              </div>
+                              <span className="text-[10px] font-mono text-cyan-400 flex items-center gap-1">
+                                <span>Open in IDE</span>
+                                <ArrowRight className="w-3 h-3 group-hover/comp:translate-x-0.5 transition-transform" />
+                              </span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="p-3 rounded bg-black/20 text-slate-500 text-xs">
+                            Modules compile lazily when preceding screen is verified.
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
@@ -190,7 +208,7 @@ export const Screen6Roadmap: React.FC = () => {
 
             <div className="flex items-center gap-2 text-sm font-bold text-[#00F0FF]">
               <Flame className="w-4 h-4 text-amber-400 fill-amber-400" />
-              <span>12 DAY STREAK</span>
+              <span>14 DAY STREAK</span>
             </div>
           </div>
 

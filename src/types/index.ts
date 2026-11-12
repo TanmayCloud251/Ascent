@@ -18,6 +18,7 @@ export interface Hint {
   content: string;
   pointCost: number;
   unlocked: boolean;
+  tier?: 'tier_1_conceptual' | 'tier_2_architecture' | 'tier_3_pseudocode';
 }
 
 export interface ModuleTask {
@@ -70,6 +71,11 @@ export interface Project {
   completedScreens: number;
   lastActiveFormatted: string;
   createdAt: string;
+  thinkingPlan?: any;
+  githubRepo?: string;
+  lastCodeReview?: any;
+  source?: 'curated' | 'generated';
+  curatedSlug?: string;
 }
 
 export interface LearnerProfile {
@@ -78,4 +84,6 @@ export interface LearnerProfile {
   calibrationTier: CalibrationTier;
   streakDays: number;
   activeProjectId?: string;
+  githubUsername?: string;
+  isGithubConnected?: boolean;
 }
