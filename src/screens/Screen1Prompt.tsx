@@ -10,31 +10,61 @@ import {
   Cpu,
   RefreshCw,
   AlertCircle,
-  BookOpen,
-  Bookmark
+  Coins,
+  Gamepad2,
+  Grid3X3,
+  Palette,
+  BookOpen
 } from 'lucide-react'
 import { TechStackConfig } from '../types/ascent'
 
-const SUGGESTED_TEMPLATES = [
+const QUICK_STARTERS = [
   {
-    title: 'Background Color Changer',
-    prompt: 'interactive background color changer with hex code picker, random palette generator button, and copy-to-clipboard toast',
-    useTailwind: true
-  },
-  {
+    id: 'currency-converter',
     title: 'Currency Converter',
-    prompt: 'live currency converter calculator with country currency dropdowns, amount exchange rate calculation, and swap button',
-    useTailwind: true
+    description: 'Live exchange rate calculation with country currency dropdowns and localStorage history.',
+    badge: 'Vanilla JS · Plain CSS',
+    isDirectLaunch: true,
+    slug: 'currency-converter',
+    iconName: 'coins' as const
   },
   {
+    id: 'rock-paper-scissors',
+    title: 'Rock Paper Scissors',
+    description: 'Classic interactive game against computer AI with animations and persistent score tracking.',
+    badge: 'Vanilla JS · Plain CSS',
+    isDirectLaunch: true,
+    slug: 'rock-paper-scissors',
+    iconName: 'gamepad' as const
+  },
+  {
+    id: 'tic-tac-toe',
+    title: 'Tic Tac Toe',
+    description: '2-player turn-based grid board with win-state algorithms, turn alerts, and match resets.',
+    badge: 'Vanilla JS · Plain CSS',
+    isDirectLaunch: true,
+    slug: 'tic-tac-toe',
+    iconName: 'grid' as const
+  },
+  {
+    id: 'background-changer',
+    title: 'Background Color Changer',
+    description: 'Interactive color explorer with hex code picker, random palette generator, and copy toast.',
+    badge: 'Vanilla HTML/CSS/JS',
+    isDirectLaunch: false,
+    prompt: 'interactive background color changer with hex code picker, random palette generator button, and copy-to-clipboard toast',
+    useTailwind: true,
+    iconName: 'palette' as const
+  },
+  {
+    id: 'blog-page',
     title: 'Minimalist Blog Reader',
+    description: 'Clean personal blog reader with article list, reading time badges, tag filters, and dark mode reading view.',
+    badge: 'Vanilla HTML/CSS/JS',
+    isDirectLaunch: false,
     prompt: 'clean personal blog reader with article list, reading time badges, tag filters, and dark mode reading view',
-    useTailwind: true
-  },
-  {
-    title: 'Pet Care & Feeding Schedule Tracker',
-    prompt: 'interactive pet axolotl feeding tracker with meal logging, visual hunger status indicators, and localStorage persistence',
-    useTailwind: true
+    useTailwind: true,
+    iconName: 'book' as const
   }
 ]
 
@@ -78,12 +108,11 @@ export const Screen1Prompt: React.FC = () => {
     })
   }
 
-  const handleSelectTemplate = (tmpl: (typeof SUGGESTED_TEMPLATES)[0]) => {
-    setPromptInput(tmpl.prompt)
+  const handleSelectTemplate = (promptText: string, tmplUseTailwind: boolean = true) => {
+    setPromptInput(promptText)
     if (!isTailwindLocked) {
-      setUseTailwind(tmpl.useTailwind)
+      setUseTailwind(tmplUseTailwind)
     }
-    // Pre-fills the prompt text box cleanly
   }
 
   return (
@@ -251,88 +280,79 @@ export const Screen1Prompt: React.FC = () => {
           </div>
         </div>
 
-        {/* Curated Pre-generated Projects Row */}
+        {/* Quick Starter Architectures */}
         <div className="space-y-3">
           <div className="text-xs font-mono uppercase text-slate-500 tracking-wider flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-purple-400 font-semibold">
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" /> START WITH A CURATED PROJECT
-            </span>
-            <div className="flex-1 h-px bg-purple-500/20 mx-3" />
-            <span className="text-purple-400/80 text-[10px] font-bold">PRE-BUILT · VERIFIED · ZERO WAIT</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {curatedCoursesList && curatedCoursesList.map((course) => (
-              <button
-                key={course.slug}
-                onClick={() => loadCuratedProject(course.slug)}
-                disabled={isGeneratingSpec}
-                className="p-4 text-left flex flex-col justify-between rounded-xl bg-[#0F0B18] border border-purple-500/30 hover:border-purple-400/70 hover:bg-[#171024] group transition-all duration-200 disabled:opacity-50 cursor-pointer shadow-lg hover:shadow-purple-950/40"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-mono font-bold tracking-wider">
-                      CURATED
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400 capitalize">
-                      {course.difficulty} · {course.estimatedHours}h
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
-                    {course.title}
-                  </h4>
-                  <p className="text-xs text-slate-400 line-clamp-2 font-sans leading-relaxed">
-                    {course.shortDescription}
-                  </p>
-                </div>
-
-                <div className="pt-3 mt-3 border-t border-white/5 flex items-center justify-between text-xs font-mono text-purple-300">
-                  <span className="text-[11px] text-slate-500 font-mono">Vanilla CSS & JS</span>
-                  <span className="flex items-center gap-1 text-[11px] font-bold group-hover:translate-x-1 transition-transform">
-                    Launch Course <ArrowRight className="w-3 h-3" />
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Preset Cards for Quick Launch */}
-        <div className="space-y-3">
-          <div className="text-xs font-mono uppercase text-slate-500 tracking-wider flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 text-slate-300 font-semibold">
               <Layers className="w-3.5 h-3.5 text-[#00F0FF]" /> QUICK STARTER ARCHITECTURES
             </span>
             <div className="flex-1 h-px bg-white/10 mx-3" />
-            <span className="text-slate-600">CLICK TO LOAD</span>
+            <span className="text-slate-500 text-[10px] font-mono">CLICK TO LAUNCH OR LOAD</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {SUGGESTED_TEMPLATES.map((tmpl) => (
-              <button
-                key={tmpl.title}
-                onClick={() => handleSelectTemplate(tmpl)}
-                disabled={isGeneratingSpec}
-                className="cyber-card p-3.5 text-left flex items-start gap-3 hover:border-[#00F0FF]/50 hover:bg-[#141420] group transition-all disabled:opacity-50 cursor-pointer"
-              >
-                <div className="w-8 h-8 rounded bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-[#00F0FF]/50 group-hover:text-[#00F0FF] transition-colors">
-                  <Code2 className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors truncate">
-                      {tmpl.title}
-                    </h4>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400">
-                      {tmpl.useTailwind ? 'Tailwind' : 'Plain CSS'}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {QUICK_STARTERS.map((item) => {
+              const renderIcon = () => {
+                switch (item.iconName) {
+                  case 'coins':
+                    return <Coins className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                  case 'gamepad':
+                    return <Gamepad2 className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                  case 'grid':
+                    return <Grid3X3 className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                  case 'palette':
+                    return <Palette className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                  case 'book':
+                    return <BookOpen className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                  default:
+                    return <Code2 className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                }
+              }
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (item.isDirectLaunch && item.slug) {
+                      loadCuratedProject(item.slug)
+                    } else if (item.prompt) {
+                      handleSelectTemplate(item.prompt, item.useTailwind)
+                    }
+                  }}
+                  disabled={isGeneratingSpec}
+                  className="cyber-card p-4 text-left flex flex-col justify-between hover:border-[#00F0FF]/50 hover:bg-[#141420] group transition-all duration-200 disabled:opacity-50 cursor-pointer rounded-xl bg-[#0C0C14] border-white/10"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-[#00F0FF]/40 transition-colors">
+                        {renderIcon()}
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">
+                        {item.badge}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
+                        {item.title}
+                      </h4>
+                      <p className="text-xs text-slate-400 line-clamp-2 mt-1 font-sans leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 mt-3 border-t border-white/5 flex items-center justify-between text-xs font-mono text-slate-500 group-hover:text-[#00F0FF] transition-colors">
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      {item.isDirectLaunch ? 'Instant Blueprint' : 'Interactive Idea'}
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px] font-bold group-hover:translate-x-0.5 transition-transform">
+                      {item.isDirectLaunch ? 'Launch Blueprint' : 'Load Prompt'} <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 line-clamp-1 mt-0.5 font-mono">
-                    {tmpl.prompt}
-                  </p>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         </div>
 
