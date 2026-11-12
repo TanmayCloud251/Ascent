@@ -2,10 +2,9 @@ import {
   ProjectSpec,
   ProjectSpecSchema,
   TechStackConfig,
-  ScreenPlanItem,
-  ScreenPlanResponseSchema,
-  ModuleItem,
-  SyllabusResponseSchema,
+  PageItem,
+  PageModuleItem,
+  PageResponseSchema,
   ProjectMemory
 } from '../types/ascent'
 import { storageService } from './storageService'
@@ -23,6 +22,7 @@ export interface LLMTraceEvent {
   latencyMs: number
   tokensUsed?: number | string
   isCached: boolean
+  isCurated?: boolean
   error?: string | null
 }
 
@@ -30,8 +30,6 @@ export interface GenerateSpecOptions {
   prompt: string
   useTailwind?: boolean
   techStack?: Partial<TechStackConfig>
-  previousSpec?: ProjectSpec
-  clarifyingAnswers?: Record<string, string>
   forceRefresh?: boolean
 }
 
@@ -42,27 +40,16 @@ export interface GenerateSpecResult {
   trace: LLMTraceEvent
 }
 
-export interface GenerateScreenPlanOptions {
+export interface GeneratePageOptions {
   spec: ProjectSpec
-  forceRefresh?: boolean
-}
-
-export interface GenerateScreenPlanResult {
-  screens: ScreenPlanItem[]
-  fromCache: boolean
-  latencyMs: number
-  trace: LLMTraceEvent
-}
-
-export interface GenerateSyllabusOptions {
-  spec: ProjectSpec
-  currentScreen: ScreenPlanItem
+  useTailwind?: boolean
   projectMemory?: ProjectMemory | null
   forceRefresh?: boolean
 }
 
-export interface GenerateSyllabusResult {
-  modules: ModuleItem[]
+export interface GeneratePageResult {
+  projectComplete: boolean
+  page?: PageItem
   fromCache: boolean
   latencyMs: number
   trace: LLMTraceEvent
@@ -113,8 +100,31 @@ export const getLatestLLMTrace = (): LLMTraceEvent | null => currentLatestTrace
  * 3. End-to-end execution telemetry for LLM Trace inspector.
  */
 export const llmService = {
+  recordCuratedTrace(slug: string, course: any): LLMTraceEvent {
+    const trace: LLMTraceEvent = {
+      id: `tr_${Date.now()}_curated`,
+      timestamp: new Date().toISOString(),
+      endpoint: `STATIC: src/data/curated/${slug}.json`,
+      model: 'PRE-BUILT',
+      requestPayload: { curatedSlug: slug, source: 'curated' },
+      rawResponseText: JSON.stringify({
+        source: 'curated',
+        slug,
+        status: 'Loaded from pre-built static course catalog. Zero LLM API calls executed.'
+      }, null, 2),
+      parsedResult: course,
+      validationSuccess: true,
+      latencyMs: 0,
+      tokensUsed: '0 (Pre-built curated course)',
+      isCached: false,
+      isCurated: true
+    }
+    broadcastTrace(trace)
+    return trace
+  },
+
   async generateSpec(options: GenerateSpecOptions): Promise<GenerateSpecResult> {
-    const { prompt, useTailwind = true, techStack, previousSpec, clarifyingAnswers, forceRefresh = false } = options
+    const { prompt, useTailwind = true, techStack, forceRefresh = false } = options
     const trimmedPrompt = prompt.trim()
 
     if (!trimmedPrompt) {
@@ -124,9 +134,7 @@ export const llmService = {
     const requestPayload = {
       prompt: trimmedPrompt,
       useTailwind,
-      techStack,
-      previousSpec,
-      clarifyingAnswers
+      techStack
     }
 
     const cacheKey = hashExactPayload('spec', requestPayload)
@@ -141,7 +149,7 @@ export const llmService = {
             id: `tr_${Date.now()}_cache`,
             timestamp: new Date().toISOString(),
             endpoint: 'POST /api/llm/generate-spec',
-            model: 'gemini-3.8-flash',
+            model: 'LLM',
             requestPayload,
             rawResponseText: JSON.stringify(parsed.data, null, 2),
             parsedResult: parsed.data,
@@ -280,23 +288,23 @@ export const llmService = {
     }
   },
 
-  async generateScreenPlan(options: GenerateScreenPlanOptions): Promise<GenerateScreenPlanResult> {
-    const { spec, forceRefresh = false } = options
-    const requestPayload = { spec }
-    const cacheKey = hashExactPayload('screen_plan', {
+  async generatePage(options: GeneratePageOptions): Promise<GeneratePageResult> {
+    const { spec, useTailwind = true, projectMemory, forceRefresh = false } = options
+    const requestPayload = { spec, useTailwind, projectMemory }
+    const cacheKey = hashExactPayload('page_1', {
       appName: spec.appName,
-      stack: spec.techStack,
-      features: spec.primaryFeatures
+      useTailwind,
+      fileTree: projectMemory?.fileTree || []
     })
 
     if (!forceRefresh) {
-      const cached = storageService.getCachedLLMResponse<ScreenPlanItem[]>(cacheKey)
-      if (cached && Array.isArray(cached) && cached.length >= 3) {
+      const cached = storageService.getCachedLLMResponse<PageItem>(cacheKey)
+      if (cached && cached.modules && cached.modules.length >= 4) {
         const trace: LLMTraceEvent = {
           id: `tr_${Date.now()}_cache`,
           timestamp: new Date().toISOString(),
-          endpoint: 'POST /api/llm/generate-screen-plan',
-          model: 'gemini-3.8-flash',
+          endpoint: 'POST /api/llm/generate-page',
+          model: 'LLM',
           requestPayload,
           rawResponseText: JSON.stringify(cached, null, 2),
           parsedResult: cached,
@@ -307,7 +315,8 @@ export const llmService = {
         }
         broadcastTrace(trace)
         return {
-          screens: cached,
+          projectComplete: false,
+          page: cached,
           fromCache: true,
           latencyMs: 0,
           trace
@@ -321,7 +330,7 @@ export const llmService = {
     let payload: any = {}
 
     try {
-      response = await fetch('/api/llm/generate-screen-plan', {
+      response = await fetch('/api/llm/generate-page', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestPayload)
@@ -337,8 +346,8 @@ export const llmService = {
       const trace: LLMTraceEvent = {
         id: `tr_${Date.now()}_err`,
         timestamp: new Date().toISOString(),
-        endpoint: 'POST /api/llm/generate-screen-plan',
-        model: 'gemini-3.8-flash',
+        endpoint: 'POST /api/llm/generate-page',
+        model: 'LLM',
         requestPayload,
         rawResponseText: networkErr?.message || 'Network Fetch Failed',
         parsedResult: null,
@@ -359,8 +368,8 @@ export const llmService = {
       const trace: LLMTraceEvent = {
         id: `tr_${Date.now()}_err`,
         timestamp: new Date().toISOString(),
-        endpoint: 'POST /api/llm/generate-screen-plan',
-        model: payload.model || 'gemini-3.8-flash',
+        endpoint: 'POST /api/llm/generate-page',
+        model: payload.model || 'LLM',
         requestPayload,
         rawResponseText: payload.rawGeminiText || responseText,
         parsedResult: null,
@@ -378,201 +387,86 @@ export const llmService = {
       throw error
     }
 
-    // Validate with Zod
-    const validation = ScreenPlanResponseSchema.safeParse(payload)
+    const validation = PageResponseSchema.safeParse(payload)
     if (!validation.success) {
       const validationErrorMsg = JSON.stringify(validation.error.format(), null, 2)
       const trace: LLMTraceEvent = {
         id: `tr_${Date.now()}_val_err`,
         timestamp: new Date().toISOString(),
-        endpoint: 'POST /api/llm/generate-screen-plan',
-        model: payload.model || 'gemini-3.8-flash',
+        endpoint: 'POST /api/llm/generate-page',
+        model: payload.model || 'LLM',
         requestPayload,
-        rawResponseText: payload.rawGeminiText || JSON.stringify(payload.screens, null, 2),
-        parsedResult: payload.screens,
+        rawResponseText: payload.rawGeminiText || JSON.stringify(payload, null, 2),
+        parsedResult: payload,
         validationSuccess: false,
         validationError: validationErrorMsg,
         latencyMs,
         tokensUsed: payload.tokensUsed || 'N/A',
         isCached: false,
-        error: 'Screen plan failed Zod validation.'
+        error: 'Page syllabus failed Zod validation.'
       }
       broadcastTrace(trace)
-      throw new Error(`Screen plan failed validation: ${validationErrorMsg}`)
+      throw new Error(`Page syllabus failed validation: ${validationErrorMsg}`)
     }
 
-    const validatedScreens: ScreenPlanItem[] = validation.data.screens.map((s, idx) => ({
-      id: `screen_${idx + 1}`,
-      order: idx + 1,
-      screenName: s.name,
-      description: s.description,
-      status: idx === 0 ? 'active' : 'locked'
-    }))
-
-    storageService.setCachedLLMResponse(cacheKey, validatedScreens)
-
-    const trace: LLMTraceEvent = {
-      id: `tr_${Date.now()}_ok`,
-      timestamp: new Date().toISOString(),
-      endpoint: 'POST /api/llm/generate-screen-plan',
-      model: payload.model || 'gemini-3.8-flash',
-      requestPayload,
-      rawResponseText: payload.rawGeminiText || JSON.stringify(validatedScreens, null, 2),
-      parsedResult: validatedScreens,
-      validationSuccess: true,
-      latencyMs,
-      tokensUsed: payload.tokensUsed || 'Calculated at runtime',
-      isCached: false
-    }
-    broadcastTrace(trace)
-
-    return {
-      screens: validatedScreens,
-      fromCache: false,
-      latencyMs,
-      trace
-    }
-  },
-
-  async generateSyllabus(options: GenerateSyllabusOptions): Promise<GenerateSyllabusResult> {
-    const { spec, currentScreen, projectMemory, forceRefresh = false } = options
-    const requestPayload = { spec, currentScreen, projectMemory }
-    const cacheKey = hashExactPayload('syllabus', {
-      appName: spec.appName,
-      screenName: currentScreen.screenName,
-      screenDesc: currentScreen.description
-    })
-
-    if (!forceRefresh) {
-      const cached = storageService.getCachedLLMResponse<ModuleItem[]>(cacheKey)
-      if (cached && Array.isArray(cached) && cached.length >= 4) {
-        const trace: LLMTraceEvent = {
-          id: `tr_${Date.now()}_cache`,
-          timestamp: new Date().toISOString(),
-          endpoint: 'POST /api/llm/generate-syllabus',
-          model: 'gemini-3.8-flash',
-          requestPayload,
-          rawResponseText: JSON.stringify(cached, null, 2),
-          parsedResult: cached,
-          validationSuccess: true,
-          latencyMs: 0,
-          tokensUsed: '0 (cache hit)',
-          isCached: true
-        }
-        broadcastTrace(trace)
-        return {
-          modules: cached,
-          fromCache: true,
-          latencyMs: 0,
-          trace
-        }
-      }
-    }
-
-    const startTime = Date.now()
-    let response: Response
-    let responseText = ''
-    let payload: any = {}
-
-    try {
-      response = await fetch('/api/llm/generate-syllabus', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestPayload)
-      })
-      responseText = await response.text()
-      try {
-        payload = JSON.parse(responseText)
-      } catch {
-        payload = { error: responseText }
-      }
-    } catch (networkErr: any) {
-      const latencyMs = Date.now() - startTime
+    if (validation.data.projectComplete || !validation.data.page) {
       const trace: LLMTraceEvent = {
-        id: `tr_${Date.now()}_err`,
+        id: `tr_${Date.now()}_done`,
         timestamp: new Date().toISOString(),
-        endpoint: 'POST /api/llm/generate-syllabus',
-        model: 'gemini-3.8-flash',
+        endpoint: 'POST /api/llm/generate-page',
+        model: payload.model || 'LLM',
         requestPayload,
-        rawResponseText: networkErr?.message || 'Network Fetch Failed',
-        parsedResult: null,
-        validationSuccess: false,
-        validationError: networkErr?.message,
+        rawResponseText: payload.rawGeminiText || JSON.stringify(validation.data, null, 2),
+        parsedResult: validation.data,
+        validationSuccess: true,
         latencyMs,
-        isCached: false,
-        error: networkErr?.message || 'Network connection failed'
+        tokensUsed: payload.tokensUsed || 'Calculated at runtime',
+        isCached: false
       }
       broadcastTrace(trace)
-      throw networkErr
-    }
-
-    const latencyMs = Date.now() - startTime
-
-    if (!response.ok || !payload.success) {
-      const errorMsg = payload.error || `Server returned HTTP ${response.status}: ${responseText}`
-      const trace: LLMTraceEvent = {
-        id: `tr_${Date.now()}_err`,
-        timestamp: new Date().toISOString(),
-        endpoint: 'POST /api/llm/generate-syllabus',
-        model: payload.model || 'gemini-3.8-flash',
-        requestPayload,
-        rawResponseText: payload.rawGeminiText || responseText,
-        parsedResult: null,
-        validationSuccess: false,
-        validationError: errorMsg,
+      return {
+        projectComplete: true,
+        fromCache: false,
         latencyMs,
-        tokensUsed: payload.tokensUsed || 'N/A',
-        isCached: false,
-        error: errorMsg
+        trace
       }
-      broadcastTrace(trace)
-      const error = new Error(errorMsg) as Error & { retryable?: boolean; trace?: LLMTraceEvent }
-      error.retryable = payload.retryable !== false
-      error.trace = trace
-      throw error
     }
 
-    const validation = SyllabusResponseSchema.safeParse(payload)
-    if (!validation.success) {
-      const validationErrorMsg = JSON.stringify(validation.error.format(), null, 2)
-      const trace: LLMTraceEvent = {
-        id: `tr_${Date.now()}_val_err`,
-        timestamp: new Date().toISOString(),
-        endpoint: 'POST /api/llm/generate-syllabus',
-        model: payload.model || 'gemini-3.8-flash',
-        requestPayload,
-        rawResponseText: payload.rawGeminiText || JSON.stringify(payload.modules, null, 2),
-        parsedResult: payload.modules,
-        validationSuccess: false,
-        validationError: validationErrorMsg,
-        latencyMs,
-        tokensUsed: payload.tokensUsed || 'N/A',
-        isCached: false,
-        error: 'Syllabus failed Zod validation.'
-      }
-      broadcastTrace(trace)
-      throw new Error(`Syllabus failed validation: ${validationErrorMsg}`)
-    }
+    const pageData = validation.data.page
+    const pageId = `page_${(pageData.fileName || 'index.html').replace(/[^a-z0-9]/gi, '_')}`
 
-    const validatedModules: ModuleItem[] = validation.data.modules.map((m, idx) => ({
+    const validatedModules: PageModuleItem[] = (validation.data.modules || []).map((m, idx) => ({
       id: `mod_${idx + 1}`,
+      pageId,
       order: idx + 1,
       title: m.title,
       learningObjective: m.learningObjective,
-      componentType: m.componentType,
+      componentType: m.componentType as any,
       status: idx === 0 ? 'active' : 'locked'
     }))
 
-    storageService.setCachedLLMResponse(cacheKey, validatedModules)
+    const pageItem: PageItem = {
+      id: pageId,
+      projectId: projectMemory?.projectId || 'current_project',
+      order: 1,
+      name: pageData.name,
+      description: pageData.description,
+      fileName: pageData.fileName,
+      purpose: pageData.purpose,
+      status: 'active',
+      modules: validatedModules
+    }
+
+    storageService.setCachedLLMResponse(cacheKey, pageItem)
 
     const trace: LLMTraceEvent = {
       id: `tr_${Date.now()}_ok`,
       timestamp: new Date().toISOString(),
-      endpoint: 'POST /api/llm/generate-syllabus',
-      model: payload.model || 'gemini-3.8-flash',
+      endpoint: 'POST /api/llm/generate-page',
+      model: payload.model || 'LLM',
       requestPayload,
-      rawResponseText: payload.rawGeminiText || JSON.stringify(validatedModules, null, 2),
-      parsedResult: validatedModules,
+      rawResponseText: payload.rawGeminiText || JSON.stringify(pageItem, null, 2),
+      parsedResult: pageItem,
       validationSuccess: true,
       latencyMs,
       tokensUsed: payload.tokensUsed || 'Calculated at runtime',
@@ -581,11 +475,13 @@ export const llmService = {
     broadcastTrace(trace)
 
     return {
-      modules: validatedModules,
+      projectComplete: false,
+      page: pageItem,
       fromCache: false,
       latencyMs,
       trace
     }
   }
 }
+
 

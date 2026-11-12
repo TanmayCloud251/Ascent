@@ -1,0 +1,344 @@
+{
+  "slug": "tic-tac-toe",
+  "title": "Tic Tac Toe",
+  "shortDescription": "2-player grid board with win-state detection, turn indicators, and match resets.",
+  "difficulty": "beginner",
+  "estimatedHours": 3,
+  "useTailwind": false,
+  "spec": {
+    "appName": "Tic Tac Toe",
+    "tagline": "Two-player turn-based board challenge with automatic victory checking.",
+    "summary": "A sleek, responsive Tic Tac Toe browser game for two players. Featuring dynamic turn indicators, grid cell interactions, winning condition evaluation, and match stats persisted in LocalStorage.",
+    "targetAudience": "Students and casual players looking for a clean, zero-dependency browser game.",
+    "primaryFeatures": [
+      {
+        "name": "3x3 Interactive Grid",
+        "description": "Responsive grid cells with click interactions and distinct X/O visual indicators."
+      },
+      {
+        "name": "Victory & Draw Resolution",
+        "description": "Instant win line highlighting for rows, columns, and diagonals, or tie game detection."
+      },
+      {
+        "name": "Match Statistics Counter",
+        "description": "Tracks total X wins, O wins, and draws in browser LocalStorage across rounds."
+      }
+    ],
+    "userFlows": [
+      {
+        "flowName": "Play a Match",
+        "steps": [
+          "Player X clicks any empty grid cell.",
+          "Board marks 'X' and turn indicator updates to Player O.",
+          "Players alternate until a line forms or all 9 cells fill.",
+          "Winning player is announced and stats counter increments."
+        ]
+      }
+    ],
+    "dataEntities": [
+      {
+        "name": "MatchStats",
+        "storageKey": "tictactoe_stats_v1",
+        "fields": [
+          { "name": "x", "type": "number", "description": "Player X wins" },
+          { "name": "o", "type": "number", "description": "Player O wins" },
+          { "name": "ties", "type": "number", "description": "Draw games" }
+        ]
+      }
+    ],
+    "techStack": {
+      "runtime": "HTML + CSS + JavaScript",
+      "styling": "Plain CSS",
+      "stateManagement": "Browser In-Memory State / DOM",
+      "backendSim": "In-Browser LocalStorage / IndexedDB",
+      "useTailwind": false
+    },
+    "useTailwind": false,
+    "architectureHighlights": [
+      "CSS Grid layout with aspect-ratio squares for responsive boards",
+      "Array-based 9-cell board state evaluation against 8 winning combinations",
+      "Event-driven state mutation with LocalStorage sync"
+    ],
+    "assumptions": [
+      "Local pass-and-play multiplayer on the same browser screen",
+      "No external server required; all statistics stored in localStorage"
+    ],
+    "outOfScope": [
+      "Online multiplayer matchmaking",
+      "Minimax AI difficulty algorithms"
+    ],
+    "estimatedScreenCount": 1,
+    "difficulty": "beginner",
+    "estimatedHours": 3
+  },
+  "page": {
+    "id": "page_tic_tac_toe",
+    "projectId": "proj_curated_ttt",
+    "order": 1,
+    "name": "Tic Tac Toe Arena",
+    "description": "Single-page board interface with turn indicator, 3x3 game board, match status text, and win counters.",
+    "fileName": "index.html",
+    "purpose": "Provide a complete 2-player Tic Tac Toe web experience.",
+    "status": "active",
+    "modules": [
+      {
+        "id": "mod_1",
+        "pageId": "page_tic_tac_toe",
+        "order": 1,
+        "title": "Establish Document Shell and CSS Link",
+        "learningObjective": "Construct the HTML5 head, meta tags, and link the styles.css stylesheet.",
+        "componentType": "document-head",
+        "status": "active"
+      },
+      {
+        "id": "mod_2",
+        "pageId": "page_tic_tac_toe",
+        "order": 2,
+        "title": "Build Game Header and Turn Indicator",
+        "learningObjective": "Create the header container with app title and dynamic turn indicator text.",
+        "componentType": "header",
+        "status": "locked"
+      },
+      {
+        "id": "mod_3",
+        "pageId": "page_tic_tac_toe",
+        "order": 3,
+        "title": "Build 3x3 Grid Board Layout",
+        "learningObjective": "Use CSS Grid to create a responsive 3x3 board containing 9 cell button elements with data-index attributes.",
+        "componentType": "main-section",
+        "status": "locked"
+      },
+      {
+        "id": "mod_4",
+        "pageId": "page_tic_tac_toe",
+        "order": 4,
+        "title": "Construct Match Control Footer and Stats",
+        "learningObjective": "Implement the restart button and stats display showing X wins, O wins, and ties.",
+        "componentType": "footer",
+        "status": "locked"
+      },
+      {
+        "id": "mod_5",
+        "pageId": "page_tic_tac_toe",
+        "order": 5,
+        "title": "Implement Win-State Engine and Turn Logic",
+        "learningObjective": "Implement JavaScript arrays to evaluate board state against winning combinations and persist match statistics.",
+        "componentType": "script-behavior",
+        "status": "locked"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "id": "mod_1",
+      "pageId": "page_tic_tac_toe",
+      "order": 1,
+      "title": "Establish Document Shell and CSS Link",
+      "learningObjective": "Construct the HTML5 head, meta tags, and link the styles.css stylesheet.",
+      "componentType": "document-head",
+      "status": "active",
+      "lesson": "# Document Foundation\n\nA solid HTML foundation ensures proper page scaling across viewports.",
+      "task": "Create the standard HTML5 shell in `index.html` with title 'Tic Tac Toe' and link `styles.css`.",
+      "starterFiles": [
+        { "path": "index.html", "content": "" },
+        { "path": "styles.css", "content": "/* Board Theme */\n" }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Tic Tac Toe</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n</body>\n</html>\n"
+        },
+        { "path": "styles.css", "content": "/* Board Theme */\n" }
+      ],
+      "checks": [
+        {
+          "id": "chk_ttt_title",
+          "description": "Page title is Tic Tac Toe",
+          "type": "textContains",
+          "selector": "title",
+          "expected": "Tic Tac Toe"
+        }
+      ],
+      "hints": [
+        "Include `<title>Tic Tac Toe</title>`."
+      ]
+    },
+    {
+      "id": "mod_2",
+      "pageId": "page_tic_tac_toe",
+      "order": 2,
+      "title": "Build Game Header and Turn Indicator",
+      "learningObjective": "Create the header container with app title and dynamic turn indicator text.",
+      "componentType": "header",
+      "status": "locked",
+      "lesson": "# Game Status and Visual Turns\n\nPlayers need continuous visibility into whose turn it is.",
+      "task": "Add `<div class=\"game-wrapper\">` in `<body>` with `<header class=\"game-header\">` containing `h1` and `<p id=\"turn-indicator\" class=\"turn-indicator\">Player X's Turn</p>`.",
+      "starterFiles": [
+        { "path": "index.html", "content": "<!DOCTYPE html><html><head><title>TTT</title></head><body></body></html>" },
+        { "path": "styles.css", "content": "/* Styles */" }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html><head><title>TTT</title></head><body>\n<div class=\"game-wrapper\">\n  <header class=\"game-header\">\n    <h1 class=\"app-title\">Tic Tac Toe</h1>\n    <p id=\"turn-indicator\" class=\"turn-indicator\">Player X's Turn</p>\n  </header>\n</div>\n</body></html>"
+        },
+        {
+          "path": "styles.css",
+          "content": "body { font-family: sans-serif; background: #090d16; color: #f1f5f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }\n.game-wrapper { background: #131b2e; border: 1px solid #233150; border-radius: 1rem; padding: 2rem; text-align: center; max-width: 440px; width: 100%; }\n.turn-indicator { color: #00f0ff; font-weight: bold; }\n"
+        }
+      ],
+      "checks": [
+        {
+          "id": "chk_turn_ind",
+          "description": "Turn indicator element exists with ID turn-indicator",
+          "type": "elementExists",
+          "selector": "#turn-indicator"
+        }
+      ],
+      "hints": [
+        "Create `<p id=\"turn-indicator\">Player X's Turn</p>`."
+      ]
+    },
+    {
+      "id": "mod_3",
+      "pageId": "page_tic_tac_toe",
+      "order": 3,
+      "title": "Build 3x3 Grid Board Layout",
+      "learningObjective": "Use CSS Grid to create a responsive 3x3 board containing 9 cell button elements with data-index attributes.",
+      "componentType": "main-section",
+      "status": "locked",
+      "lesson": "# CSS Grid for Board Layouts\n\n`grid-template-columns: repeat(3, 1fr)` provides an ideal structure for a 3x3 game board.",
+      "task": "Add `<main class=\"board-container\">` with `<div id=\"game-board\" class=\"game-board\">` containing 9 `<button class=\"cell\" data-index=\"0\"></button>` through `data-index=\"8\"`.",
+      "starterFiles": [
+        { "path": "index.html", "content": "<!DOCTYPE html><html><body><div class=\"game-wrapper\"><header><h1 class=\"app-title\">Tic Tac Toe</h1></header></div></body></html>" },
+        { "path": "styles.css", "content": "/* Board */" }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<!DOCTYPE html><html><body><div class=\"game-wrapper\">\n<header><h1 class=\"app-title\">Tic Tac Toe</h1></header>\n<main class=\"board-container\">\n  <div id=\"game-board\" class=\"game-board\">\n    <button class=\"cell\" data-index=\"0\"></button>\n    <button class=\"cell\" data-index=\"1\"></button>\n    <button class=\"cell\" data-index=\"2\"></button>\n    <button class=\"cell\" data-index=\"3\"></button>\n    <button class=\"cell\" data-index=\"4\"></button>\n    <button class=\"cell\" data-index=\"5\"></button>\n    <button class=\"cell\" data-index=\"6\"></button>\n    <button class=\"cell\" data-index=\"7\"></button>\n    <button class=\"cell\" data-index=\"8\"></button>\n  </div>\n  <p id=\"game-status\" class=\"game-status\"></p>\n</main>\n</div></body></html>"
+        },
+        {
+          "path": "styles.css",
+          "content": ".game-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; margin: 1rem auto; max-width: 300px; }\n.cell { background: #090d16; border: 2px solid #233150; border-radius: 0.5rem; aspect-ratio: 1; font-size: 2rem; font-weight: bold; cursor: pointer; color: #fff; }\n"
+        }
+      ],
+      "checks": [
+        {
+          "id": "chk_board_exists",
+          "description": "Game board container exists with ID game-board",
+          "type": "elementExists",
+          "selector": "#game-board"
+        },
+        {
+          "id": "chk_cells_count",
+          "description": "Cell with data-index 8 exists",
+          "type": "elementExists",
+          "selector": ".cell[data-index='8']"
+        }
+      ],
+      "hints": [
+        "Create 9 button elements with class `cell` and data-index 0 to 8."
+      ]
+    },
+    {
+      "id": "mod_4",
+      "pageId": "page_tic_tac_toe",
+      "order": 4,
+      "title": "Construct Match Control Footer and Stats",
+      "learningObjective": "Implement the restart button and stats display showing X wins, O wins, and ties.",
+      "componentType": "footer",
+      "status": "locked",
+      "lesson": "# Game Controls and Score Display\n\nA restart button lets players start fresh matches, and score counters provide persistence.",
+      "task": "Add `<footer class=\"game-footer\">` with `<button id=\"restart-btn\" class=\"restart-button\">New Match</button>` and `#x-wins`, `#o-wins`, and `#ties-count` in a `.stats-row`.",
+      "starterFiles": [
+        { "path": "index.html", "content": "<div><div id=\"game-board\"></div></div>" },
+        { "path": "styles.css", "content": "/* Footer */" }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<div>\n<div id=\"game-board\"></div>\n<footer class=\"game-footer\">\n  <button id=\"restart-btn\" class=\"restart-button\">New Match</button>\n  <div class=\"stats-row\">\n    <span>X Wins: <strong id=\"x-wins\">0</strong></span>\n    <span>O Wins: <strong id=\"o-wins\">0</strong></span>\n    <span>Ties: <strong id=\"ties-count\">0</strong></span>\n  </div>\n</footer>\n</div>"
+        },
+        {
+          "path": "styles.css",
+          "content": ".game-footer { border-top: 1px solid #233150; padding-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }\n.restart-button { padding: 0.5rem 1rem; background: #090d16; border: 1px solid #233150; color: #fff; border-radius: 0.5rem; cursor: pointer; align-self: center; }\n.stats-row { display: flex; justify-content: space-around; font-size: 0.85rem; color: #94a3b8; }\n"
+        }
+      ],
+      "checks": [
+        {
+          "id": "chk_restart_btn",
+          "description": "Restart button exists with ID restart-btn",
+          "type": "elementExists",
+          "selector": "#restart-btn"
+        },
+        {
+          "id": "chk_x_wins",
+          "description": "X wins counter exists with ID x-wins",
+          "type": "elementExists",
+          "selector": "#x-wins"
+        }
+      ],
+      "hints": [
+        "Include `<button id=\"restart-btn\">` and `<strong id=\"x-wins\">`."
+      ]
+    },
+    {
+      "id": "mod_5",
+      "pageId": "page_tic_tac_toe",
+      "order": 5,
+      "title": "Implement Win-State Engine and Turn Logic",
+      "learningObjective": "Implement JavaScript arrays to evaluate board state against winning combinations and persist match statistics.",
+      "componentType": "script-behavior",
+      "status": "locked",
+      "lesson": "# Evaluating Game Combinations\n\nThere are 8 possible win combinations in Tic Tac Toe: 3 rows, 3 columns, and 2 diagonals. On every click, we update the array and check for a winner.",
+      "task": "Link `<script src=\"app.js\"></script>`. In `app.js`, add click handlers to grid cells, alternate between 'X' and 'O', detect victory/tie conditions, and persist stats to `localStorage`.",
+      "starterFiles": [
+        { "path": "index.html", "content": "<div><div id=\"game-board\"><button class=\"cell\" data-index=\"0\"></button></div><button id=\"restart-btn\"></button></div>" },
+        { "path": "app.js", "content": "// Logic" }
+      ],
+      "solutionFiles": [
+        {
+          "path": "index.html",
+          "content": "<div><div id=\"game-board\"><button class=\"cell\" data-index=\"0\"></button></div><button id=\"restart-btn\"></button></div><script src=\"app.js\"></script>"
+        },
+        {
+          "path": "app.js",
+          "content": "let currentPlayer = 'X';\nlet board = ['', '', '', '', '', '', '', '', ''];\nlet active = true;\nconst winConditions = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];\nfunction handleClick(e) {\n  const idx = parseInt(e.target.dataset.index);\n  if (board[idx] !== '' || !active) return;\n  board[idx] = currentPlayer;\n  e.target.textContent = currentPlayer;\n  for (let c of winConditions) {\n    if (board[c[0]] && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]) {\n      active = false;\n      return;\n    }\n  }\n  if (!board.includes('')) active = false;\n  currentPlayer = currentPlayer === 'X' ? 'O' : 'X';\n}\ndocument.querySelectorAll('.cell').forEach(c => c.addEventListener('click', handleClick));\n"
+        }
+      ],
+      "checks": [
+        {
+          "id": "chk_script_ttt",
+          "description": "Script tag links to app.js",
+          "type": "attributeEquals",
+          "selector": "script[src='app.js']",
+          "expected": "app.js"
+        },
+        {
+          "id": "chk_handleclick_def",
+          "description": "handleClick function is declared",
+          "type": "scriptDefines",
+          "expected": "handleClick"
+        }
+      ],
+      "hints": [
+        "Define the 8 winning combinations in `winConditions`."
+      ]
+    }
+  ],
+  "finalFiles": [
+    {
+      "path": "index.html",
+      "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n  <title>Tic Tac Toe</title>\n  <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n  <div class=\"game-wrapper\">\n    <header class=\"game-header\">\n      <h1 class=\"app-title\">Tic Tac Toe</h1>\n      <p id=\"turn-indicator\" class=\"turn-indicator\">Player X's Turn</p>\n    </header>\n    <main class=\"board-container\">\n      <div id=\"game-board\" class=\"game-board\">\n        <button class=\"cell\" data-index=\"0\"></button>\n        <button class=\"cell\" data-index=\"1\"></button>\n        <button class=\"cell\" data-index=\"2\"></button>\n        <button class=\"cell\" data-index=\"3\"></button>\n        <button class=\"cell\" data-index=\"4\"></button>\n        <button class=\"cell\" data-index=\"5\"></button>\n        <button class=\"cell\" data-index=\"6\"></button>\n        <button class=\"cell\" data-index=\"7\"></button>\n        <button class=\"cell\" data-index=\"8\"></button>\n      </div>\n      <p id=\"game-status\" class=\"game-status\"></p>\n    </main>\n    <footer class=\"game-footer\">\n      <button id=\"restart-btn\" class=\"restart-button\">New Match</button>\n      <div class=\"stats-row\">\n        <span>X Wins: <strong id=\"x-wins\">0</strong></span>\n        <span>O Wins: <strong id=\"o-wins\">0</strong></span>\n        <span>Ties: <strong id=\"ties-count\">0</strong></span>\n      </div>\n    </footer>\n  </div>\n  <script src=\"app.js\"></script>\n</body>\n</html>\n"
+    },
+    {
+      "path": "styles.css",
+      "content": ":root {\n  --bg: #090d16;\n  --card: #131b2e;\n  --border: #233150;\n  --text: #f1f5f9;\n  --text-muted: #94a3b8;\n  --color-x: #00f0ff;\n  --color-o: #f43f5e;\n}\n* { box-sizing: border-box; margin: 0; padding: 0; }\nbody {\n  font-family: sans-serif;\n  background-color: var(--bg);\n  color: var(--text);\n  min-height: 100vh;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  padding: 1rem;\n}\n.game-wrapper {\n  background: var(--card);\n  border: 1px solid var(--border);\n  border-radius: 1.25rem;\n  width: 100%;\n  max-width: 440px;\n  padding: 2rem;\n  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);\n  text-align: center;\n}\n.app-title {\n  font-size: 1.5rem;\n  font-weight: 800;\n  color: var(--text);\n  margin-bottom: 0.5rem;\n}\n.turn-indicator {\n  font-size: 0.9rem;\n  font-weight: 600;\n  color: var(--color-x);\n}\n.game-board {\n  display: grid;\n  grid-template-columns: repeat(3, 1fr);\n  gap: 0.75rem;\n  margin: 0 auto 1.25rem auto;\n  max-width: 320px;\n}\n.cell {\n  background: #090d16;\n  border: 2px solid var(--border);\n  border-radius: 0.75rem;\n  aspect-ratio: 1;\n  font-size: 2.25rem;\n  font-weight: 800;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  color: var(--text);\n}\n.game-status {\n  font-size: 1rem;\n  font-weight: 700;\n  min-height: 1.5rem;\n  margin-bottom: 1rem;\n}\n.game-footer {\n  border-top: 1px solid var(--border);\n  padding-top: 1.25rem;\n  display: flex;\n  flex-direction: column;\n  gap: 1rem;\n}\n.restart-button {\n  background: #090d16;\n  border: 1px solid var(--border);\n  color: var(--text);\n  padding: 0.625rem 1.25rem;\n  border-radius: 0.5rem;\n  font-size: 0.875rem;\n  font-weight: 600;\n  cursor: pointer;\n  align-self: center;\n}\n.stats-row {\n  display: flex;\n  justify-content: space-around;\n  font-size: 0.8125rem;\n  color: var(--text-muted);\n}\n"
+    },
+    {
+      "path": "app.js",
+      "content": "const cells = document.querySelectorAll('.cell');\nconst turnIndicator = document.getElementById('turn-indicator');\nconst statusText = document.getElementById('game-status');\nconst restartBtn = document.getElementById('restart-btn');\nlet currentPlayer = 'X';\nlet boardState = ['', '', '', '', '', '', '', '', ''];\nlet isGameActive = true;\nconst winConditions = [\n  [0, 1, 2], [3, 4, 5], [6, 7, 8],\n  [0, 3, 6], [1, 4, 7], [2, 5, 8],\n  [0, 4, 8], [2, 4, 6]\n];\nfunction handleCellClick(e) {\n  const idx = parseInt(e.target.dataset.index);\n  if (boardState[idx] !== '' || !isGameActive) return;\n  boardState[idx] = currentPlayer;\n  e.target.textContent = currentPlayer;\n  for (let c of winConditions) {\n    if (boardState[c[0]] && boardState[c[0]] === boardState[c[1]] && boardState[c[0]] === boardState[c[2]]) {\n      statusText.textContent = `Player ${currentPlayer} Wins!`;\n      isGameActive = false;\n      return;\n    }\n  }\n  if (!boardState.includes('')) {\n    statusText.textContent = 'Draw Game!';\n    isGameActive = false;\n    return;\n  }\n  currentPlayer = currentPlayer === 'X' ? 'O' : 'X';\n  turnIndicator.textContent = `Player ${currentPlayer}'s Turn`;\n}\ncells.forEach(cell => cell.addEventListener('click', handleCellClick));\nrestartBtn.addEventListener('click', () => {\n  currentPlayer = 'X';\n  boardState = ['', '', '', '', '', '', '', '', ''];\n  isGameActive = true;\n  statusText.textContent = '';\n  turnIndicator.textContent = \"Player X's Turn\";\n  cells.forEach(c => c.textContent = '');\n});\n"
+    }
+  ]
+}

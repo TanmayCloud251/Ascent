@@ -13,8 +13,8 @@ import {
   ProjectSpec,
   TechStackConfig,
   Project as AscentProject,
-  ScreenPlanItem,
-  ModuleItem,
+  PageItem,
+  PageModuleItem,
   ProjectMemory
 } from '../types/ascent'
 import { storageService } from '../services/storageService'
@@ -23,6 +23,16 @@ import {
   CodeEvaluationResult,
   ThinkingPlan
 } from '../services/curriculumGenerator'
+import curatedIndex from '../data/curated/index.json'
+import currencyConverterCourse from '../data/curated/currency-converter.json'
+import rockPaperScissorsCourse from '../data/curated/rock-paper-scissors.json'
+import ticTacToeCourse from '../data/curated/tic-tac-toe.json'
+
+const CURATED_COURSES: Record<string, any> = {
+  'currency-converter': currencyConverterCourse,
+  'rock-paper-scissors': rockPaperScissorsCourse,
+  'tic-tac-toe': ticTacToeCourse
+}
 
 export type SpecGenerationStage = 'idle' | 'analyzing' | 'synthesizing' | 'validating' | 'done' | 'error'
 
@@ -67,18 +77,26 @@ interface AppContextType {
   generateProjectSpec: (prompt: string, techStack?: Partial<TechStackConfig>, forceRefresh?: boolean) => Promise<void>
   retryGenerateSpec: () => Promise<void>
   updateProjectSpec: (spec: ProjectSpec) => void
-  updateClarifyingAnswer: (questionId: string, answer: string) => void
   confirmProjectSpec: () => Promise<void>
   clearSpecError: () => void
+  curatedCoursesList: Array<{
+    slug: string
+    title: string
+    shortDescription: string
+    difficulty: string
+    estimatedHours: number
+  }>
+  loadCuratedProject: (slug: string) => Promise<void>
 
-  // Slice 2: Screen Plan & Syllabus Decomposition
-  activeScreens: ScreenPlanItem[]
-  activeModules: ModuleItem[]
+  // Slice 2 Revised: Page + Component Syllabus
+  currentPage: PageItem | null
+  pages: PageItem[]
+  activeModules: PageModuleItem[]
   currentScreenIndex: number
   selectActiveScreen: (index: number) => Promise<void>
   projectMemory: ProjectMemory | null
   isGeneratingPlan: boolean
-  planStage: 'idle' | 'plan' | 'syllabus' | 'done' | 'error'
+  planStage: 'idle' | 'page' | 'done' | 'error'
   planError: string | null
 
   // Projects State
@@ -103,8 +121,6 @@ interface AppContextType {
   testStatus: 'not_run' | 'running' | 'pass' | 'fail'
   evaluationResult: CodeEvaluationResult | null
   unlockHint: (hintId: string) => void
-  clarifyingQuestionAnswered: boolean
-  setClarifyingAnswered: (ans: boolean) => void
   isThinking: boolean
   skipThinking: () => void
   thinkingPlan: ThinkingPlan | null
@@ -166,6 +182,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       totalScreens: p.spec?.primaryFeatures?.length || 1,
       completedScreens: 0,
       lastActiveFormatted: 'active just now',
+      source: p.source || 'generated',
+      curatedSlug: p.curatedSlug,
       createdAt: p.createdAt
     }))
   })
@@ -309,9 +327,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         userPrompt: trimmed,
         spec: result.spec,
         useTailwind: result.spec.useTailwind,
-        screens: [],
-        currentScreenIndex: 0,
+        currentPageIndex: 0,
+        pages: [],
         status: 'draft_spec',
+        source: 'generated',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }
@@ -335,32 +354,155 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [activePrompt, activeStackConfig, generateProjectSpec])
 
-  // Slice 2 State: Screen Plan, Syllabus Modules, and Project Memory
-  const [activeScreens, setActiveScreens] = useState<ScreenPlanItem[]>([])
-  const [activeModules, setActiveModules] = useState<ModuleItem[]>([])
+  const loadCuratedProject = useCallback(async (slug: string) => {
+    const course = CURATED_COURSES[slug]
+    if (!course) {
+      setSpecError(`Curated course "${slug}" not found.`)
+      return
+    }
+
+    setSpecError(null)
+    // Curated projects strictly use plain CSS (no Tailwind) and are locked
+    setUseTailwindState(false)
+    setIsTailwindLocked(true)
+    setActivePrompt(`${course.title}: ${course.shortDescription}`)
+    setActiveStackConfig({
+      runtime: 'HTML + CSS + JavaScript',
+      styling: 'Plain CSS',
+      stateManagement: 'Browser In-Memory State / DOM',
+      backendSim: 'In-Browser LocalStorage / IndexedDB',
+      useTailwind: false
+    })
+
+    // Staged telemetry transition: analyzing -> synthesizing -> validating -> done
+    setSpecStage('analyzing')
+    setCurrentScreen(2)
+
+    // Record static trace immediately for telemetry inspector
+    llmService.recordCuratedTrace(slug, course)
+
+    await new Promise(r => setTimeout(r, 700))
+    setSpecStage('synthesizing')
+    await new Promise(r => setTimeout(r, 900))
+    setSpecStage('validating')
+    await new Promise(r => setTimeout(r, 600))
+
+    const newProjectId = `proj_curated_${slug}_${Date.now()}`
+    const pageItem: PageItem = {
+      id: course.page?.id || `page_${slug}_1`,
+      projectId: newProjectId,
+      order: course.page?.order || 1,
+      name: course.page?.name || course.title,
+      description: course.page?.description || course.shortDescription,
+      fileName: course.page?.fileName || 'index.html',
+      purpose: course.page?.purpose || course.shortDescription,
+      status: 'active',
+      modules: (course.modules || []).map((m: any, idx: number) => ({
+        id: m.id || `mod_${slug}_${idx + 1}`,
+        pageId: course.page?.id || `page_${slug}_1`,
+        order: m.order || (idx + 1),
+        title: m.title,
+        learningObjective: m.learningObjective || (m.task ? m.task.slice(0, 100) : 'Implement module specifications'),
+        componentType: m.componentType || 'content-block',
+        status: (idx === 0 ? 'active' : 'locked') as 'locked' | 'active' | 'done'
+      }))
+    }
+
+    const newProject: AscentProject = {
+      id: newProjectId,
+      userId: currentUser.id,
+      userPrompt: `${course.title} — ${course.shortDescription}`,
+      spec: course.spec,
+      useTailwind: false,
+      currentPageIndex: 0,
+      pages: [pageItem],
+      status: 'draft_spec',
+      source: 'curated',
+      curatedSlug: slug,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+
+    storageService.saveProject(newProject)
+    storageService.setActiveProjectId(newProjectId)
+    setActiveProjectId(newProjectId)
+    setActiveSpec(course.spec)
+    setPages([pageItem])
+    setCurrentPage(pageItem)
+    setActiveModules(pageItem.modules)
+    setCurrentScreenIndex(0)
+
+    const memory: ProjectMemory = {
+      projectId: newProjectId,
+      techStack: 'HTML + CSS + JavaScript (Plain CSS, semantic styles)',
+      useTailwind: false,
+      namingConventions: [
+        'Single page vanilla web app',
+        'Semantic HTML and pure CSS custom properties',
+        'Modular vanilla JavaScript event handlers'
+      ],
+      fileTree: [pageItem.fileName, 'styles.css', 'app.js'],
+      decisionsMade: [...(course.spec?.assumptions || [])],
+      completedFiles: {}
+    }
+    storageService.saveProjectMemory(memory)
+    setProjectMemory(memory)
+
+    // Update projects list for sidebar/history
+    setProjects(prev => [
+      {
+        id: newProjectId,
+        title: course.spec.appName,
+        prompt: newProject.userPrompt,
+        status: 'planning',
+        techStack: ['HTML + CSS + JavaScript', 'Plain CSS'],
+        plannedScreens: [],
+        totalScreens: course.spec.primaryFeatures?.length || 1,
+        completedScreens: 0,
+        lastActiveFormatted: 'active just now',
+        source: 'curated',
+        curatedSlug: slug,
+        createdAt: newProject.createdAt
+      },
+      ...prev.filter(p => p.id !== newProjectId)
+    ])
+
+    // Load initial code for module 0 if present
+    if (course.modules?.[0]?.starterFiles && course.modules[0].starterFiles.length > 0) {
+      const initCode: Record<string, string> = {}
+      for (const f of course.modules[0].starterFiles) {
+        initCode[f.path] = f.content
+      }
+      setCodeFiles(initCode)
+      setActiveFile(course.modules[0].starterFiles[0].path)
+    }
+
+    setSpecStage('done')
+  }, [currentUser.id])
+
+  // Slice 2 Revised: Page + Component Syllabus
+  const [currentPage, setCurrentPage] = useState<PageItem | null>(null)
+  const [pages, setPages] = useState<PageItem[]>([])
+  const [activeModules, setActiveModules] = useState<PageModuleItem[]>([])
   const [currentScreenIndex, setCurrentScreenIndex] = useState<number>(0)
   const [projectMemory, setProjectMemory] = useState<ProjectMemory | null>(null)
   const [isGeneratingPlan, setIsGeneratingPlan] = useState<boolean>(false)
-  const [planStage, setPlanStage] = useState<'idle' | 'plan' | 'syllabus' | 'done' | 'error'>('idle')
+  const [planStage, setPlanStage] = useState<'idle' | 'page' | 'done' | 'error'>('idle')
   const [planError, setPlanError] = useState<string | null>(null)
 
-  // Restore Slice 2 screens, modules, and memory from storage on project load
+  // Restore Slice 2 page and modules from storage on project load
   useEffect(() => {
     if (activeProjectId) {
       const stored = storageService.getProjectById(activeProjectId)
       if (stored) {
-        if (stored.screens && stored.screens.length > 0) {
-          setActiveScreens(stored.screens)
+        if (stored.pages && stored.pages.length > 0) {
+          setPages(stored.pages)
+          const activePg = stored.pages[stored.currentPageIndex || 0] || stored.pages[0]
+          setCurrentPage(activePg)
+          setActiveModules(activePg.modules || [])
         }
-        if (stored.currentScreenIndex !== undefined) {
-          setCurrentScreenIndex(stored.currentScreenIndex)
-        }
-        if (stored.modulesByScreen) {
-          const firstScreenId = stored.screens?.[stored.currentScreenIndex || 0]?.id || 'screen_1'
-          const currentMods = stored.modulesByScreen[firstScreenId] || []
-          if (currentMods.length > 0) {
-            setActiveModules(currentMods)
-          }
+        if (stored.currentPageIndex !== undefined) {
+          setCurrentScreenIndex(stored.currentPageIndex)
         }
       }
       const mem = storageService.getProjectMemory(activeProjectId)
@@ -381,140 +523,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [activeProjectId])
 
-  // GAP FIX 1: When user answers clarifying questions, call generateSpec again
-  // with prompt, previousSpec, and answers so the spec is truly refined
-  const updateClarifyingAnswer = useCallback(async (questionId: string, answer: string) => {
-    if (!activeSpec) return
-    const updatedQuestions = activeSpec.clarifyingQuestions.map(q => 
-      q.id === questionId ? { ...q, selectedAnswer: answer } : q
-    )
-    const answersMap: Record<string, string> = {}
-    updatedQuestions.forEach(q => {
-      if (q.selectedAnswer) {
-        answersMap[q.id] = q.selectedAnswer
-      }
-    })
-
-    const updatedSpec = { ...activeSpec, clarifyingQuestions: updatedQuestions }
-    setActiveSpec(updatedSpec)
-
-    // Trigger spec refinement with Gemini
-    try {
-      setSpecStage('synthesizing')
-      const refinedResult = await llmService.generateSpec({
-        prompt: activePrompt,
-        techStack: activeStackConfig,
-        previousSpec: updatedSpec,
-        clarifyingAnswers: answersMap,
-        forceRefresh: true
-      })
-      setActiveSpec(refinedResult.spec)
-      if (activeProjectId) {
-        const stored = storageService.getProjectById(activeProjectId)
-        if (stored) {
-          stored.spec = refinedResult.spec
-          storageService.saveProject(stored)
-        }
-      }
-      setSpecStage('done')
-    } catch (e: any) {
-      console.warn('Spec refinement non-fatal error:', e)
-      setSpecStage('done')
-    }
-  }, [activePrompt, activeProjectId, activeSpec, activeStackConfig])
-
-  // SLICE 2: Confirm Spec triggers Plan Generation, then Syllabus Generation for Screen 1
+  // SLICE 2: Confirm Spec triggers Single Page + Component Syllabus Generation
   const confirmProjectSpec = useCallback(async () => {
     if (!activeSpec || !activeProjectId) return
 
     setPlanError(null)
     setIsGeneratingPlan(true)
-    setPlanStage('plan')
+    setPlanStage('page')
     setIsTailwindLocked(true) // LOCK TOGGLE AFTER CONFIRMATION
     setCurrentScreen(3) // Navigate to Screen 3 (Project Overview)
 
     try {
-      // 2. Generate or Load Cached Screen Plan (5-8 screens in strict dependency order)
-      const planResult = await llmService.generateScreenPlan({
-        spec: activeSpec
-      })
-      const screens = planResult.screens
-      setActiveScreens(screens)
-      setCurrentScreenIndex(0)
-
-      // 1. Initialize Project Memory with multi-page HTML file structure
-      // Each screen of the target app is its own HTML file (e.g. index.html, dashboard.html)
-      // sharing /css/styles.css (only when Tailwind is off), and /js/*.js files.
-      const initialFileTree: string[] = screens.map((s, idx) => {
-        if (idx === 0) return 'index.html'
-        const cleanName = s.screenName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-        return `${cleanName || `screen-${idx + 1}`}.html`
-      })
-
-      if (!activeSpec.useTailwind) {
-        initialFileTree.push('css/styles.css')
+      // For curated projects: bypass LLM generation completely! Pre-built syllabus already loaded.
+      const storedCurated = storageService.getProjectById(activeProjectId)
+      if (storedCurated?.source === 'curated') {
+        storedCurated.status = 'spec_confirmed'
+        storageService.saveProject(storedCurated)
+        setPlanStage('done')
+        setIsGeneratingPlan(false)
+        return
       }
-      initialFileTree.push('js/app.js')
-      initialFileTree.push('js/storage.js')
 
-      let memory = storageService.getProjectMemory(activeProjectId)
-      if (!memory) {
-        memory = {
-          projectId: activeProjectId,
-          techStack: `HTML + CSS + JavaScript (${activeSpec.useTailwind ? 'Tailwind CSS utilities' : 'Plain CSS'})`,
-          namingConventions: [
-            'Each screen has its own standalone .html file (index.html, dashboard.html, etc.)',
-            activeSpec.useTailwind
-              ? 'Tailwind utility classes directly on HTML elements'
-              : 'Semantic class names and CSS custom properties in css/styles.css',
-            'camelCase for vanilla JavaScript functions, events, and variables (js/*.js)',
-            'LocalStorage / IndexedDB keys namespaced with app prefix'
-          ],
-          fileTree: initialFileTree,
-          decisionsMade: activeSpec.clarifyingQuestions
-            .filter(q => q.selectedAnswer)
-            .map(q => `${q.question}: ${q.selectedAnswer}`),
-          completedFiles: {}
-        }
-        storageService.saveProjectMemory(memory)
-      } else {
-        memory.fileTree = initialFileTree
-        storageService.saveProjectMemory(memory)
+      // 1. Initialize or load Project Memory
+      let memory: ProjectMemory = storageService.getProjectMemory(activeProjectId) || {
+        projectId: activeProjectId,
+        techStack: `HTML + CSS + JavaScript (${activeSpec.useTailwind ? 'Tailwind CSS utilities' : 'Plain semantic CSS'})`,
+        useTailwind: activeSpec.useTailwind,
+        namingConventions: [
+          'Single page at a time with dedicated progressive component modules',
+          activeSpec.useTailwind
+            ? 'Tailwind utility classes directly on HTML elements'
+            : 'Semantic class names and CSS custom properties',
+          'camelCase for vanilla JavaScript DOM behavior and localStorage persistence'
+        ],
+        fileTree: [],
+        decisionsMade: [...activeSpec.assumptions],
+        completedFiles: {}
       }
+      storageService.saveProjectMemory(memory)
       setProjectMemory(memory)
 
-      // 3. Generate or Load Cached Syllabus for the First Screen ONLY
-      setPlanStage('syllabus')
-      const firstScreen = screens[0]
-      const syllabusResult = await llmService.generateSyllabus({
+      // 2. Call LLM to generate the SINGLE PAGE + Component Syllabus
+      const pageResult = await llmService.generatePage({
         spec: activeSpec,
-        currentScreen: firstScreen,
+        useTailwind: activeSpec.useTailwind,
         projectMemory: memory
       })
-      const modules = syllabusResult.modules
-      setActiveModules(modules)
 
-      // 4. Persist to storage abstraction
+      if (!pageResult.page) {
+        throw new Error('LLM did not return a valid page blueprint.')
+      }
+
+      const generatedPage = pageResult.page
+      setCurrentPage(generatedPage)
+      setPages([generatedPage])
+      setActiveModules(generatedPage.modules)
+      setCurrentScreenIndex(0)
+
+      // Update memory fileTree
+      memory.fileTree = [generatedPage.fileName]
+      storageService.saveProjectMemory(memory)
+      setProjectMemory({ ...memory })
+
+      // 3. Persist to storage abstraction
       const stored = storageService.getProjectById(activeProjectId)
       if (stored) {
         stored.status = 'spec_confirmed'
         stored.spec = activeSpec
         stored.useTailwind = activeSpec.useTailwind
-        stored.screens = screens
-        stored.currentScreenIndex = 0
-        stored.modulesByScreen = {
-          [firstScreen.id]: modules
-        }
+        stored.pages = [generatedPage]
+        stored.currentPageIndex = 0
         storageService.saveProject(stored)
       }
 
       setPlanStage('done')
       setIsGeneratingPlan(false)
     } catch (err: any) {
-      const msg = err.message || 'Failed to generate screen plan and syllabus.'
+      const msg = err.message || 'Failed to generate page blueprint.'
       setPlanError(msg)
       setPlanStage('error')
       setIsGeneratingPlan(false)
@@ -522,48 +607,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [activeProjectId, activeSpec])
 
   const selectActiveScreen = useCallback(async (index: number) => {
-    if (!activeScreens[index] || !activeSpec || !activeProjectId) return
+    if (!pages[index]) return
     setCurrentScreenIndex(index)
-    const targetScreen = activeScreens[index]
-
-    // Check if we have syllabus for this screen
-    const stored = storageService.getProjectById(activeProjectId)
-    const existingMods = stored?.modulesByScreen?.[targetScreen.id]
-    if (existingMods && existingMods.length > 0) {
-      setActiveModules(existingMods)
-      return
-    }
-
-    // Only generate if screen is not locked
-    if (targetScreen.status !== 'locked' || index === 0) {
-      try {
-        setIsGeneratingPlan(true)
-        setPlanStage('syllabus')
-        const memory = storageService.getProjectMemory(activeProjectId)
-        const syllabusResult = await llmService.generateSyllabus({
-          spec: activeSpec,
-          currentScreen: targetScreen,
-          projectMemory: memory
-        })
-        setActiveModules(syllabusResult.modules)
-
-        if (stored) {
-          stored.modulesByScreen = {
-            ...(stored.modulesByScreen || {}),
-            [targetScreen.id]: syllabusResult.modules
-          }
-          stored.currentScreenIndex = index
-          storageService.saveProject(stored)
-        }
-        setPlanStage('done')
-        setIsGeneratingPlan(false)
-      } catch (err: any) {
-        setPlanError(err.message || 'Failed to generate syllabus for screen.')
-        setPlanStage('error')
-        setIsGeneratingPlan(false)
-      }
-    }
-  }, [activeProjectId, activeScreens, activeSpec])
+    const targetPage = pages[index]
+    setCurrentPage(targetPage)
+    setActiveModules(targetPage.modules)
+  }, [pages])
 
   const clearSpecError = useCallback(() => {
     setSpecError(null)
@@ -806,10 +855,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         generateProjectSpec,
         retryGenerateSpec,
         updateProjectSpec,
-        updateClarifyingAnswer,
         confirmProjectSpec,
         clearSpecError,
-        activeScreens,
+        curatedCoursesList: curatedIndex,
+        loadCuratedProject,
+        currentPage,
+        pages,
         activeModules,
         currentScreenIndex,
         selectActiveScreen,
@@ -836,8 +887,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         testStatus,
         evaluationResult,
         unlockHint,
-        clarifyingQuestionAnswered,
-        setClarifyingAnswered,
         isThinking,
         skipThinking,
         thinkingPlan,

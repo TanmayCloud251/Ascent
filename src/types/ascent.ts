@@ -32,24 +32,67 @@ export interface TechStackConfig {
   useTailwind: boolean
 }
 
+export interface FeatureItem {
+  name: string
+  description: string
+}
+
+export interface UserFlowItem {
+  flowName: string
+  steps: string[]
+}
+
+export interface DataEntityField {
+  name: string
+  type: string
+  description?: string
+}
+
+export interface DataEntity {
+  name: string
+  storageKey: string
+  fields: DataEntityField[]
+}
+
 export interface ProjectSpec {
   appName: string
   tagline: string
   summary: string
   targetAudience: string
-  primaryFeatures: string[]
+  primaryFeatures: FeatureItem[]
+  userFlows: UserFlowItem[]
+  dataEntities: DataEntity[]
   techStack: TechStackConfig
   useTailwind: boolean
   architectureHighlights: string[]
-  clarifyingQuestions: ClarifyingQuestion[]
+  assumptions: string[]
+  outOfScope: string[]
+  estimatedScreenCount: number
+  difficulty: 'beginner' | 'intermediate'
+  estimatedHours: number
 }
 
-// Zod Schema for Gemini API validation
-export const ClarifyingQuestionSchema = z.object({
-  id: z.string(),
-  question: z.string(),
-  options: z.array(z.string()).min(2),
-  selectedAnswer: z.string().optional()
+// Zod Schemas
+export const FeatureItemSchema = z.object({
+  name: z.string().min(2),
+  description: z.string().min(5)
+})
+
+export const UserFlowItemSchema = z.object({
+  flowName: z.string().min(2),
+  steps: z.array(z.string()).min(2)
+})
+
+export const DataEntityFieldSchema = z.object({
+  name: z.string(),
+  type: z.string(),
+  description: z.string().optional()
+})
+
+export const DataEntitySchema = z.object({
+  name: z.string(),
+  storageKey: z.string(),
+  fields: z.array(DataEntityFieldSchema).min(1)
 })
 
 export const TechStackConfigSchema = z.object({
@@ -65,76 +108,90 @@ export const ProjectSpecSchema = z.object({
   tagline: z.string().min(5),
   summary: z.string().min(10),
   targetAudience: z.string().default('General Web Users'),
-  primaryFeatures: z.array(z.string()).min(2),
+  primaryFeatures: z.array(FeatureItemSchema).min(2),
+  userFlows: z.array(UserFlowItemSchema).min(2).max(4).default([]),
+  dataEntities: z.array(DataEntitySchema).min(1).default([]),
   techStack: TechStackConfigSchema,
   useTailwind: z.boolean().default(true),
   architectureHighlights: z.array(z.string()).min(2),
-  clarifyingQuestions: z.array(ClarifyingQuestionSchema).default([])
+  assumptions: z.array(z.string()).min(1),
+  outOfScope: z.array(z.string()).min(1),
+  estimatedScreenCount: z.number().int().min(1).max(8).default(3),
+  difficulty: z.enum(['beginner', 'intermediate']).default('beginner'),
+  estimatedHours: z.number().min(1).max(20).default(4)
 })
 
 export type ProjectStatus = 'draft_spec' | 'spec_confirmed' | 'in_progress' | 'completed'
 
-export interface ScreenPlanItem {
+// ============================================================================
+// Slice 2 Revised: Page + Component Syllabus
+// ============================================================================
+
+export type ComponentType =
+  | 'document-head'
+  | 'body-layout'
+  | 'header'
+  | 'navigation'
+  | 'main-section'
+  | 'content-block'
+  | 'form'
+  | 'footer'
+  | 'script-behavior'
+
+export interface PageModuleItem {
   id: string
-  order: number
-  screenName: string
-  description: string
-  estimatedModulesCount?: number
-  keyComponents?: string[]
-  status: 'locked' | 'active' | 'done'
-}
-
-export const ScreenPlanItemSchema = z.object({
-  name: z.string().min(2),
-  description: z.string().min(6)
-})
-
-export const ScreenPlanResponseSchema = z.object({
-  screens: z.array(ScreenPlanItemSchema).min(3).max(8)
-})
-
-export interface ModuleItem {
-  id: string
+  pageId: string
   order: number
   title: string
   learningObjective: string
-  componentType: string
+  componentType: ComponentType
   status: 'locked' | 'active' | 'done'
 }
 
-export const ModuleItemSchema = z.object({
+export const PageModuleItemSchema = z.object({
   title: z.string().min(2),
   learningObjective: z.string().min(6),
-  componentType: z.string().min(2)
+  componentType: z.enum([
+    'document-head',
+    'body-layout',
+    'header',
+    'navigation',
+    'main-section',
+    'content-block',
+    'form',
+    'footer',
+    'script-behavior'
+  ])
 })
 
-export const SyllabusResponseSchema = z.object({
-  screenName: z.string().optional(),
-  modules: z.array(ModuleItemSchema).min(4).max(7)
-})
-
-export interface ModuleCheck {
+export interface PageItem {
   id: string
-  description: string
-  testCode?: string
-  passed?: boolean
-}
-
-export interface Module {
-  id: string
-  screenId: string
+  projectId: string
   order: number
-  title: string
-  conceptSummary: string
-  taskInstructions: string
-  targetFile: string
-  starterCode: string
-  solutionCode?: string
-  checks: ModuleCheck[]
-  hints: string[]
-  status: 'locked' | 'unlocked' | 'in_progress' | 'passed'
-  userCode: string
+  name: string
+  description: string
+  fileName: string // e.g. index.html
+  purpose: string
+  status: 'active' | 'done'
+  modules: PageModuleItem[]
 }
+
+export const PageResponseSchema = z.object({
+  projectComplete: z.boolean().default(false),
+  page: z
+    .object({
+      name: z.string().min(2),
+      description: z.string().min(6),
+      fileName: z.string().min(4),
+      purpose: z.string().min(6)
+    })
+    .optional(),
+  modules: z.array(PageModuleItemSchema).min(4).max(10).optional()
+})
+
+export type PageResponse = z.infer<typeof PageResponseSchema>
+
+export type ProjectSource = 'curated' | 'generated'
 
 export interface Project {
   id: string
@@ -142,20 +199,23 @@ export interface Project {
   userPrompt: string
   spec: ProjectSpec
   useTailwind: boolean
-  screens: ScreenPlanItem[]
-  currentScreenIndex: number
-  modulesByScreen?: Record<string, ModuleItem[]>
+  currentPageIndex: number
+  pages: PageItem[]
   status: ProjectStatus
+  source: ProjectSource
+  curatedSlug?: string
   createdAt: string
   updatedAt: string
 }
 
 export interface ProjectMemory {
   projectId: string
-  fileTree: string[]
   techStack: string
+  useTailwind: boolean
   namingConventions: string[]
+  fileTree: string[]
   decisionsMade: string[]
   completedFiles: Record<string, string>
 }
+
 

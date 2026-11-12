@@ -9,7 +9,9 @@ import {
   Layers,
   Cpu,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  BookOpen,
+  Bookmark
 } from 'lucide-react'
 import { TechStackConfig } from '../types/ascent'
 
@@ -45,7 +47,9 @@ export const Screen1Prompt: React.FC = () => {
     activePrompt,
     useTailwind,
     setUseTailwind,
-    isTailwindLocked
+    isTailwindLocked,
+    curatedCoursesList,
+    loadCuratedProject
   } = useApp()
 
   const [promptInput, setPromptInput] = useState(
@@ -244,6 +248,52 @@ export const Screen1Prompt: React.FC = () => {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Curated Pre-generated Projects Row */}
+        <div className="space-y-3">
+          <div className="text-xs font-mono uppercase text-slate-500 tracking-wider flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-purple-400 font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-purple-400" /> START WITH A CURATED PROJECT
+            </span>
+            <div className="flex-1 h-px bg-purple-500/20 mx-3" />
+            <span className="text-purple-400/80 text-[10px] font-bold">PRE-BUILT · VERIFIED · ZERO WAIT</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {curatedCoursesList && curatedCoursesList.map((course) => (
+              <button
+                key={course.slug}
+                onClick={() => loadCuratedProject(course.slug)}
+                disabled={isGeneratingSpec}
+                className="p-4 text-left flex flex-col justify-between rounded-xl bg-[#0F0B18] border border-purple-500/30 hover:border-purple-400/70 hover:bg-[#171024] group transition-all duration-200 disabled:opacity-50 cursor-pointer shadow-lg hover:shadow-purple-950/40"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[10px] font-mono font-bold tracking-wider">
+                      CURATED
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400 capitalize">
+                      {course.difficulty} · {course.estimatedHours}h
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">
+                    {course.title}
+                  </h4>
+                  <p className="text-xs text-slate-400 line-clamp-2 font-sans leading-relaxed">
+                    {course.shortDescription}
+                  </p>
+                </div>
+
+                <div className="pt-3 mt-3 border-t border-white/5 flex items-center justify-between text-xs font-mono text-purple-300">
+                  <span className="text-[11px] text-slate-500 font-mono">Vanilla CSS & JS</span>
+                  <span className="flex items-center gap-1 text-[11px] font-bold group-hover:translate-x-1 transition-transform">
+                    Launch Course <ArrowRight className="w-3 h-3" />
+                  </span>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 

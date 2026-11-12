@@ -275,7 +275,7 @@ app.use('/api/llm', rateLimitMiddleware)
 app.post('/api/llm/generate-spec', async (req: Request, res: Response) => {
   const startTime = Date.now()
   try {
-    const { prompt, useTailwind: rawUseTailwind, techStack, previousSpec, clarifyingAnswers } = req.body
+    const { prompt, useTailwind: rawUseTailwind, techStack } = req.body
 
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       return res.status(400).json({ success: false, error: 'Valid prompt string is required', retryable: false })
@@ -308,20 +308,12 @@ app.post('/api/llm/generate-spec', async (req: Request, res: Response) => {
     const stateChoice = 'Browser In-Memory State / DOM'
     const backendChoice = 'In-Browser LocalStorage / IndexedDB'
 
-    const answersContext = clarifyingAnswers && Object.keys(clarifyingAnswers).length > 0
-      ? `\nStudent Decisions on Architectural Questions:\n${Object.entries(clarifyingAnswers).map(([k, v]) => `- ${k}: ${v}`).join('\n')}\nIncorporate these decisions directly into the revised architectureHighlights and primaryFeatures.`
-      : ''
-
-    const previousSpecContext = previousSpec
-      ? `\nPrevious Draft Spec to Refine:\n${JSON.stringify({ appName: previousSpec.appName, summary: previousSpec.summary, features: previousSpec.primaryFeatures }, null, 2)}`
-      : ''
-
     const stylingRule = useTailwind
       ? 'Tailwind CSS utilities (learner builds with semantic HTML + Tailwind utility classes + vanilla JS DOM manipulation; avoid custom CSS except when necessary).'
       : 'Plain CSS (learner builds with semantic HTML + semantic CSS classes, CSS custom properties, and Flexbox/Grid + vanilla JS DOM manipulation; zero utility libraries).'
 
     const systemInstruction = `You are Ascent, an elite computer science curriculum architect and senior software engineer.
-Analyze the user's project idea and synthesize a complete, production-grade project specification.
+Analyze the user's project idea and synthesize a complete, production-grade project specification in a single comprehensive pass.
 
 Student Idea: "${prompt.trim()}"
 
@@ -330,31 +322,45 @@ STRICT FIXED STACK MANDATE:
 - Absolute Prohibition: NO React, NO Vue, NO Svelte, NO Zustand/Redux, NO TypeScript, NO npm packages, NO bundlers (Webpack/Vite/Parcel), and NO server-side/backend code.
 - Styling: ${stylingRule}
 - Data Persistence: In-browser only (localStorage or IndexedDB).
-- Backend Scope-Down Rule: Any features requiring a real backend (e.g. payments, real email delivery, multi-user authentication, cloud databases) MUST be scoped down to realistic front-end-only equivalents (e.g. simulated checkout with receipt generator, mock auth stored in localStorage, client-side data export/import) and the spec summary/features MUST explicitly state this front-end-only scoping.
+- Backend Scope-Down Rule: Any features requiring a real backend (e.g. payments, real email delivery, multi-user authentication, cloud databases) MUST be scoped down to realistic front-end-only equivalents (e.g. simulated checkout with receipt generator, mock auth stored in localStorage, client-side data export/import).
 
-Context & Decisions:
-${answersContext}${previousSpecContext}
+NO CLARIFYING QUESTIONS:
+- Do NOT generate questions for the user. Instead, infer missing details sensibly, make clear engineering assumptions, and state them explicitly in 'assumptions'.
+- State clearly in 'outOfScope' anything deliberately excluded because the project is front-end only.
 
-Strict Constraints:
+Strict Schema Requirements:
 1. appName: Creative, crisp, memorable name (e.g., "AquaFeed", "ApexPulse", "OmniTracker").
 2. tagline: Under 12 words, active and punchy.
-3. summary: Concise 2-3 sentences explaining what problem it solves, what the user experience feels like, and how features are implemented purely in vanilla front-end browser storage.
+3. summary: Concise 2-3 sentences explaining what problem it solves, how it works in vanilla browser storage, and what the experience feels like.
 4. targetAudience: Specific user persona.
-5. primaryFeatures: Exactly 4 to 6 concrete, interactive features that will be built screen-by-screen in vanilla HTML, CSS, and JS.
-6. techStack:
+5. primaryFeatures: Array of 4 to 6 features, each an object with:
+   - name: concise feature title
+   - description: one-line explanation of what it does
+6. userFlows: Exactly 2 to 4 end-to-end user journeys, each an object with:
+   - flowName: title of the journey (e.g., "First Feeding Log Entry", "Export Chemistry Report")
+   - steps: 3 to 5 short step strings describing user interactions
+7. dataEntities: 1 to 3 data models persisted in localStorage/IndexedDB, each an object with:
+   - name: entity name (e.g. "FeedingRecord", "WaterReading")
+   - storageKey: exact localStorage key (e.g. "axolog_feedings_v1")
+   - fields: array of { name: string, type: string, description: string }
+8. techStack:
    - runtime: "HTML + CSS + JavaScript"
    - styling: "${stylingChoice}"
    - stateManagement: "${stateChoice}"
    - backendSim: "${backendChoice}"
    - useTailwind: ${useTailwind}
-7. useTailwind: MUST be boolean ${useTailwind}.
-8. architectureHighlights: 3 to 4 technical patterns or architectural constraints reflecting vanilla DOM manipulation, event listeners, localStorage/IndexedDB schemas, and UI rendering methods.
-9. clarifyingQuestions: Exactly 2 to 3 genuine architectural clarifying questions to present to the student before building (e.g., data schema structures, localStorage keys, UI layouts). Each question must include an id (e.g. "q1", "q2"), a clear question string, and 2 to 4 distinct plain-text option strings. If previous answers are provided, preserve question IDs and mark selectedAnswer.`
+9. useTailwind: boolean ${useTailwind}
+10. architectureHighlights: 3 to 4 technical patterns (e.g., DOM query caching, event delegation, LocalStorage JSON serialization).
+11. assumptions: 3 to 5 explicit decisions you made on the user's behalf (e.g., "Checkout is simulated, no real payments", "Data persists locally per browser session only").
+12. outOfScope: 3 to 5 features deliberately excluded to keep the project pure front-end (e.g., "Cloud database sync", "Real SMS/email alerts").
+13. estimatedScreenCount: integer between 2 and 6.
+14. difficulty: "beginner" or "intermediate".
+15. estimatedHours: estimated build time in hours (number between 2 and 12).`
 
     const callGemini = async () => {
       const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
-        contents: `Generate a production vanilla front-end project specification for: "${prompt.trim()}".`,
+        contents: `Generate a complete vanilla front-end specification for: "${prompt.trim()}".`,
         config: {
           systemInstruction,
           responseMimeType: 'application/json',
@@ -367,7 +373,51 @@ Strict Constraints:
               targetAudience: { type: Type.STRING },
               primaryFeatures: {
                 type: Type.ARRAY,
-                items: { type: Type.STRING }
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING },
+                    description: { type: Type.STRING }
+                  },
+                  required: ['name', 'description']
+                }
+              },
+              userFlows: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    flowName: { type: Type.STRING },
+                    steps: {
+                      type: Type.ARRAY,
+                      items: { type: Type.STRING }
+                    }
+                  },
+                  required: ['flowName', 'steps']
+                }
+              },
+              dataEntities: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    name: { type: Type.STRING },
+                    storageKey: { type: Type.STRING },
+                    fields: {
+                      type: Type.ARRAY,
+                      items: {
+                        type: Type.OBJECT,
+                        properties: {
+                          name: { type: Type.STRING },
+                          type: { type: Type.STRING },
+                          description: { type: Type.STRING }
+                        },
+                        required: ['name', 'type']
+                      }
+                    }
+                  },
+                  required: ['name', 'storageKey', 'fields']
+                }
               },
               useTailwind: { type: Type.BOOLEAN },
               techStack: {
@@ -385,21 +435,17 @@ Strict Constraints:
                 type: Type.ARRAY,
                 items: { type: Type.STRING }
               },
-              clarifyingQuestions: {
+              assumptions: {
                 type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    id: { type: Type.STRING },
-                    question: { type: Type.STRING },
-                    options: {
-                      type: Type.ARRAY,
-                      items: { type: Type.STRING }
-                    }
-                  },
-                  required: ['id', 'question', 'options']
-                }
-              }
+                items: { type: Type.STRING }
+              },
+              outOfScope: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING }
+              },
+              estimatedScreenCount: { type: Type.INTEGER },
+              difficulty: { type: Type.STRING },
+              estimatedHours: { type: Type.NUMBER }
             },
             required: [
               'appName',
@@ -407,10 +453,16 @@ Strict Constraints:
               'summary',
               'targetAudience',
               'primaryFeatures',
+              'userFlows',
+              'dataEntities',
               'useTailwind',
               'techStack',
               'architectureHighlights',
-              'clarifyingQuestions'
+              'assumptions',
+              'outOfScope',
+              'estimatedScreenCount',
+              'difficulty',
+              'estimatedHours'
             ]
           }
         }
@@ -465,9 +517,6 @@ Strict Constraints:
       styling: spec.techStack?.styling || stylingChoice,
       stateManagement: spec.techStack?.stateManagement || stateChoice,
       backendSim: spec.techStack?.backendSim || backendChoice
-    }
-    if (!spec.clarifyingQuestions || !Array.isArray(spec.clarifyingQuestions)) {
-      spec.clarifyingQuestions = []
     }
 
     const duration = Date.now() - startTime
@@ -762,6 +811,173 @@ Strict Rules:
       success: true,
       screenName: currentScreen.screenName,
       modules: syllabusResult.modules.slice(0, 7),
+      model: GEMINI_MODEL,
+      latencyMs: duration,
+      rawGeminiText: rawText,
+      tokensUsed: tokenCount
+    })
+  } catch (err: any) {
+    const cleanError = extractGeminiErrorMessage(err)
+    return res.status(500).json({
+      success: false,
+      error: cleanError,
+      model: GEMINI_MODEL,
+      retryable: true
+    })
+  }
+})
+
+// -------------------------------------------------------------
+// POST /api/llm/generate-page
+// SLICE 2 REVISED: Real Gemini structured generation for a SINGLE PAGE and its Component Syllabus
+// Input: confirmed spec (incl. assumptions and outOfScope), useTailwind, ProjectMemory
+// Output: ONE page with 5-10 modules in HTML document/build order
+// -------------------------------------------------------------
+app.post('/api/llm/generate-page', async (req: Request, res: Response) => {
+  const startTime = Date.now()
+  try {
+    const { spec, useTailwind: rawTailwind, projectMemory } = req.body
+
+    if (!spec || !spec.appName) {
+      return res.status(400).json({ success: false, error: 'Valid ProjectSpec is required', retryable: false })
+    }
+
+    const ai = getGeminiClient()
+    if (!ai) {
+      return res.status(503).json({
+        success: false,
+        error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
+        model: GEMINI_MODEL,
+        retryable: true
+      })
+    }
+
+    telemetry.geminiCalls++
+
+    const useTailwind = rawTailwind !== undefined ? Boolean(rawTailwind) : Boolean(spec.useTailwind)
+    const stylingDetail = useTailwind
+      ? 'Tailwind CSS utility classes directly on elements'
+      : 'Plain semantic CSS with Flexbox/Grid and CSS variables'
+
+    const memoryContext = projectMemory && projectMemory.fileTree && projectMemory.fileTree.length > 0
+      ? `\nProject Architecture Context (Existing files built so far):\n- Files Built: ${projectMemory.fileTree.join(', ')}\n- Decisions Made: ${(projectMemory.decisionsMade || []).join('; ') || 'None'}`
+      : '\nInitial Project Page: This is the very first page of the project (home / core landing page).'
+
+    const systemInstruction = `You are Ascent, an elite computer science curriculum architect and senior software engineer.
+Generate a SINGLE PAGE and its component-by-component syllabus for the student's project.
+
+App: "${spec.appName}" - ${spec.tagline}
+Summary: ${spec.summary}
+Features: ${(spec.primaryFeatures || []).map((f: any) => typeof f === 'string' ? f : `${f.name}: ${f.description}`).join('; ')}
+Assumptions Made: ${(spec.assumptions || []).join('; ')}
+Out of Scope (MUST NOT PLAN ANY SCREENS OR MODULES FOR THESE): ${(spec.outOfScope || []).join('; ')}
+Stack: HTML, CSS, and vanilla JavaScript (${stylingDetail})
+${memoryContext}
+
+STRICT ARCHITECTURE & SYLLABUS RULES:
+1. Return EXACTLY ONE page. No list of other pages.
+   - For the first page, it must be the logical starting point of the app (usually index.html).
+2. Generate 5 to 10 progressive modules for THIS page in HTML document/build order:
+   - Order: document-head (doctype, meta, title, stylesheet or Tailwind CDN setup) -> body-layout -> header -> navigation -> main-section / content-blocks (cards, tables, lists) -> forms -> footer -> script-behavior (DOM manipulation, event listeners, localStorage persistence).
+   - Each module represents ONE component of THAT page taught by building it: its markup, then its styling (${useTailwind ? 'Tailwind utility classes' : 'plain semantic CSS'}), and behavior where applicable.
+   - Modules must be cumulative: each builds on the same page file so the page works after every module.
+   - componentType MUST be one of:
+     "document-head" | "body-layout" | "header" | "navigation" | "main-section" | "content-block" | "form" | "footer" | "script-behavior"
+3. DO NOT include anything from outOfScope.
+4. Titles must be specific action titles for "${spec.appName}" (e.g. "Build Axolotl Feeding Log Table Markup", "Wire Up Add Meal Button and LocalStorage Event"). No generic titles like "Introduction".
+5. For this starting page, set projectComplete: false. You MUST return both 'page' and 5 to 10 progressive 'modules' in HTML document order.`
+
+    const callGemini = async () => {
+      const response = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: `Generate the starting HTML page and its 5-10 component modules in HTML document order for "${spec.appName}". Set projectComplete to false and provide all modules.`,
+        config: {
+          systemInstruction,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              projectComplete: { type: Type.BOOLEAN },
+              page: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  description: { type: Type.STRING },
+                  fileName: { type: Type.STRING },
+                  purpose: { type: Type.STRING }
+                },
+                required: ['name', 'description', 'fileName', 'purpose']
+              },
+              modules: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    title: { type: Type.STRING },
+                    learningObjective: { type: Type.STRING },
+                    componentType: { type: Type.STRING }
+                  },
+                  required: ['title', 'learningObjective', 'componentType']
+                }
+              }
+            },
+            required: ['projectComplete', 'page', 'modules']
+          }
+        }
+      })
+      return {
+        text: response.text,
+        tokens: response.usageMetadata?.totalTokenCount || 'N/A'
+      }
+    }
+
+    let rawText: string | undefined
+    let tokenCount: any = 'N/A'
+    let pageResult: any
+    let attempts = 0
+    let lastError: any = null
+
+    while (attempts < 3 && !pageResult) {
+      attempts++
+      try {
+        const result = await callGemini()
+        rawText = result.text
+        tokenCount = result.tokens
+        if (rawText) {
+          pageResult = cleanAndParseJSON(rawText)
+          if (!pageResult.projectComplete && (!pageResult.page || !Array.isArray(pageResult.modules) || pageResult.modules.length < 4)) {
+            pageResult = null
+            throw new Error('Incomplete page syllabus payload returned from model')
+          }
+        }
+      } catch (e: any) {
+        lastError = e
+        logEvent('generate_page_attempt_failed', { attempt: attempts, error: e?.message })
+        if (attempts < 3) {
+          await new Promise(r => setTimeout(r, 1500))
+        }
+      }
+    }
+
+    if (!pageResult) {
+      const cleanError = extractGeminiErrorMessage(lastError)
+      return res.status(502).json({
+        success: false,
+        error: cleanError,
+        model: GEMINI_MODEL,
+        rawGeminiText: rawText || null,
+        retryable: true
+      })
+    }
+
+    const duration = Date.now() - startTime
+    logEvent('generate_page_success', { pageName: pageResult.page?.name, duration, model: GEMINI_MODEL })
+
+    return res.json({
+      success: true,
+      projectComplete: Boolean(pageResult.projectComplete),
+      page: pageResult.page,
+      modules: pageResult.modules || [],
       model: GEMINI_MODEL,
       latencyMs: duration,
       rawGeminiText: rawText,

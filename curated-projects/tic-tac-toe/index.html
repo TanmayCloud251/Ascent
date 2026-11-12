@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic Tac Toe</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="game-wrapper">
+    <header class="game-header">
+      <h1 class="app-title">Tic Tac Toe</h1>
+      <p id="turn-indicator" class="turn-indicator">Player X's Turn</p>
+    </header>
+
+    <main class="board-container">
+      <div id="game-board" class="game-board">
+        <button class="cell" data-index="0"></button>
+        <button class="cell" data-index="1"></button>
+        <button class="cell" data-index="2"></button>
+        <button class="cell" data-index="3"></button>
+        <button class="cell" data-index="4"></button>
+        <button class="cell" data-index="5"></button>
+        <button class="cell" data-index="6"></button>
+        <button class="cell" data-index="7"></button>
+        <button class="cell" data-index="8"></button>
+      </div>
+      <p id="game-status" class="game-status"></p>
+    </main>
+
+    <footer class="game-footer">
+      <button id="restart-btn" class="restart-button">New Match</button>
+      <div class="stats-row">
+        <span>X Wins: <strong id="x-wins">0</strong></span>
+        <span>O Wins: <strong id="o-wins">0</strong></span>
+        <span>Ties: <strong id="ties-count">0</strong></span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

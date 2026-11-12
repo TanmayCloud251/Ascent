@@ -74,6 +74,8 @@ export interface Project {
   thinkingPlan?: any;
   githubRepo?: string;
   lastCodeReview?: any;
+  source?: 'curated' | 'generated';
+  curatedSlug?: string;
 }
 
 export interface LearnerProfile {
