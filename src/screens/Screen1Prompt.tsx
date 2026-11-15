@@ -79,8 +79,16 @@ export const Screen1Prompt: React.FC = () => {
     setUseTailwind,
     isTailwindLocked,
     curatedCoursesList,
-    loadCuratedProject
+    loadCuratedProject,
+    storedProjects,
+    currentUser,
+    selectProject,
+    setScreen
   } = useApp()
+
+  const activeCustomProject = storedProjects.find(
+    p => p.source === 'generated' && (p.status === 'spec_confirmed' || p.status === 'in_progress')
+  ) || (currentUser?.customProjectUsed ? storedProjects.find(p => p.source === 'generated') : null)
 
   const [promptInput, setPromptInput] = useState(
     activePrompt || DEFAULT_STARTER_PROMPT
@@ -186,6 +194,38 @@ export const Screen1Prompt: React.FC = () => {
 
           {/* Console Form Input */}
           <div className="p-6 space-y-6">
+            {activeCustomProject && (
+              <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 flex items-start gap-3 text-xs text-amber-200">
+                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-1">
+                  <div className="font-bold text-white text-sm">
+                    Custom Project Slot Occupied (1 Allowed)
+                  </div>
+                  <p className="text-amber-300/90 leading-relaxed font-sans">
+                    You already have an active custom AI project: <strong className="text-white">{activeCustomProject.spec?.appName || activeCustomProject.userPrompt}</strong>.
+                    You can continue learning on it or delete it from the Projects screen if zero modules have been completed. Curated tracks remain unlimited below!
+                  </p>
+                  <div className="pt-2 flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        selectProject(activeCustomProject.id)
+                        setScreen(4)
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition cursor-pointer"
+                    >
+                      Open Workspace →
+                    </button>
+                    <button
+                      onClick={() => setScreen(5)}
+                      className="text-amber-300 underline hover:text-white cursor-pointer"
+                    >
+                      View in Projects
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-start gap-3">
               <span className="text-[#00F0FF] font-mono text-lg font-bold select-none">&gt;</span>
               <textarea
@@ -193,12 +233,12 @@ export const Screen1Prompt: React.FC = () => {
                 onChange={(e) => setPromptInput(e.target.value)}
                 placeholder="What do you want to build? (e.g. an e-commerce dashboard using React, a developer portfolio, a Kanban board...)"
                 rows={3}
-                disabled={isGeneratingSpec}
+                disabled={isGeneratingSpec || Boolean(activeCustomProject)}
                 className="w-full bg-transparent border-none outline-none text-white font-mono text-base md:text-lg resize-none placeholder:text-slate-600 focus:ring-0 disabled:opacity-50"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault()
-                    handleLaunch()
+                    if (!activeCustomProject) handleLaunch()
                   }
                 }}
               />
@@ -230,10 +270,10 @@ export const Screen1Prompt: React.FC = () => {
                 {/* Single Tailwind CSS Toggle */}
                 <button
                   type="button"
-                  disabled={isTailwindLocked}
+                  disabled={isTailwindLocked || Boolean(activeCustomProject)}
                   onClick={() => setUseTailwind(!useTailwind)}
                   className={`px-3 py-1.5 rounded-lg border text-xs font-mono flex items-center gap-2 transition-all cursor-pointer ${
-                    isTailwindLocked
+                    isTailwindLocked || activeCustomProject
                       ? 'opacity-60 cursor-not-allowed bg-black/40 border-white/10 text-slate-500'
                       : useTailwind
                       ? 'border-[#00F0FF] bg-[#00F0FF]/15 text-[#00F0FF]'
@@ -261,7 +301,8 @@ export const Screen1Prompt: React.FC = () => {
 
               <button
                 onClick={() => handleLaunch()}
-                disabled={isGeneratingSpec || !promptInput.trim()}
+                disabled={isGeneratingSpec || !promptInput.trim() || Boolean(activeCustomProject)}
+                title={activeCustomProject ? '1 custom project limit reached. Open or delete your existing custom project.' : undefined}
                 className="cyber-btn-primary group disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isGeneratingSpec ? (
@@ -271,7 +312,7 @@ export const Screen1Prompt: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <span>Generate Spec & Review</span>
+                    <span>{activeCustomProject ? 'Custom Slot Occupied' : 'Generate Spec & Review'}</span>
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </>
                 )}

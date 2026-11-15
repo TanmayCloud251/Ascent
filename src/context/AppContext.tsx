@@ -27,6 +27,7 @@ import {
   ReviewSubmissionResponse
 } from '../schemas/course'
 import { storageService, blobToDataUrl } from '../services/storageService'
+import { syncService } from '../services/syncService'
 import {
   MAX_SINGLE_FILE_BYTES,
   MAX_TOTAL_PROJECT_BYTES,
@@ -107,11 +108,15 @@ interface AppContextType {
   currentScreen: ScreenIndex
   setScreen: (screen: ScreenIndex) => void
 
-  // User Profile Session
+  // User Profile Session & Auth
   currentUser: UserProfile
   updateCurrentUser: (updates: Partial<UserProfile>) => void
   learnerProfile: LearnerProfile
   setCalibrationTier: (tier: CalibrationTier) => void
+  isAuthenticated: boolean
+  authLoading: boolean
+  checkAuth: () => Promise<void>
+  logout: () => Promise<void>
 
   // Slice 1: Spec Generation & Real AI Pipeline
   activeSpec: ProjectSpec | null
@@ -253,6 +258,69 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => storageService.getCurrentUser())
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false)
+  const [authLoading, setAuthLoading] = useState<boolean>(true)
+
+  const checkAuth = useCallback(async () => {
+    try {
+      const resp = await fetch('/api/auth/me', { credentials: 'include' })
+      const data = await resp.json()
+      if (data.authenticated && data.user) {
+        setIsAuthenticated(true)
+        setCurrentUser(prev => ({
+          ...prev,
+          id: data.user.id,
+          name: data.user.displayName || data.user.username,
+          handle: `@${data.user.username}`,
+          avatarSeed: data.user.username,
+          username: data.user.username,
+          githubId: data.user.githubId,
+          avatarUrl: data.user.avatarUrl,
+          displayName: data.user.displayName,
+          plan: data.user.plan || 'byok',
+          customProjectUsed: data.user.customProjectUsed
+        }))
+
+        try {
+          const pResp = await fetch('/api/projects', { credentials: 'include' })
+          if (pResp.ok) {
+            const pData = await pResp.json()
+            if (Array.isArray(pData.projects)) {
+              for (const proj of pData.projects) {
+                storageService.saveProject(proj)
+              }
+            }
+            if (Array.isArray(pData.progress)) {
+              for (const pr of pData.progress) {
+                storageService.saveLearnerProgress(pr)
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+      } else {
+        setIsAuthenticated(false)
+      }
+    } catch {
+      setIsAuthenticated(false)
+    } finally {
+      setAuthLoading(false)
+    }
+  }, [])
+
+  const logout = useCallback(async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    } catch {
+      // ignore
+    }
+    setIsAuthenticated(false)
+  }, [])
+
+  useEffect(() => {
+    checkAuth()
+  }, [checkAuth])
   const [currentScreen, setCurrentScreenState] = useState<ScreenIndex>(() => {
     try {
       const saved = window.localStorage.getItem(ACTIVE_SCREEN_KEY)
@@ -934,6 +1002,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentScreen(3) // Navigate to Screen 3 (Project Overview)
 
     try {
+      // Server-side atomic custom project limit check + GitHub repo creation
+      try {
+        const confirmResp = await fetch('/api/projects/confirm-spec', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ projectId: activeProjectId, spec: activeSpec })
+        })
+
+        if (!confirmResp.ok) {
+          const errJson = await confirmResp.json()
+          if (errJson.code === 'CUSTOM_PROJECT_LIMIT_REACHED') {
+            setPlanError(errJson.error || 'You have already created your 1 allowed custom project.')
+            setIsGeneratingPlan(false)
+            setCurrentScreen(2)
+            return
+          }
+        } else {
+          const confirmData = await confirmResp.json()
+          if (confirmData.project?.repo) {
+            const stored = storageService.getProjectById(activeProjectId)
+            if (stored) {
+              (stored as any).repo = confirmData.project.repo
+              storageService.saveProject(stored)
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Server spec confirmation notice:', e)
+      }
+
       // For curated projects: bypass LLM generation completely! Pre-built syllabus already loaded.
       const storedCurated = storageService.getProjectById(activeProjectId)
       if (storedCurated?.source === 'curated') {
@@ -1123,8 +1222,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }
 
-  const deleteProject = useCallback((id: string) => {
+  const deleteProject = useCallback(async (id: string) => {
     flushUserFilesSaveRef.current?.()
+
+    try {
+      const resp = await fetch(`/api/projects/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      if (!resp.ok) {
+        const errJson = await resp.json()
+        alert(errJson.error || 'Cannot delete project')
+        return
+      }
+    } catch {
+      // offline / in-memory fallback
+    }
+
     const deletingActive = activeProjectId === id
     storageService.deleteProject(id)
     setProjects(prev => prev.filter(p => p.id !== id))
@@ -1748,6 +1862,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const nextMap = projectFilesToTextMap(updatedList)
     setUserFiles(nextMap)
     setCodeFiles(nextMap)
+    syncService.markDirty({ projectId: activeProjectId, files: nextMap })
     latestFilesContextRef.current = {
       projectId: activeProjectId,
       moduleId: activeModuleItem.id,
@@ -2372,6 +2487,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     storageService.saveProjectMemory(updatedMemory)
     setProjectMemory(updatedMemory)
 
+    // Trigger state sync and background GitHub code commit
+    syncService.syncNow({
+      projectId: activeProjectId,
+      progress: [nextProgress],
+      files: filesToCommit,
+      completedModule: {
+        moduleIndex: activeModuleIndex,
+        moduleTitle: activeModuleItem.title
+      },
+      allModules: activeModules.map(m => ({ id: m.id, title: m.title, learningObjective: m.learningObjective })),
+      completedPages: (updatedMemory.completedPages || []).map(p => p.name)
+    })
+
     // Unlock next module or finish page
     const updatedModules: PageModuleItem[] = activeModules.map((m, idx) => {
       if (idx === activeModuleIndex) {
@@ -2725,6 +2853,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateCurrentUser,
         learnerProfile,
         setCalibrationTier,
+        isAuthenticated,
+        authLoading,
+        checkAuth,
+        logout,
         activeSpec,
         activePrompt,
         setActivePrompt,

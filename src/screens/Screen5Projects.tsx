@@ -83,6 +83,8 @@ export const Screen5Projects: React.FC = () => {
             const title = proj.spec?.appName || 'Untitled Project'
             const stylingLabel = proj.useTailwind ? 'Tailwind CSS' : 'Plain CSS'
             const pagesCount = proj.pages?.length || 0
+            const isCustom = proj.source === 'generated'
+            const isDeleteBlocked = isCustom && summary.completedModules > 0
 
             return (
               <div
@@ -121,19 +123,28 @@ export const Screen5Projects: React.FC = () => {
                     <span className="text-xs font-mono text-slate-500 flex items-center gap-1">
                       <Clock className="w-3 h-3" /> {formatProjectDate(proj.updatedAt || proj.createdAt)}
                     </span>
-                    <button
-                      type="button"
-                      aria-label={`Delete ${title}`}
-                      title={`Delete ${title}`}
-                      data-testid={`delete-project-${proj.id}`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setConfirmingDeleteId(isConfirmingDelete ? null : proj.id)
-                      }}
-                      className="p-1.5 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    {isDeleteBlocked ? (
+                      <div
+                        title="Custom projects cannot be deleted after completing modules, to preserve your verified learning history."
+                        className="p-1.5 rounded-md text-slate-600 cursor-not-allowed opacity-50"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        aria-label={`Delete ${title}`}
+                        title={isCustom ? "Delete custom project (frees your 1 custom slot)" : `Delete ${title}`}
+                        data-testid={`delete-project-${proj.id}`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setConfirmingDeleteId(isConfirmingDelete ? null : proj.id)
+                        }}
+                        className="p-1.5 rounded-md text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 border border-transparent hover:border-rose-500/30 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

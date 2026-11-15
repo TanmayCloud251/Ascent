@@ -16,6 +16,7 @@ import {
   Check
 } from '../schemas/course'
 import { TIMEOUT_CONFIG } from '../config/timeouts'
+import { clientApiKeyService } from './clientApiKeyService'
 
 export interface LLMCallAttempt {
   attempt: number
@@ -141,11 +142,30 @@ export const subscribeToLLMTraces = (fn: TraceListener): (() => void) => {
   return () => traceListeners.delete(fn)
 }
 
+function redactTrace(trace: LLMTraceEvent): LLMTraceEvent {
+  const key = clientApiKeyService.getUserApiKey()
+  if (!key) return trace
+  const safeString = (s?: string | null) => (s ? s.split(key).join('[REDACTED_API_KEY]') : s)
+  let cleanPayload = trace.requestPayload
+  try {
+    cleanPayload = JSON.parse(JSON.stringify(trace.requestPayload || {}).split(key).join('[REDACTED_API_KEY]'))
+  } catch {
+    // ignore
+  }
+  return {
+    ...trace,
+    requestPayload: cleanPayload,
+    rawResponseText: safeString(trace.rawResponseText) || '',
+    error: safeString(trace.error)
+  }
+}
+
 function broadcastTrace(trace: LLMTraceEvent) {
-  currentLatestTrace = trace
+  const sanitizedTrace = redactTrace(trace)
+  currentLatestTrace = sanitizedTrace
   traceListeners.forEach(listener => {
     try {
-      listener(trace)
+      listener(sanitizedTrace)
     } catch (e) {
       console.warn('Trace listener error:', e)
     }
@@ -161,8 +181,15 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
   }, timeoutMs)
 
   try {
+    const userApiKey = clientApiKeyService.getUserApiKey()
+    const headers = new Headers(options.headers || {})
+    if (userApiKey) {
+      headers.set('x-user-api-key', userApiKey)
+    }
     return await fetch(url, {
       ...options,
+      headers,
+      credentials: 'include',
       signal: controller.signal
     })
   } catch (err: any) {

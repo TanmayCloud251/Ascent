@@ -6,10 +6,15 @@ import {
   Flame,
   Sparkles,
   ChevronDown,
-  Check
+  Check,
+  Key,
+  Share2,
+  LogOut
 } from 'lucide-react'
 import { UserTier } from '../types/ascent'
 import { getUserInitials } from '../utils/learnerStats'
+import { ApiKeyModal } from './ApiKeyModal'
+import { ShareCardModal } from './ShareCardModal'
 
 export const Header: React.FC = () => {
   const {
@@ -18,11 +23,16 @@ export const Header: React.FC = () => {
     currentUser,
     updateCurrentUser,
     streakMetrics,
-    loadPresetProject
+    loadPresetProject,
+    profileStats,
+    storedProjects,
+    logout
   } = useApp()
 
   const [isPresetsOpen, setIsPresetsOpen] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isApiKeyOpen, setIsApiKeyOpen] = useState(false)
+  const [isShareCardOpen, setIsShareCardOpen] = useState(false)
 
   const initials = getUserInitials(currentUser)
 
@@ -195,12 +205,20 @@ export const Header: React.FC = () => {
             data-testid="navbar-profile-trigger"
             className="flex items-center gap-2 bg-[#12121A] hover:bg-[#161622] border border-white/10 hover:border-[#00F0FF]/40 pl-2 pr-3 py-1 rounded-full text-xs font-mono transition-colors cursor-pointer"
           >
-            <div
-              data-testid="navbar-avatar-initials"
-              className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 border border-white/20 flex items-center justify-center text-white text-[10px] font-bold"
-            >
-              {initials}
-            </div>
+            {currentUser.avatarUrl ? (
+              <img
+                src={currentUser.avatarUrl}
+                alt={currentUser.name}
+                className="w-6 h-6 rounded-full object-cover border border-white/20"
+              />
+            ) : (
+              <div
+                data-testid="navbar-avatar-initials"
+                className="w-6 h-6 rounded-full bg-gradient-to-tr from-cyan-600 to-indigo-600 border border-white/20 flex items-center justify-center text-white text-[10px] font-bold"
+              >
+                {initials}
+              </div>
+            )}
             <div className="text-left hidden md:block">
               <span className="text-white font-medium block leading-none">{currentUser.name}</span>
               <span className="text-slate-500 text-[10px] block leading-none mt-0.5">{currentUser.handle}</span>
@@ -217,6 +235,32 @@ export const Header: React.FC = () => {
                 <span className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[9px] border border-emerald-500/30">
                   PERSISTED
                 </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsApiKeyOpen(true)
+                    setIsProfileOpen(false)
+                  }}
+                  className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center gap-1.5 text-[11px] text-slate-300 hover:text-white transition cursor-pointer"
+                >
+                  <Key className="w-3.5 h-3.5 text-amber-400" />
+                  <span>BYOK Key</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsShareCardOpen(true)
+                    setIsProfileOpen(false)
+                  }}
+                  className="p-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 flex items-center gap-1.5 text-[11px] text-cyan-300 transition cursor-pointer"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Share Card</span>
+                </button>
               </div>
 
               <div className="grid grid-cols-3 gap-2">
@@ -274,10 +318,22 @@ export const Header: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-white/10 flex justify-end">
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    logout()
+                    setIsProfileOpen(false)
+                  }}
+                  className="text-xs text-slate-400 hover:text-white flex items-center gap-1 transition cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out</span>
+                </button>
+
                 <button
                   onClick={() => setIsProfileOpen(false)}
-                  className="cyber-btn-primary text-xs py-1 px-3"
+                  className="cyber-btn-primary text-xs py-1 px-3 cursor-pointer"
                 >
                   Done
                 </button>
@@ -286,6 +342,26 @@ export const Header: React.FC = () => {
           )}
         </div>
       </div>
+
+      <ApiKeyModal
+        isOpen={isApiKeyOpen}
+        onClose={() => setIsApiKeyOpen(false)}
+      />
+
+      <ShareCardModal
+        isOpen={isShareCardOpen}
+        onClose={() => setIsShareCardOpen(false)}
+        user={{
+          username: currentUser.handle ? currentUser.handle.replace('@', '') : 'learner',
+          displayName: currentUser.name,
+          avatarUrl: currentUser.avatarUrl
+        }}
+        stats={{
+          streakDays: streakMetrics.currentStreak,
+          completedModules: profileStats.totalModulesCompleted,
+          totalProjects: storedProjects.length
+        }}
+      />
     </header>
   )
 }

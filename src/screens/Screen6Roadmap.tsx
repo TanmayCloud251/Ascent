@@ -18,7 +18,11 @@ import {
   Repeat,
   ShieldAlert,
   Trophy,
-  User
+  User,
+  Key,
+  Share2,
+  LogOut,
+  Trash2
 } from 'lucide-react'
 import {
   computeActivityHeatmap,
@@ -27,6 +31,8 @@ import {
   getUserInitials,
   HeatmapDayCell
 } from '../utils/learnerStats'
+import { ShareCardModal } from '../components/ShareCardModal'
+import { ApiKeyModal } from '../components/ApiKeyModal'
 
 const WEEKDAY_ROW_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -77,6 +83,37 @@ export const Screen6Roadmap: React.FC = () => {
 
   const [hoveredCell, setHoveredCell] = useState<HeatmapDayCell | null>(null)
   const [openingModuleKey, setOpeningModuleKey] = useState<string | null>(null)
+  const [isShareCardOpen, setIsShareCardOpen] = useState(false)
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false)
+
+  const handleDisconnectGithub = async () => {
+    if (window.confirm('Disconnect GitHub and sign out? You will need to log in again to sync code.')) {
+      try {
+        await fetch('/api/auth/disconnect', { method: 'POST', credentials: 'include' })
+        window.location.reload()
+      } catch (err) {
+        console.warn('Disconnect error:', err)
+      }
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (
+      window.confirm(
+        'Permanently delete your Ascent account and all progress data? Note: Repositories created on your GitHub account remain completely untouched.'
+      )
+    ) {
+      try {
+        const resp = await fetch('/api/auth/account', { method: 'DELETE', credentials: 'include' })
+        if (resp.ok) {
+          alert('Your account and progress have been deleted. Repositories on GitHub remain untouched.')
+          window.location.reload()
+        }
+      } catch (err) {
+        console.warn('Delete account error:', err)
+      }
+    }
+  }
 
   const selectedProject = useMemo(
     () => storedProjects.find(p => p.id === selectedProjectId) || storedProjects[0] || null,
@@ -236,12 +273,51 @@ export const Screen6Roadmap: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setIsShareCardOpen(true)}
+                  className="px-2.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-300 text-xs font-mono flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                  <span>Share Card</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsApiKeyModalOpen(true)}
+                  className="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 text-xs font-mono flex items-center gap-1.5 transition cursor-pointer"
+                >
+                  <Key className="w-3.5 h-3.5 text-amber-400" />
+                  <span>BYOK Key</span>
+                </button>
+              </div>
+
               <button
                 type="submit"
-                className="cyber-btn-primary text-xs py-1.5 px-3.5"
+                className="cyber-btn-primary text-xs py-1.5 px-3.5 cursor-pointer"
               >
                 Save Profile
+              </button>
+            </div>
+
+            <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] font-mono">
+              <button
+                type="button"
+                onClick={handleDisconnectGithub}
+                className="text-slate-400 hover:text-white flex items-center gap-1 transition cursor-pointer"
+              >
+                <LogOut className="w-3 h-3" />
+                <span>Disconnect GitHub</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                className="text-rose-400/80 hover:text-rose-300 flex items-center gap-1 transition cursor-pointer"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Delete Account</span>
               </button>
             </div>
           </form>
@@ -781,6 +857,28 @@ export const Screen6Roadmap: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Share Card Modal */}
+      <ShareCardModal
+        isOpen={isShareCardOpen}
+        onClose={() => setIsShareCardOpen(false)}
+        user={{
+          username: currentUser.handle ? currentUser.handle.replace('@', '') : 'learner',
+          displayName: currentUser.name,
+          avatarUrl: currentUser.avatarUrl
+        }}
+        stats={{
+          streakDays: streakMetrics.currentStreak,
+          completedModules: profileStats.totalModulesCompleted,
+          totalProjects: storedProjects.length
+        }}
+      />
+
+      {/* BYOK API Key Modal */}
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => setIsApiKeyModalOpen(false)}
+      />
     </div>
   )
 }

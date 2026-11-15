@@ -12,6 +12,11 @@ export interface UserProfile {
   handle: string
   avatarSeed: string
   avatarInitials?: string
+  avatarUrl?: string
+  githubId?: number
+  displayName?: string
+  plan?: 'byok' | 'subscription'
+  customProjectUsed?: boolean
   tier: UserTier
   streakDays: number
   lastActive: string // ISO date
@@ -214,6 +219,15 @@ export interface Project {
   status: ProjectStatus
   source: ProjectSource
   curatedSlug?: string
+  repo?: {
+    name: string
+    url: string
+    defaultBranch: string
+    lastCommitSha?: string
+    syncStatus: 'idle' | 'syncing' | 'synced' | 'failed'
+    lastPushedAt?: string
+    error?: string
+  }
   createdAt: string
   updatedAt: string
 }

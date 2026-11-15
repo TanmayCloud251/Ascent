@@ -1,12 +1,57 @@
 import express from 'express'
-import type { Request, Response } from 'express'
+import type { Request, Response, NextFunction } from 'express'
 import fs from 'fs'
 import path from 'path'
+import crypto from 'crypto'
 import { fileURLToPath } from 'url'
+import cookieParser from 'cookie-parser'
+import helmet from 'helmet'
+import rateLimit from 'express-rate-limit'
 import { GoogleGenAI, Type } from '@google/genai'
 import { runChecksOnFiles } from './src/services/checkRunner.js'
 import { ModuleContentSchema, ReviewSubmissionResponseSchema } from './src/schemas/course.js'
 import { TIMEOUT_CONFIG } from './src/config/timeouts.js'
+import { ENV, redactSecrets } from './src/config/env.js'
+import { encryptToken, decryptToken, generateRandomToken } from './src/services/cryptoService.js'
+import {
+  connectToMongo,
+  isMongoConnected,
+  findUserById,
+  findUserByGithubId,
+  saveUser,
+  deleteUserAndAllData,
+  createSession,
+  findSession,
+  deleteSession,
+  getProjectsByUserId,
+  getProjectById,
+  saveProject,
+  deleteProjectRecord,
+  countUserConfirmedCustomProjects,
+  confirmCustomProjectSpecAtomic,
+  saveLearnerProgress,
+  getUserProgress,
+  getProjectProgress,
+  saveProjectMemory,
+  getProjectMemory,
+  getShareSettings,
+  saveShareSettings,
+  findPublicProfileByUsername,
+  saveProjectAsset,
+  getProjectAsset,
+  MongoUser,
+  MongoProject,
+  MongoProgress
+} from './src/services/mongoService.js'
+import {
+  getGitHubAuthUrl,
+  exchangeCodeForGitHubToken,
+  fetchGitHubUser,
+  revokeGitHubToken,
+  createPrivateRepoForProject,
+  triggerBackgroundModuleSync
+} from './src/services/githubService.js'
+import { geminiProvider, resolveKeySource } from './src/services/llmProvider.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -70,17 +115,118 @@ const app = express()
 const PORT = Number(process.env.PORT) || 3000
 const HOST = '0.0.0.0'
 
-app.use(express.json({ limit: '10mb' }))
+// Security Headers (Helmet) & CORS
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+  })
+)
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const origin = req.headers.origin
+  if (
+    origin &&
+    (origin === ENV.APP_URL ||
+      origin.startsWith('http://localhost') ||
+      origin.startsWith('http://127.0.0.1'))
+  ) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    res.setHeader(
+      'Access-Control-Allow-Headers',
+      'Content-Type, Authorization, x-session-id, x-user-api-key'
+    )
+  }
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204)
+  }
+  next()
+})
+
+app.use(cookieParser(ENV.SESSION_SECRET))
+app.use(express.json({ limit: '15mb' }))
+
+// Rate limiters
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 60,
+  message: { success: false, error: 'Too many authentication attempts, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false
+})
+
+export const llmLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { success: false, error: 'Too many AI generation requests, please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false
+})
+
+// Session authentication middlewares
+export async function authenticateUser(req: Request, res: Response, next: NextFunction) {
+  try {
+    const sessionId = req.cookies?.['ascent_session']
+    if (!sessionId) {
+      return res.status(401).json({ success: false, error: 'Unauthorized: login required', code: 'UNAUTHORIZED' })
+    }
+    const session = await findSession(sessionId)
+    if (!session) {
+      res.clearCookie('ascent_session')
+      return res.status(401).json({ success: false, error: 'Session expired, please log in again', code: 'SESSION_EXPIRED' })
+    }
+    const user = await findUserById(session.userId)
+    if (!user) {
+      res.clearCookie('ascent_session')
+      return res.status(401).json({ success: false, error: 'User not found', code: 'USER_NOT_FOUND' })
+    }
+    ;(req as any).user = user
+    ;(req as any).session = session
+    next()
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: 'Internal auth error' })
+  }
+}
+
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  try {
+    const sessionId = req.cookies?.['ascent_session']
+    if (sessionId) {
+      const session = await findSession(sessionId)
+      if (session) {
+        const user = await findUserById(session.userId)
+        if (user) {
+          ;(req as any).user = user
+          ;(req as any).session = session
+        }
+      }
+    }
+  } catch {
+    // optional, continue
+  }
+  next()
+}
 
 // ============================================================================
 // GEMINI MODEL CONFIGURATION
-// Note: gemini-3.6-flash and 3.5-flash have reached their 20-req/day Free Tier quota on this key.
-// gemini-3.1-flash-lite has healthy quota, supports JSON schemas, and is fully active.
 // ============================================================================
 export const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite'
 
-// Dynamic Gemini client resolution (finds the first non-placeholder key, refreshing .env if needed)
-export function getGeminiClient(): GoogleGenAI | null {
+// Dynamic Gemini client resolution (accepts optional user API key override)
+export function getGeminiClient(keyOverride?: string | null): GoogleGenAI | null {
+  if (keyOverride && isValidApiKeyValue(keyOverride)) {
+    return new GoogleGenAI({
+      apiKey: keyOverride.trim(),
+      httpOptions: {
+        headers: {
+          'User-Agent': 'aistudio-build'
+        }
+      }
+    })
+  }
+
   const findValidKey = () =>
     API_KEY_ENV_NAMES.map(name => process.env[name]).find(k => isValidApiKeyValue(k))?.trim() || null
 
@@ -101,6 +247,37 @@ export function getGeminiClient(): GoogleGenAI | null {
       }
     }
   })
+}
+
+export function getClientForRequest(
+  req: Request,
+  isCurated: boolean = false
+): { ai: GoogleGenAI | null; code?: string; error?: string } {
+  const userApiKey = req.headers['x-user-api-key'] as string | undefined
+  const keyResolution = resolveKeySource(userApiKey)
+  const isSimulation =
+    req.headers['x-simulate-permanent-503'] === 'true' ||
+    req.headers['x-simulate-transient-503'] === 'true' ||
+    process.env.ASCENT_SIMULATE_PERMANENT_503 === '1' ||
+    process.env.ASCENT_SIMULATE_TRANSIENT_503 === '1'
+
+  if (!isCurated && !keyResolution.apiKey && !isSimulation) {
+    return {
+      ai: null,
+      code: 'no_key',
+      error: 'An active Gemini API key is required for custom AI-generated projects. Please add your API key in Settings.'
+    }
+  }
+
+  const ai = getGeminiClient(keyResolution.apiKey) || (isSimulation ? ({} as any) : null)
+  if (!ai && !isSimulation) {
+    return {
+      ai: null,
+      code: 'no_key',
+      error: 'Gemini API client could not be initialized. Please configure an API key in Settings.'
+    }
+  }
+  return { ai }
 }
 
 // Model startup verification state
@@ -169,33 +346,37 @@ function cleanAndParseJSON(rawText: string): any {
 function extractGeminiErrorMessage(err: any): string {
   if (!err) return 'Unknown error occurred while contacting Gemini API'
   const message = err.message || String(err)
+  let result = message
   try {
     const parsed = JSON.parse(message)
     if (parsed?.error?.message) {
       if (parsed.error.code === 400 && parsed.error.status === 'INVALID_ARGUMENT') {
-        return 'Gemini API key is invalid or not yet configured. Please verify your API key in Settings > Secrets and click Retry.'
+        return 'Gemini API key is invalid or not yet configured. Please verify your API key in Settings and click Retry.'
       }
       if (parsed.error.code === 403 || parsed.error.status === 'PERMISSION_DENIED') {
-        return 'Gemini API permission denied. Please verify your API key in Settings > Secrets, then click Retry.'
+        return 'Gemini API permission denied. Please verify your API key in Settings, then click Retry.'
       }
-      if (parsed.error.code === 429) {
-        return 'Gemini API rate limit reached. Please wait a moment and click Retry.'
+      if (parsed.error.code === 429 || parsed.error.status === 'RESOURCE_EXHAUSTED') {
+        return 'Your API key hit its quota or rate limit on Google AI Studio. Please check your quota or wait a moment.'
       }
       if (parsed.error.code === 503 || parsed.error.status === 'UNAVAILABLE') {
-        return 'The Gemini 3.8 Flash model is currently experiencing a temporary demand spike on Google servers (503 Service Unavailable). Your quota has NOT ended. Please wait 15–30 seconds and click Retry.'
+        return 'The Gemini model is currently experiencing a temporary demand spike on Google servers (503 Service Unavailable). Your quota has NOT ended. Please wait 15–30 seconds and click Retry.'
       }
-      return parsed.error.message
+      result = parsed.error.message
     }
   } catch {
     // not JSON string
   }
   if (message.includes('API_KEY_INVALID') || message.includes('API key not valid')) {
-    return 'Gemini API key is invalid or expired. Please check your key in Settings > Secrets and click Retry.'
+    return 'Gemini API key is invalid or expired. Please check your key in Settings and click Retry.'
+  }
+  if (message.includes('429') || message.includes('RESOURCE_EXHAUSTED') || message.includes('quota')) {
+    return 'Your API key hit its quota or rate limit on Google AI Studio. Please check your quota or wait a moment.'
   }
   if (message.includes('503') || message.includes('high demand') || message.includes('UNAVAILABLE')) {
-    return 'The Gemini 3.8 Flash model is currently experiencing a temporary demand spike on Google servers (503 Service Unavailable). Your quota has NOT ended. Please wait 15–30 seconds and click Retry.'
+    return 'The Gemini model is currently experiencing a temporary demand spike on Google servers (503 Service Unavailable). Your quota has NOT ended. Please wait 15–30 seconds and click Retry.'
   }
-  return message
+  return redactSecrets(result)
 }
 
 export interface AttemptLog {
@@ -526,7 +707,511 @@ function rateLimitMiddleware(req: Request, res: Response, next: () => void) {
   next()
 }
 
-app.use('/api/llm', rateLimitMiddleware)
+app.use('/api/llm', llmLimiter)
+
+// -------------------------------------------------------------
+// Health Check Endpoint
+// -------------------------------------------------------------
+app.get('/api/health', (_req: Request, res: Response) => {
+  return res.json({
+    status: 'ok',
+    mongo: isMongoConnected() ? 'connected' : 'memory_fallback',
+    timestamp: new Date().toISOString()
+  })
+})
+
+// -------------------------------------------------------------
+// GitHub OAuth & Account Endpoints
+// -------------------------------------------------------------
+app.get('/api/auth/github/url', authLimiter, (_req: Request, res: Response) => {
+  const state = generateRandomToken()
+  res.cookie('ascent_oauth_state', state, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 10 * 60 * 1000 // 10 minutes
+  })
+  const url = getGitHubAuthUrl(state)
+  return res.json({ success: true, url })
+})
+
+app.get('/api/auth/github/callback', authLimiter, async (req: Request, res: Response) => {
+  try {
+    const { code, state } = req.query
+    const savedState = req.cookies?.['ascent_oauth_state']
+
+    if (!code || typeof code !== 'string') {
+      return res.status(400).send('Missing code parameter')
+    }
+    if (!state || !savedState || state !== savedState) {
+      return res.status(403).send('Invalid or expired CSRF state parameter')
+    }
+
+    res.clearCookie('ascent_oauth_state')
+
+    const accessToken = await exchangeCodeForGitHubToken(code)
+    const githubUser = await fetchGitHubUser(accessToken)
+    const encryptedToken = encryptToken(accessToken)
+
+    let user = await findUserByGithubId(githubUser.id)
+    if (!user) {
+      user = {
+        id: crypto.randomUUID(),
+        githubId: githubUser.id,
+        username: githubUser.login,
+        avatarUrl: githubUser.avatar_url,
+        displayName: githubUser.name || githubUser.login,
+        email: githubUser.email,
+        noreplyEmail: githubUser.noreply_email,
+        encryptedToken,
+        plan: 'byok',
+        customProjectUsed: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    } else {
+      user.encryptedToken = encryptedToken
+      user.avatarUrl = githubUser.avatar_url
+      user.displayName = githubUser.name || user.displayName || user.username
+      user.email = githubUser.email || user.email
+      user.noreplyEmail = githubUser.noreply_email || user.noreplyEmail
+      user.updatedAt = new Date()
+    }
+    await saveUser(user)
+
+    const sessionId = generateRandomToken()
+    const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+    await createSession({
+      sessionId,
+      userId: user.id,
+      expiresAt,
+      createdAt: new Date(),
+      userAgent: req.headers['user-agent'] as string,
+      ip: req.ip
+    })
+
+    res.cookie('ascent_session', sessionId, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 14 * 24 * 60 * 60 * 1000
+    })
+
+    return res.redirect('/')
+  } catch (err: any) {
+    console.error('[GitHub Callback Error]', redactSecrets(String(err)))
+    return res.status(500).send(`Authentication failed: ${redactSecrets(String(err?.message || err))}`)
+  }
+})
+
+app.get('/api/auth/me', optionalAuth, async (req: Request, res: Response) => {
+  const user = (req as any).user as MongoUser | undefined
+  if (!user) {
+    return res.json({ authenticated: false, user: null })
+  }
+
+  const session = (req as any).session
+  if (session && new Date(session.expiresAt).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000) {
+    session.expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+    await createSession(session)
+    res.cookie('ascent_session', session.sessionId, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 14 * 24 * 60 * 60 * 1000
+    })
+  }
+
+  const customCount = await countUserConfirmedCustomProjects(user.id)
+
+  return res.json({
+    authenticated: true,
+    user: {
+      id: user.id,
+      githubId: user.githubId,
+      username: user.username,
+      avatarUrl: user.avatarUrl,
+      displayName: user.displayName,
+      plan: user.plan || 'byok',
+      customProjectUsed: customCount > 0 || user.customProjectUsed === true
+    }
+  })
+})
+
+app.post('/api/auth/logout', async (req: Request, res: Response) => {
+  const sessionId = req.cookies?.['ascent_session']
+  if (sessionId) {
+    await deleteSession(sessionId)
+  }
+  res.clearCookie('ascent_session')
+  return res.json({ success: true })
+})
+
+app.post('/api/auth/disconnect', authenticateUser, async (req: Request, res: Response) => {
+  const user = (req as any).user as MongoUser
+  if (user.encryptedToken) {
+    try {
+      const token = decryptToken(user.encryptedToken)
+      if (token) {
+        await revokeGitHubToken(token)
+      }
+    } catch (e) {
+      console.warn('Revoke token warning:', e)
+    }
+    user.encryptedToken = ''
+    await saveUser(user)
+  }
+  const sessionId = req.cookies?.['ascent_session']
+  if (sessionId) {
+    await deleteSession(sessionId)
+  }
+  res.clearCookie('ascent_session')
+  return res.json({ success: true, message: 'GitHub grant revoked and signed out.' })
+})
+
+app.delete('/api/auth/account', authenticateUser, async (req: Request, res: Response) => {
+  const user = (req as any).user as MongoUser
+  await deleteUserAndAllData(user.id)
+  const sessionId = req.cookies?.['ascent_session']
+  if (sessionId) {
+    await deleteSession(sessionId)
+  }
+  res.clearCookie('ascent_session')
+  return res.json({
+    success: true,
+    message: 'Account and all data deleted. Your GitHub repositories remain untouched.'
+  })
+})
+
+app.get('/api/auth/proxy-avatar', async (req: Request, res: Response) => {
+  try {
+    const url = req.query.url as string
+    if (!url || !url.startsWith('https://avatars.githubusercontent.com/')) {
+      return res.status(400).send('Invalid avatar URL')
+    }
+    const resp = await fetch(url)
+    if (!resp.ok) return res.status(resp.status).send('Avatar fetch failed')
+    const contentType = resp.headers.get('content-type') || 'image/jpeg'
+    const buffer = await resp.arrayBuffer()
+    res.setHeader('Content-Type', contentType)
+    res.setHeader('Cache-Control', 'public, max-age=86400')
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin')
+    return res.send(Buffer.from(buffer))
+  } catch (e: any) {
+    return res.status(500).send(e?.message || 'Error proxying avatar')
+  }
+})
+
+// -------------------------------------------------------------
+// Projects CRUD & Access Rules Endpoints
+// -------------------------------------------------------------
+app.get('/api/projects', authenticateUser, async (req: Request, res: Response) => {
+  const user = (req as any).user as MongoUser
+  const projects = await getProjectsByUserId(user.id)
+  const progress = await getUserProgress(user.id)
+  return res.json({ success: true, projects, progress })
+})
+
+app.post('/api/projects', authenticateUser, async (req: Request, res: Response) => {
+  const user = (req as any).user as MongoUser
+  const { id, name, prompt, spec, useTailwind, source = 'curated', curatedSlug } = req.body
+  if (!name || !id) {
+    return res.status(400).json({ success: false, error: 'Project id and name are required' })
+  }
+  const existing = await getProjectById(id)
+  const project: MongoProject = {
+    id,
+    userId: user.id,
+    name,
+    prompt: prompt || '',
+    spec: spec || null,
+    useTailwind: Boolean(useTailwind),
+    source,
+    curatedSlug,
+    status: existing?.status || 'draft_spec',
+    repo: existing?.repo,
+    createdAt: existing?.createdAt || new Date(),
+    updatedAt: new Date()
+  }
+  await saveProject(project)
+  return res.json({ success: true, project })
+})
+
+app.post('/api/projects/confirm-spec', authenticateUser, async (req: Request, res: Response) => {
+  const user = (req as any).user as MongoUser
+  const { projectId, spec } = req.body
+
+  if (!projectId) {
+    return res.status(400).json({ success: false, error: 'Project ID is required' })
+  }
+
+  const result = await confirmCustomProjectSpecAtomic(user.id, projectId, spec)
+  if (!result.success) {
+    return res.status(403).json(result)
+  }
+
+  const project = await getProjectById(projectId)
+  if (!project) {
+    return res.status(404).json({ success: false, error: 'Project not found' })
+  }
+
+  // Create GitHub repo if user has connected token and repo not yet created
+  if (user.encryptedToken && (!project.repo || !project.repo.url)) {
+    try {
+      const token = decryptToken(user.encryptedToken)
+      if (token) {
+        const repoResult = await createPrivateRepoForProject(
+          token,
+          user.username,
+          project.name,
+          project.prompt || project.spec?.summary || 'Web Application',
+          {
+            'index.html': `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <title>${project.name}</title>\n</head>\n<body>\n  <h1>${project.name}</h1>\n  <p>Initialized with Ascent.</p>\n</body>\n</html>`
+          },
+          project.spec?.pages?.flatMap((p: any) => p.modules || []) || [],
+          project.useTailwind ? 'HTML + Tailwind CSS + JavaScript' : 'HTML + Plain CSS + JavaScript'
+        )
+
+        project.repo = {
+          name: repoResult.repoName,
+          url: repoResult.repoUrl,
+          defaultBranch: repoResult.defaultBranch,
+          lastCommitSha: repoResult.initialCommitSha,
+          syncStatus: 'synced',
+          lastPushedAt: new Date()
+        }
+        await saveProject(project)
+      }
+    } catch (err: any) {
+      console.warn('[GitHub Repo Creation Warning]:', redactSecrets(String(err)))
+      project.repo = {
+        name: `ASCENT-${project.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}`,
+        url: '',
+        defaultBranch: 'main',
+        syncStatus: 'failed',
+        error: redactSecrets(err?.message || 'Repo creation error')
+      }
+      await saveProject(project)
+    }
+  }
+
+  return res.json({ success: true, project })
+})
+
+app.delete('/api/projects/:id', authenticateUser, async (req: Request, res: Response) => {
+  const user = (req as any).user as MongoUser
+  const projectId = req.params.id
+
+  const project = await getProjectById(projectId)
+  if (!project) {
+    return res.status(404).json({ success: false, error: 'Project not found' })
+  }
+
+  if (project.userId !== user.id) {
+    return res.status(403).json({ success: false, error: 'Access denied' })
+  }
+
+  const progressList = await getProjectProgress(user.id, projectId)
+  const completedCount = progressList.filter(p => p.passed).length
+
+  if (project.source === 'generated' && completedCount > 0) {
+    return res.status(400).json({
+      success: false,
+      code: 'CANNOT_DELETE_ACTIVE_CUSTOM_PROJECT',
+      error:
+        'A custom project may be deleted only if zero modules have been completed. Once you start completing modules, the custom project slot is locked to preserve your learning history.'
+    })
+  }
+
+  await deleteProjectRecord(projectId)
+
+  if (project.source === 'generated') {
+    const remainingCustom = await countUserConfirmedCustomProjects(user.id)
+    if (remainingCustom === 0) {
+      user.customProjectUsed = false
+      await saveUser(user)
+    }
+  }
+
+  return res.json({ success: true, message: 'Project deleted successfully' })
+})
+
+// -------------------------------------------------------------
+// State Sync & GitHub Synchronization Endpoints
+// -------------------------------------------------------------
+app.post('/api/sync/state', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const user = (req as any).user as MongoUser
+    const { projectId, progress, files, completedModule, allModules, completedPages } = req.body
+
+    if (Array.isArray(progress)) {
+      for (const p of progress) {
+        await saveLearnerProgress({
+          ...p,
+          userId: user.id,
+          projectId: p.projectId || projectId
+        })
+      }
+    }
+
+    if (projectId && completedModule && files) {
+      const allDone = (progress || []).filter((p: any) => p.passed).map((p: any) => p.moduleId)
+      triggerBackgroundModuleSync({
+        projectId,
+        userId: user.id,
+        moduleIndex: completedModule.moduleIndex ?? 0,
+        moduleTitle: completedModule.moduleTitle || 'Module Update',
+        userFiles: files,
+        allModules: allModules || [],
+        completedModuleIds: allDone,
+        completedPages: completedPages || []
+      })
+    }
+
+    return res.json({ success: true })
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err?.message || 'Sync error' })
+  }
+})
+
+app.get('/api/github/sync-status/:projectId', authenticateUser, async (req: Request, res: Response) => {
+  const user = (req as any).user as MongoUser
+  const project = await getProjectById(req.params.projectId)
+  if (!project || project.userId !== user.id) {
+    return res.status(404).json({ success: false, error: 'Project not found' })
+  }
+  return res.json({
+    success: true,
+    repo: project.repo || null
+  })
+})
+
+app.post('/api/github/retry-sync/:projectId', authenticateUser, async (req: Request, res: Response) => {
+  const user = (req as any).user as MongoUser
+  const project = await getProjectById(req.params.projectId)
+  if (!project || project.userId !== user.id) {
+    return res.status(404).json({ success: false, error: 'Project not found' })
+  }
+  const { files, moduleIndex = 0, moduleTitle = 'Retry Sync', allModules = [], completedPages = [] } = req.body
+  const progressList = await getProjectProgress(user.id, project.id)
+  const doneIds = progressList.filter(p => p.passed).map(p => p.moduleId)
+
+  triggerBackgroundModuleSync({
+    projectId: project.id,
+    userId: user.id,
+    moduleIndex,
+    moduleTitle,
+    userFiles: files || {},
+    allModules,
+    completedModuleIds: doneIds,
+    completedPages
+  })
+
+  return res.json({ success: true, message: 'Sync queued' })
+})
+
+// -------------------------------------------------------------
+// Share Settings & Public Profile Endpoints
+// -------------------------------------------------------------
+app.get('/api/share/settings', authenticateUser, async (req: Request, res: Response) => {
+  const user = (req as any).user as MongoUser
+  const settings = await getShareSettings(user.id)
+  return res.json({ success: true, settings })
+})
+
+app.put('/api/share/settings', authenticateUser, async (req: Request, res: Response) => {
+  const user = (req as any).user as MongoUser
+  const { isPublic, theme } = req.body
+  const settings = {
+    userId: user.id,
+    isPublic: Boolean(isPublic),
+    theme: theme === 'green' || theme === 'magenta' ? theme : 'cyan'
+  }
+  await saveShareSettings(settings as any)
+  return res.json({ success: true, settings })
+})
+
+app.get('/api/u/:username', async (req: Request, res: Response) => {
+  const username = req.params.username
+  const profile = await findPublicProfileByUsername(username)
+  if (!profile) {
+    return res.status(404).json({ success: false, error: 'Profile not found or is private' })
+  }
+
+  return res.json({
+    success: true,
+    user: {
+      username: profile.user.username,
+      displayName: profile.user.displayName,
+      avatarUrl: profile.user.avatarUrl,
+      createdAt: profile.user.createdAt
+    },
+    shareSettings: profile.shareSettings,
+    stats: {
+      totalProjects: profile.projects.length,
+      completedModules: profile.progress.filter(p => p.passed).length,
+      hintsUsed: profile.progress.reduce((sum, p) => sum + (p.hintsUsed || 0), 0)
+    },
+    projects: profile.projects.map(p => ({
+      name: p.name,
+      prompt: p.prompt,
+      source: p.source,
+      status: p.status,
+      repoUrl: p.repo?.url
+    }))
+  })
+})
+
+// -------------------------------------------------------------
+// Bring Your Own Key (BYOK) Validation Endpoint
+// -------------------------------------------------------------
+app.post('/api/llm/validate-key', async (req: Request, res: Response) => {
+  const apiKey = (req.body?.apiKey || req.headers['x-user-api-key'] || '') as string
+  const result = await geminiProvider.validateKey(apiKey)
+  return res.json({ success: result.valid, ...result })
+})
+
+// -------------------------------------------------------------
+// Binary Project Assets (GridFS with 5MB file & 10MB project caps)
+// -------------------------------------------------------------
+app.post('/api/projects/:projectId/assets', authenticateUser, async (req: Request, res: Response) => {
+  try {
+    const { projectId } = req.params
+    const { path: assetPath, mimeType, base64Content } = req.body
+    if (!assetPath || !base64Content) {
+      return res.status(400).json({ success: false, error: 'path and base64Content required' })
+    }
+    const buffer = Buffer.from(base64Content, 'base64')
+    const result = await saveProjectAsset({
+      projectId,
+      path: assetPath,
+      mimeType: mimeType || 'application/octet-stream',
+      buffer
+    })
+    if (!result.success) {
+      return res.status(400).json(result)
+    }
+    return res.json({ success: true })
+  } catch (err: any) {
+    return res.status(500).json({ success: false, error: err?.message || 'Asset upload error' })
+  }
+})
+
+app.get('/api/projects/:projectId/assets/{*assetPath}', async (req: Request, res: Response) => {
+  try {
+    const projectId = req.params.projectId
+    const assetPath = (req.params as any).assetPath
+    const asset = await getProjectAsset(projectId, assetPath)
+    if (!asset) {
+      return res.status(404).send('Asset not found')
+    }
+    res.setHeader('Content-Type', asset.mimeType)
+    res.setHeader('Cache-Control', 'public, max-age=86400')
+    return res.send(asset.buffer)
+  } catch (err: any) {
+    return res.status(500).send(err?.message || 'Asset fetch error')
+  }
+})
 
 // -------------------------------------------------------------
 // POST /api/llm/generate-spec
@@ -541,16 +1226,19 @@ app.post('/api/llm/generate-spec', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Valid prompt string is required', retryable: false })
     }
 
-    const ai = getGeminiClient()
-    if (!ai) {
-      logEvent('generate_spec_no_api_key', { prompt })
-      return res.status(503).json({
+    const isCurated = req.body?.isCurated === true || req.body?.curated === true || req.body?.source === 'curated'
+    const clientResult = getClientForRequest(req, isCurated)
+    if (!clientResult.ai) {
+      logEvent('generate_spec_no_api_key', { prompt, code: clientResult.code })
+      return res.status(clientResult.code === 'no_key' ? 400 : 503).json({
         success: false,
-        error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
+        code: clientResult.code || 'no_key',
+        error: clientResult.error,
         model: GEMINI_MODEL,
-        retryable: true
+        retryable: clientResult.code !== 'no_key'
       })
     }
+    const ai = clientResult.ai
 
     telemetry.geminiCalls++
 
@@ -816,15 +1504,18 @@ app.post('/api/llm/generate-screen-plan', async (req: Request, res: Response) =>
       return res.status(400).json({ success: false, error: 'Valid ProjectSpec is required', retryable: false })
     }
 
-    const ai = getGeminiClient()
-    if (!ai) {
-      return res.status(503).json({
+    const isCurated = req.body?.isCurated === true || req.body?.curated === true || req.body?.source === 'curated' || spec?.isCurated === true
+    const clientResult = getClientForRequest(req, isCurated)
+    if (!clientResult.ai) {
+      return res.status(clientResult.code === 'no_key' ? 400 : 503).json({
         success: false,
-        error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
+        code: clientResult.code || 'no_key',
+        error: clientResult.error,
         model: GEMINI_MODEL,
-        retryable: true
+        retryable: clientResult.code !== 'no_key'
       })
     }
+    const ai = clientResult.ai
 
     telemetry.geminiCalls++
 
@@ -951,15 +1642,18 @@ app.post('/api/llm/generate-syllabus', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Valid spec and currentScreen are required', retryable: false })
     }
 
-    const ai = getGeminiClient()
-    if (!ai) {
-      return res.status(503).json({
+    const isCurated = req.body?.isCurated === true || req.body?.curated === true || req.body?.source === 'curated' || spec?.isCurated === true
+    const clientResult = getClientForRequest(req, isCurated)
+    if (!clientResult.ai) {
+      return res.status(clientResult.code === 'no_key' ? 400 : 503).json({
         success: false,
-        error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
+        code: clientResult.code || 'no_key',
+        error: clientResult.error,
         model: GEMINI_MODEL,
-        retryable: true
+        retryable: clientResult.code !== 'no_key'
       })
     }
+    const ai = clientResult.ai
 
     telemetry.geminiCalls++
 
@@ -1126,15 +1820,18 @@ app.post('/api/llm/generate-page', async (req: Request, res: Response) => {
       })
     }
 
-    const ai = getGeminiClient()
-    if (!ai) {
-      return res.status(503).json({
+    const isCurated = req.body?.isCurated === true || req.body?.curated === true || req.body?.source === 'curated' || spec?.isCurated === true
+    const clientResult = getClientForRequest(req, isCurated)
+    if (!clientResult.ai) {
+      return res.status(clientResult.code === 'no_key' ? 400 : 503).json({
         success: false,
-        error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
+        code: clientResult.code || 'no_key',
+        error: clientResult.error,
         model: GEMINI_MODEL,
-        retryable: true
+        retryable: clientResult.code !== 'no_key'
       })
     }
+    const ai = clientResult.ai
 
     telemetry.geminiCalls++
 
@@ -1379,19 +2076,21 @@ app.post('/api/llm/generate-module-content', async (req: Request, res: Response)
       })
     }
 
-    const ai = getGeminiClient()
-    if (!ai) {
-      return res.status(503).json({
+    const isCurated = req.body?.isCurated === true || req.body?.curated === true || req.body?.source === 'curated' || spec?.isCurated === true
+    const clientResult = getClientForRequest(req, isCurated)
+    if (!clientResult.ai) {
+      return res.status(clientResult.code === 'no_key' ? 400 : 503).json({
         success: false,
-        code: 'GEMINI_UNAVAILABLE',
-        message: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
-        error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
+        code: clientResult.code || 'no_key',
+        message: clientResult.error,
+        error: clientResult.error,
         model: GEMINI_MODEL,
-        retryable: true,
+        retryable: clientResult.code !== 'no_key',
         attempts: attemptLogs,
         totalTimeMs: Date.now() - requestStartTime
       })
     }
+    const ai = clientResult.ai
 
     telemetry.geminiCalls++
 
@@ -1743,14 +2442,17 @@ app.post('/api/llm/review-submission', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Module and failedChecks are required', retryable: false })
     }
 
-    const ai = getGeminiClient()
-    if (!ai) {
-      return res.status(503).json({
+    const isCurated = req.body?.isCurated === true || req.body?.curated === true || req.body?.source === 'curated'
+    const clientResult = getClientForRequest(req, isCurated)
+    if (!clientResult.ai) {
+      return res.status(clientResult.code === 'no_key' ? 400 : 503).json({
         success: false,
-        error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
-        retryable: true
+        code: clientResult.code || 'no_key',
+        error: clientResult.error,
+        retryable: clientResult.code !== 'no_key'
       })
     }
+    const ai = clientResult.ai
 
     telemetry.geminiCalls++
 
@@ -1847,14 +2549,17 @@ app.post('/api/generate-curriculum', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'Prompt is required' })
     }
 
-    const ai = getGeminiClient()
-    if (!ai) {
-      return res.status(503).json({
+    const isCurated = req.body?.isCurated === true || req.body?.curated === true || req.body?.source === 'curated'
+    const clientResult = getClientForRequest(req, isCurated)
+    if (!clientResult.ai) {
+      return res.status(clientResult.code === 'no_key' ? 400 : 503).json({
         success: false,
-        error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
-        retryable: true
+        code: clientResult.code || 'no_key',
+        error: clientResult.error,
+        retryable: clientResult.code !== 'no_key'
       })
     }
+    const ai = clientResult.ai
 
     telemetry.curriculumGenerations++
 
@@ -1933,14 +2638,17 @@ app.post('/api/evaluate-code', async (req: Request, res: Response) => {
   try {
     const { codeFiles = {}, moduleTitle = '', componentName = '' } = req.body
 
-    const ai = getGeminiClient()
-    if (!ai) {
-      return res.status(503).json({
+    const isCurated = req.body?.isCurated === true || req.body?.curated === true || req.body?.source === 'curated'
+    const clientResult = getClientForRequest(req, isCurated)
+    if (!clientResult.ai) {
+      return res.status(clientResult.code === 'no_key' ? 400 : 503).json({
         success: false,
-        error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
-        retryable: true
+        code: clientResult.code || 'no_key',
+        error: clientResult.error,
+        retryable: clientResult.code !== 'no_key'
       })
     }
+    const ai = clientResult.ai
 
     telemetry.codeEvaluations++
 
@@ -2004,14 +2712,17 @@ app.post('/api/ask-tutor', async (req: Request, res: Response) => {
   try {
     const { question, activeFile = '', currentCode = '', moduleTitle = '', testFailureLog = '' } = req.body
 
-    const ai = getGeminiClient()
-    if (!ai) {
-      return res.status(503).json({
+    const isCurated = req.body?.isCurated === true || req.body?.curated === true || req.body?.source === 'curated'
+    const clientResult = getClientForRequest(req, isCurated)
+    if (!clientResult.ai) {
+      return res.status(clientResult.code === 'no_key' ? 400 : 503).json({
         success: false,
-        error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
-        retryable: true
+        code: clientResult.code || 'no_key',
+        error: clientResult.error,
+        retryable: clientResult.code !== 'no_key'
       })
     }
+    const ai = clientResult.ai
 
     telemetry.tutorQueries++
 
@@ -2063,26 +2774,40 @@ Student's question: "${question}"`,
 // -------------------------------------------------------------
 async function startServer() {
   try {
-    const { createServer: createViteServer } = await import('vite')
-    const vite = await createViteServer({
-      server: {
-        middlewareMode: true,
-        hmr: false
-      },
-      appType: 'spa'
+    // Initialize MongoDB connection (or resilient memory store fallback)
+    await connectToMongo().catch(err => {
+      console.warn('[Server] MongoDB background connection warning:', err)
     })
 
-    app.use(vite.middlewares)
+    if (process.env.NODE_ENV === 'production') {
+      const distPath = path.join(__dirname, 'dist')
+      if (fs.existsSync(distPath)) {
+        app.use(express.static(distPath))
+        app.get('*', (req, res, next) => {
+          if (req.path.startsWith('/api')) return next()
+          res.sendFile(path.join(distPath, 'index.html'))
+        })
+      }
+    } else {
+      const { createServer: createViteServer } = await import('vite')
+      const vite = await createViteServer({
+        server: {
+          middlewareMode: true,
+          hmr: false
+        },
+        appType: 'spa'
+      })
+
+      app.use(vite.middlewares)
+    }
 
     const server = app.listen(PORT, HOST, () => {
-      console.log(`Ascent Full-Stack Dev Server running on http://${HOST}:${PORT}`)
-      // Run model verification asynchronously in background so server listens immediately
+      console.log(`Ascent Full-Stack Server running on http://${HOST}:${PORT}`)
       verifyModelAtStartup().catch(err => {
         console.warn('[Gemini Startup Check] Background check error:', err)
       })
     })
 
-    // Set Express HTTP server timeouts (>= 130 seconds) to prevent premature socket aborts
     server.timeout = TIMEOUT_CONFIG.SERVER_REQUEST_TIMEOUT_MS
     server.requestTimeout = TIMEOUT_CONFIG.SERVER_REQUEST_TIMEOUT_MS
     server.headersTimeout = TIMEOUT_CONFIG.SERVER_REQUEST_TIMEOUT_MS + 5_000
@@ -2092,7 +2817,7 @@ async function startServer() {
       console.error('[Server] Fatal listen error:', err)
     })
   } catch (err) {
-    console.error('[Server] Failed to initialize dev server:', err)
+    console.error('[Server] Failed to initialize server:', err)
   }
 }
 

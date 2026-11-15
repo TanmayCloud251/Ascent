@@ -7,6 +7,7 @@ import { getDeterministicCheckGuidance } from '../services/workspaceHelpers'
 import { SimpleMarkdown } from '../components/SimpleMarkdown'
 import { FileExplorer } from '../components/FileExplorer'
 import { AssetViewer } from '../components/AssetViewer'
+import { SyncIndicator } from '../components/SyncIndicator'
 import {
   Play,
   CheckCircle2,
@@ -146,9 +147,12 @@ export const Screen4Workspace: React.FC = () => {
     completeActiveModule,
     requestSubmissionReview,
     enableModuleRedo,
-    downloadProjectZip
+    downloadProjectZip,
+    activeProjectId,
+    storedProjects
   } = useApp()
 
+  const [mobileTab, setMobileTab] = useState<'editor' | 'files' | 'preview' | 'lesson'>('editor')
   const [rightInfoTab, setRightInfoTab] = useState<'lesson' | 'task' | 'hints'>('lesson')
   const [bottomPanelTab, setBottomPanelTab] = useState<'checks' | 'console'>('checks')
   const [showResetConfirm, setShowResetConfirm] = useState(false)
@@ -1250,6 +1254,13 @@ export const Screen4Workspace: React.FC = () => {
 
         {/* Right Controls */}
         <div className="flex items-center gap-2">
+          {activeProjectId && (
+            <SyncIndicator
+              projectId={activeProjectId}
+              repoUrl={(storedProjects.find(p => p.id === activeProjectId) as any)?.repo?.url}
+            />
+          )}
+
           <span className={`px-2 py-0.5 rounded text-[10px] border ${
             useTailwind
               ? 'bg-[#00F0FF]/10 text-[#00F0FF] border-[#00F0FF]/30'
@@ -1268,10 +1279,38 @@ export const Screen4Workspace: React.FC = () => {
         </div>
       </div>
 
+      {/* Mobile Tab Switcher */}
+      <div className="lg:hidden flex items-center justify-around border-b border-white/10 bg-[#0B0B12] text-xs font-mono py-1.5 px-2">
+        <button
+          onClick={() => setMobileTab('editor')}
+          className={`px-3 py-1 rounded-md transition ${mobileTab === 'editor' ? 'bg-[#00F0FF]/15 text-[#00F0FF] font-bold' : 'text-slate-400'}`}
+        >
+          Code
+        </button>
+        <button
+          onClick={() => setMobileTab('preview')}
+          className={`px-3 py-1 rounded-md transition ${mobileTab === 'preview' ? 'bg-[#00F0FF]/15 text-[#00F0FF] font-bold' : 'text-slate-400'}`}
+        >
+          Preview
+        </button>
+        <button
+          onClick={() => setMobileTab('lesson')}
+          className={`px-3 py-1 rounded-md transition ${mobileTab === 'lesson' ? 'bg-[#00F0FF]/15 text-[#00F0FF] font-bold' : 'text-slate-400'}`}
+        >
+          Task / Checks
+        </button>
+        <button
+          onClick={() => setMobileTab('files')}
+          className={`px-3 py-1 rounded-md transition ${mobileTab === 'files' ? 'bg-[#00F0FF]/15 text-[#00F0FF] font-bold' : 'text-slate-400'}`}
+        >
+          Files
+        </button>
+      </div>
+
       {/* MAIN IDE 3-COLUMN GRID */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
         {/* LEFT COLUMN: FILE EXPLORER TREE */}
-        <aside className="w-full lg:w-60 border-b lg:border-b-0 lg:border-r border-white/10 bg-[#09090F] flex flex-col justify-between shrink-0 min-h-0">
+        <aside className={`${mobileTab === 'files' ? 'flex' : 'hidden'} lg:flex w-full lg:w-60 border-b lg:border-b-0 lg:border-r border-white/10 bg-[#09090F] flex-col justify-between shrink-0 min-h-0`}>
           <FileExplorer
             projectFiles={projectFiles}
             projectFolders={projectFolders}
@@ -1332,7 +1371,7 @@ export const Screen4Workspace: React.FC = () => {
         </aside>
 
         {/* CENTER COLUMN: MONACO EDITOR OR READ-ONLY ASSET VIEWER + ACTION TOOLBAR */}
-        <section className="flex-1 flex flex-col min-w-0 min-h-[280px] border-b lg:border-b-0 lg:border-r border-white/10 bg-[#0B0B11]">
+        <section className={`${mobileTab !== 'files' ? 'flex' : 'hidden'} lg:flex flex-1 flex-col min-w-0 min-h-[280px] border-b lg:border-b-0 lg:border-r border-white/10 bg-[#0B0B11]`}>
           {/* Tabs + Action Buttons */}
           <div className="px-3 py-1.5 border-b border-white/10 bg-[#0D0D15] flex flex-wrap items-center justify-between gap-2 shrink-0">
             <div className="flex items-center gap-1 overflow-x-auto">
