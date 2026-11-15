@@ -26,7 +26,7 @@ export const LLMTracePanel: React.FC = () => {
     return latest ? [latest] : []
   })
   const [selectedTraceIdx, setSelectedTraceIdx] = useState(0)
-  const [activeTab, setActiveTab] = useState<'response' | 'request' | 'parsed'>('response')
+  const [activeTab, setActiveTab] = useState<'response' | 'request' | 'parsed' | 'harness' | 'attempts'>('response')
   const [copied, setCopied] = useState(false)
   const [serverModelStatus, setServerModelStatus] = useState<{
     model: string
@@ -168,7 +168,7 @@ export const LLMTracePanel: React.FC = () => {
 
             {/* Metrics Ribbon */}
             {trace ? (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
+              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-[11px]">
                 <div className="p-2 rounded bg-black/50 border border-white/5 space-y-0.5">
                   <span className="text-slate-500 block text-[10px]">ENDPOINT</span>
                   <span className="text-cyan-300 font-semibold truncate block">{trace.endpoint}</span>
@@ -178,9 +178,31 @@ export const LLMTracePanel: React.FC = () => {
                   <span className="text-white font-semibold truncate block">{trace.model}</span>
                 </div>
                 <div className="p-2 rounded bg-black/50 border border-white/5 space-y-0.5">
-                  <span className="text-slate-500 block text-[10px]">LATENCY</span>
+                  <span className="text-slate-500 block text-[10px]">ATTEMPTS</span>
+                  <span className={`font-semibold truncate block ${
+                    trace.attempts && trace.attempts.length > 1
+                      ? 'text-amber-300'
+                      : trace.error
+                      ? 'text-rose-400'
+                      : 'text-emerald-400'
+                  }`}>
+                    {trace.attempts && trace.attempts.length > 0
+                      ? trace.succeededAttempt
+                        ? `#${trace.succeededAttempt} passed (${trace.attempts.length} try)`
+                        : `${trace.attempts.length} tries (failed)`
+                      : '1 try'}
+                  </span>
+                </div>
+                <div className="p-2 rounded bg-black/50 border border-white/5 space-y-0.5">
+                  <span className="text-slate-500 block text-[10px]">TOTAL TIME</span>
                   <span className="text-amber-300 font-semibold flex items-center gap-1">
-                    <Clock className="w-3 h-3" /> {trace.latencyMs} ms
+                    <Clock className="w-3 h-3" /> {trace.totalTimeMs || trace.latencyMs} ms
+                  </span>
+                </div>
+                <div className="p-2 rounded bg-black/50 border border-white/5 space-y-0.5">
+                  <span className="text-slate-500 block text-[10px]">LATENCY</span>
+                  <span className="text-cyan-300 font-semibold flex items-center gap-1">
+                    <Zap className="w-3 h-3" /> {trace.latencyMs} ms
                   </span>
                 </div>
                 <div className="p-2 rounded bg-black/50 border border-white/5 space-y-0.5">
@@ -246,6 +268,19 @@ export const LLMTracePanel: React.FC = () => {
                         JSDOM Harness
                       </button>
                     )}
+                    {trace.attempts && trace.attempts.length > 0 && (
+                      <button
+                        onClick={() => setActiveTab('attempts')}
+                        className={`px-2.5 py-1 rounded transition-colors flex items-center gap-1 ${
+                          activeTab === 'attempts' ? 'bg-[#00F0FF]/15 text-[#00F0FF] font-semibold' : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        <span>Attempts ({trace.attempts.length})</span>
+                        {trace.attempts.some(a => !a.success) && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                        )}
+                      </button>
+                    )}
                   </div>
 
                   <button
@@ -255,6 +290,8 @@ export const LLMTracePanel: React.FC = () => {
                           ? trace.rawResponseText
                           : activeTab === 'request'
                           ? JSON.stringify(trace.requestPayload, null, 2)
+                          : activeTab === 'attempts'
+                          ? JSON.stringify(trace.attempts, null, 2)
                           : (activeTab as string) === 'harness'
                           ? JSON.stringify(trace.harnessResults, null, 2)
                           : JSON.stringify(trace.parsedResult, null, 2)
@@ -267,17 +304,62 @@ export const LLMTracePanel: React.FC = () => {
                   </button>
                 </div>
 
-                <div className="p-3 rounded-lg bg-black/80 border border-white/10 overflow-x-auto max-h-56 text-[11px] text-slate-300 font-mono leading-relaxed">
-                  <pre>
-                    {activeTab === 'response'
-                      ? trace.rawResponseText
-                      : activeTab === 'request'
-                      ? JSON.stringify(trace.requestPayload, null, 2)
-                      : (activeTab as string) === 'harness'
-                      ? JSON.stringify(trace.harnessResults, null, 2)
-                      : JSON.stringify(trace.parsedResult, null, 2)}
-                  </pre>
-                </div>
+                {activeTab === 'attempts' && trace.attempts ? (
+                  <div className="p-3 rounded-lg bg-black/80 border border-white/10 space-y-2.5 max-h-56 overflow-y-auto">
+                    <div className="flex items-center justify-between text-[11px] text-slate-400 border-b border-white/10 pb-1 font-bold">
+                      <span>ATTEMPTS &amp; TRANSIENT RETRY LOG</span>
+                      <span>Total Time: {trace.totalTimeMs || trace.latencyMs} ms</span>
+                    </div>
+                    {trace.attempts.map((att) => (
+                      <div
+                        key={att.attempt}
+                        className={`p-2.5 rounded border text-[11px] space-y-1 ${
+                          att.success
+                            ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-200'
+                            : 'bg-rose-950/30 border-rose-500/30 text-rose-200'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between font-mono">
+                          <span className="font-bold">
+                            Attempt #{att.attempt} {att.phase ? `[${att.phase.toUpperCase()}]` : ''}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-slate-400">{att.durationMs} ms</span>
+                            <span className={`px-1.5 py-0.2 rounded font-bold text-[10px] ${
+                              att.success
+                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                            }`}>
+                              {att.success ? 'PASSED' : 'FAILED'}
+                            </span>
+                          </div>
+                        </div>
+                        {att.errorType && (
+                          <div className="font-mono text-[10px] text-amber-300">
+                            Error Type: {att.errorType}
+                          </div>
+                        )}
+                        {att.errorMessage && (
+                          <div className="font-sans text-[11px] text-slate-300 leading-snug">
+                            {att.errorMessage}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-3 rounded-lg bg-black/80 border border-white/10 overflow-x-auto max-h-56 text-[11px] text-slate-300 font-mono leading-relaxed">
+                    <pre>
+                      {activeTab === 'response'
+                        ? trace.rawResponseText
+                        : activeTab === 'request'
+                        ? JSON.stringify(trace.requestPayload, null, 2)
+                        : (activeTab as string) === 'harness'
+                        ? JSON.stringify(trace.harnessResults, null, 2)
+                        : JSON.stringify(trace.parsedResult, null, 2)}
+                    </pre>
+                  </div>
+                )}
               </div>
             )}
           </div>

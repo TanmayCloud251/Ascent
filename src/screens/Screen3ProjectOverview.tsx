@@ -35,7 +35,9 @@ export const Screen3ProjectOverview: React.FC = () => {
     getModuleProgress,
     finishActivePage,
     selectActiveScreen,
-    activeProjectSource
+    activeProjectSource,
+    isLoadingModuleContent,
+    activeModuleIndex
   } = useApp()
 
   // Loading state during single page + component syllabus generation
@@ -166,25 +168,40 @@ export const Screen3ProjectOverview: React.FC = () => {
           </button>
 
           <button
+            disabled={isLoadingModuleContent}
             onClick={() => {
+              if (isLoadingModuleContent) return
               if (allModulesCompleted) {
                 finishActivePage()
               } else {
                 openModule(activeIdx >= 0 ? activeIdx : 0)
               }
             }}
-            className="cyber-btn-primary px-3.5 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer font-bold"
+            className={`px-3.5 py-1.5 text-xs flex items-center gap-1.5 font-bold transition-all ${
+              isLoadingModuleContent
+                ? 'opacity-60 cursor-not-allowed bg-slate-800 text-slate-400 border border-white/10 rounded-lg'
+                : 'cyber-btn-primary cursor-pointer'
+            }`}
           >
-            <span>
-              {allModulesCompleted
-                ? activeProjectSource === 'curated'
-                  ? 'Project Complete Summary'
-                  : 'Page Complete Summary'
-                : completedModulesCount > 0
-                ? 'Continue Module'
-                : 'Start Module 1'}
-            </span>
-            <ArrowRight className="w-3.5 h-3.5" />
+            {isLoadingModuleContent ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#00F0FF]" />
+                <span>Opening Module...</span>
+              </>
+            ) : (
+              <>
+                <span>
+                  {allModulesCompleted
+                    ? activeProjectSource === 'curated'
+                      ? 'Project Complete Summary'
+                      : 'Page Complete Summary'
+                    : completedModulesCount > 0
+                    ? 'Continue Module'
+                    : 'Start Module 1'}
+                </span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -401,11 +418,28 @@ export const Screen3ProjectOverview: React.FC = () => {
                           Build this component in the live browser sandbox
                         </span>
                         <button
-                          onClick={() => openModule(mIdx)}
-                          className="cyber-btn-primary px-4 py-1.5 text-xs flex items-center gap-1.5 cursor-pointer font-bold"
+                          disabled={isLoadingModuleContent}
+                          onClick={() => {
+                            if (isLoadingModuleContent) return
+                            openModule(mIdx)
+                          }}
+                          className={`px-4 py-1.5 text-xs flex items-center gap-1.5 font-bold transition-all ${
+                            isLoadingModuleContent
+                              ? 'opacity-60 cursor-not-allowed bg-slate-800 text-slate-400 border border-white/10 rounded-lg'
+                              : 'cyber-btn-primary cursor-pointer'
+                          }`}
                         >
-                          <span>Start This Component</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          {isLoadingModuleContent && activeModuleIndex === mIdx ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#00F0FF]" />
+                              <span>Starting...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Start This Component</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </>
+                          )}
                         </button>
                       </div>
                     )}

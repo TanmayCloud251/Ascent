@@ -40,9 +40,10 @@ import {
   isTextCodePath,
   projectFilesToTextMap,
   sanitizeProjectPath,
-  textMapToProjectFiles
+  textMapToProjectFiles,
+  computeStarterFilesHash
 } from '../services/fileUtils'
-import { llmService } from '../services/llmService'
+import { llmService, LLMCallAttempt, ModuleGenerationError } from '../services/llmService'
 import {
   CodeEvaluationResult,
   ThinkingPlan
@@ -92,6 +93,13 @@ const EMPTY_MODULE: LearningModule = {
   testCases: [],
   tasks: [],
   status: 'locked'
+}
+
+export interface StructuredModuleError {
+  code?: string
+  message: string
+  retryable?: boolean
+  attempts?: LLMCallAttempt[]
 }
 
 interface AppContextType {
@@ -188,6 +196,10 @@ interface AppContextType {
   activeModuleContent: ModuleContent | null
   isLoadingModuleContent: boolean
   moduleContentError: string | null
+  moduleLoadingStage: 'preparing' | 'writing' | 'verifying'
+  moduleLoadingElapsed: number
+  moduleLoadingIsSlow: boolean
+  structuredModuleError: StructuredModuleError | null
   userFiles: Record<string, string>
   projectFiles: ProjectFile[]
   projectFolders: string[]
@@ -733,6 +745,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [activeModuleContent, setActiveModuleContent] = useState<ModuleContent | null>(null)
   const [isLoadingModuleContent, setIsLoadingModuleContent] = useState<boolean>(false)
   const [moduleContentError, setModuleContentError] = useState<string | null>(null)
+  const [moduleLoadingStage, setModuleLoadingStage] = useState<'preparing' | 'writing' | 'verifying'>('preparing')
+  const [moduleLoadingElapsed, setModuleLoadingElapsed] = useState<number>(0)
+  const [moduleLoadingIsSlow, setModuleLoadingIsSlow] = useState<boolean>(false)
+  const [structuredModuleError, setStructuredModuleError] = useState<StructuredModuleError | null>(null)
+  const inFlightModulePromisesRef = useRef<Map<string, Promise<ModuleContent>>>(new Map())
+
+  useEffect(() => {
+    if (!isLoadingModuleContent) {
+      setModuleLoadingElapsed(0)
+      setModuleLoadingIsSlow(false)
+      setModuleLoadingStage('preparing')
+      return
+    }
+
+    setModuleLoadingElapsed(0)
+    setModuleLoadingIsSlow(false)
+    setModuleLoadingStage('preparing')
+
+    const startMs = Date.now()
+    const timer = setInterval(() => {
+      const elapsedSec = Math.floor((Date.now() - startMs) / 1000)
+      setModuleLoadingElapsed(elapsedSec)
+      if (elapsedSec >= 20) {
+        setModuleLoadingIsSlow(true)
+      }
+      if (elapsedSec >= 10) {
+        setModuleLoadingStage('verifying')
+      } else if (elapsedSec >= 4) {
+        setModuleLoadingStage('writing')
+      } else {
+        setModuleLoadingStage('preparing')
+      }
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [isLoadingModuleContent])
   const [userFiles, setUserFiles] = useState<Record<string, string>>({})
   const [projectFiles, setProjectFiles] = useState<ProjectFile[]>([])
   const [projectFolders, setProjectFolders] = useState<string[]>([])
@@ -1297,6 +1345,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setActiveModuleIndex(index)
     setModuleContentError(null)
+    setStructuredModuleError(null)
     setIsModuleRedoMode(false)
     setIsPageCompleteView(false)
     setIsProjectCompleteView(false)
@@ -1314,6 +1363,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const stored = storageService.getProjectById(targetProjectId)
     const latestMem = storageService.getProjectMemory(targetProjectId) || projectMemory
+    let generatedBaselineFiles: { path: string; content: string }[] = []
 
     try {
       let rawContent: ModuleContent | null = null
@@ -1337,51 +1387,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } else {
         const scopedId = scopedModuleKey(targetProjectId, mod.id)
+        const completed = latestMem?.completedFiles || {}
+        const targetHtmlName = targetPage.fileName || 'index.html'
+        const hasSharedCss = Object.keys(completed).some(p => p.toLowerCase() === 'styles.css')
+        const hasSharedJs = Object.keys(completed).some(p => p.toLowerCase() === 'app.js')
+        const newPageSkeleton = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${targetPage.name} — ${targetSpec.appName}</title>${hasSharedCss ? '\n  <link rel="stylesheet" href="styles.css">' : ''}\n</head>\n<body>\n  <!-- ${targetPage.name}: ${targetPage.purpose || targetPage.description} -->\n${hasSharedJs ? '  <script src="app.js"></script>\n' : ''}</body>\n</html>`
+
+        let baselineFiles: { path: string; content: string }[] = []
+        if (Object.keys(completed).length > 0) {
+          baselineFiles = Object.entries(completed).map(([path, content]) => ({ path, content }))
+          if (!completed[targetHtmlName]) {
+            baselineFiles.push({ path: targetHtmlName, content: newPageSkeleton })
+          }
+        } else {
+          baselineFiles = [
+            {
+              path: targetHtmlName,
+              content: `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${targetSpec.appName}</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n</body>\n</html>`
+            },
+            {
+              path: 'styles.css',
+              content: `/* Styles for ${targetSpec.appName} */\n* {\n  box-sizing: border-box;\n  margin: 0;\n  padding: 0;\n}\n`
+            },
+            {
+              path: 'app.js',
+              content: `// Logic for ${targetSpec.appName}\n`
+            }
+          ]
+        }
+        generatedBaselineFiles = baselineFiles
+        const currentStarterHash = computeStarterFilesHash(baselineFiles)
+
         const cached = !options?.forceRefresh ? storageService.getModuleContent(scopedId) : null
         if (cached) {
           rawContent = cached
         } else {
-          setIsLoadingModuleContent(true)
-          const completed = latestMem?.completedFiles || {}
-          const targetHtmlName = targetPage.fileName || 'index.html'
-          const hasSharedCss = Object.keys(completed).some(p => p.toLowerCase() === 'styles.css')
-          const hasSharedJs = Object.keys(completed).some(p => p.toLowerCase() === 'app.js')
-          const newPageSkeleton = `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${targetPage.name} — ${targetSpec.appName}</title>${hasSharedCss ? '\n  <link rel="stylesheet" href="styles.css">' : ''}\n</head>\n<body>\n  <!-- ${targetPage.name}: ${targetPage.purpose || targetPage.description} -->\n${hasSharedJs ? '  <script src="app.js"></script>\n' : ''}</body>\n</html>`
-
-          let baselineFiles: { path: string; content: string }[] = []
-          if (Object.keys(completed).length > 0) {
-            baselineFiles = Object.entries(completed).map(([path, content]) => ({ path, content }))
-            if (!completed[targetHtmlName]) {
-              baselineFiles.push({ path: targetHtmlName, content: newPageSkeleton })
-            }
+          // Check if module was pre-fetched in background with matching starter files
+          const prefetched = !options?.forceRefresh ? storageService.getPrefetchedModule(scopedId) : null
+          if (prefetched && prefetched.starterHash === currentStarterHash) {
+            rawContent = prefetched.content
+            storageService.saveModuleContent(scopedId, rawContent)
+            storageService.deletePrefetchedModule(scopedId)
           } else {
-            baselineFiles = [
-              {
-                path: targetHtmlName,
-                content: `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${targetSpec.appName}</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n</body>\n</html>`
-              },
-              {
-                path: 'styles.css',
-                content: `/* Styles for ${targetSpec.appName} */\n* {\n  box-sizing: border-box;\n  margin: 0;\n  padding: 0;\n}\n`
-              },
-              {
-                path: 'app.js',
-                content: `// Logic for ${targetSpec.appName}\n`
-              }
-            ]
-          }
+            if (prefetched && prefetched.starterHash !== currentStarterHash) {
+              // Learner code changed materially, discard stale prefetch
+              storageService.deletePrefetchedModule(scopedId)
+            }
 
-          const result = await llmService.generateModuleContent({
-            spec: targetSpec,
-            page: targetPage,
-            module: { ...mod, id: scopedId },
-            useTailwind: Boolean(targetSpec.useTailwind),
-            projectMemory: latestMem,
-            currentFiles: baselineFiles,
-            forceRefresh: Boolean(options?.forceRefresh)
-          })
-          rawContent = result.moduleContent
-          storageService.saveModuleContent(scopedId, rawContent)
+            setIsLoadingModuleContent(true)
+
+            // Reuse in-flight request if user navigates away and back, or clicks again
+            let inFlightPromise = inFlightModulePromisesRef.current.get(scopedId)
+            if (!inFlightPromise) {
+              inFlightPromise = (async () => {
+                const result = await llmService.generateModuleContent({
+                  spec: targetSpec,
+                  page: targetPage,
+                  module: { ...mod, id: scopedId },
+                  useTailwind: Boolean(targetSpec.useTailwind),
+                  projectMemory: latestMem,
+                  currentFiles: baselineFiles,
+                  forceRefresh: Boolean(options?.forceRefresh)
+                })
+                storageService.saveModuleContent(scopedId, result.moduleContent)
+                return result.moduleContent
+              })()
+              inFlightModulePromisesRef.current.set(scopedId, inFlightPromise)
+            }
+
+            try {
+              rawContent = await inFlightPromise
+            } finally {
+              inFlightModulePromisesRef.current.delete(scopedId)
+            }
+          }
         }
       }
 
@@ -1497,8 +1576,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setAllModulesProgressMap(prev => ({ ...prev, [mod.id]: updatedProg }))
         refreshStatsFromStorage()
       }
+
+      // Background prefetch strictly for live generated projects (1 module ahead)
+      if (stored?.source !== 'curated' && index + 1 < targetModules.length && generatedBaselineFiles.length > 0) {
+        const nextMod = targetModules[index + 1]
+        const nextScopedId = scopedModuleKey(targetProjectId, nextMod.id)
+        const currentStarterHash = computeStarterFilesHash(generatedBaselineFiles)
+        const existingPrefetch = storageService.getPrefetchedModule(nextScopedId)
+
+        if (!existingPrefetch || existingPrefetch.starterHash !== currentStarterHash) {
+          void (async () => {
+            try {
+              const prefetchResult = await llmService.generateModuleContent({
+                spec: targetSpec,
+                page: targetPage,
+                module: { ...nextMod, id: nextScopedId },
+                useTailwind: Boolean(targetSpec.useTailwind),
+                projectMemory: latestMem,
+                currentFiles: generatedBaselineFiles,
+                forceRefresh: false,
+                isPrefetch: true
+              })
+              storageService.savePrefetchedModule(nextScopedId, prefetchResult.moduleContent, currentStarterHash)
+            } catch {
+              // Prefetch errors are swallowed silently with no user visible error
+            }
+          })()
+        }
+      }
     } catch (err: any) {
-      setModuleContentError(err?.message || 'Failed to load module content.')
+      console.error('Module load error:', err)
+      const errorMsg = err?.message || 'Failed to load module content.'
+      setModuleContentError(errorMsg)
+      setStructuredModuleError({
+        code: err?.code || 'GENERATION_FAILED',
+        message: errorMsg,
+        retryable: err?.retryable !== false,
+        attempts: err?.attempts || []
+      })
       setActiveModuleContent(null)
     } finally {
       setIsLoadingModuleContent(false)
@@ -1575,6 +1690,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [flushUserFilesSave, refreshProjectProgressMap, refreshStatsFromStorage, openModuleInternal])
 
   const retryLoadModuleContent = useCallback(async () => {
+    setStructuredModuleError(null)
+    setModuleContentError(null)
     await openModule(activeModuleIndex, { navigate: false, forceRefresh: true })
   }, [openModule, activeModuleIndex])
 
@@ -2676,6 +2793,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         activeModuleContent,
         isLoadingModuleContent,
         moduleContentError,
+        moduleLoadingStage,
+        moduleLoadingElapsed,
+        moduleLoadingIsSlow,
+        structuredModuleError,
         userFiles,
         projectFiles,
         projectFolders,

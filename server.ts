@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url'
 import { GoogleGenAI, Type } from '@google/genai'
 import { runChecksOnFiles } from './src/services/checkRunner.js'
 import { ModuleContentSchema, ReviewSubmissionResponseSchema } from './src/schemas/course.js'
+import { TIMEOUT_CONFIG } from './src/config/timeouts.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -197,24 +198,198 @@ function extractGeminiErrorMessage(err: any): string {
   return message
 }
 
-async function generateContentWithRetry(ai: GoogleGenAI, params: Parameters<GoogleGenAI['models']['generateContent']>[0], maxRetries = 2) {
-  let lastError: any
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+export interface AttemptLog {
+  attempt: number
+  startTimeMs: number
+  durationMs: number
+  success: boolean
+  errorType?: string
+  errorMessage?: string
+  phase?: 'initial' | 'repair'
+}
+
+export function isTransientGeminiError(err: any): { isTransient: boolean; errorType: string; statusCode: number; message: string } {
+  const rawMsg = String(err?.message || err || '')
+  let statusCode = typeof err?.status === 'number' ? err.status : 0
+  let cleanMsg = extractGeminiErrorMessage(err)
+
+  try {
+    const parsed = JSON.parse(rawMsg)
+    if (parsed?.error?.code) {
+      statusCode = parsed.error.code
+    }
+  } catch {
+    // not JSON
+  }
+
+  // Non-transient errors: surface immediately without retry
+  if (statusCode === 400 || rawMsg.includes('INVALID_ARGUMENT') || rawMsg.includes('API_KEY_INVALID') || rawMsg.includes('API key not valid')) {
+    return { isTransient: false, errorType: 'HTTP_400_INVALID_ARGUMENT', statusCode: 400, message: cleanMsg }
+  }
+  if (statusCode === 401 || rawMsg.includes('UNAUTHENTICATED')) {
+    return { isTransient: false, errorType: 'HTTP_401_UNAUTHENTICATED', statusCode: 401, message: cleanMsg }
+  }
+  if (statusCode === 403 || rawMsg.includes('PERMISSION_DENIED')) {
+    return { isTransient: false, errorType: 'HTTP_403_PERMISSION_DENIED', statusCode: 403, message: cleanMsg }
+  }
+  if (rawMsg.includes('SAFETY') || rawMsg.includes('HARM_CATEGORY') || rawMsg.includes('blocked: true')) {
+    return { isTransient: false, errorType: 'SAFETY_POLICY_BLOCK', statusCode: 400, message: 'Gemini safety filters flagged the content. Please modify the requirements.' }
+  }
+
+  // Transient errors: safe to retry with exponential backoff
+  if (statusCode === 429 || rawMsg.includes('429') || rawMsg.includes('RESOURCE_EXHAUSTED') || rawMsg.includes('rate limit')) {
+    return { isTransient: true, errorType: 'HTTP_429_RATE_LIMIT', statusCode: 429, message: cleanMsg }
+  }
+  if (statusCode === 503 || rawMsg.includes('503') || rawMsg.includes('UNAVAILABLE') || rawMsg.includes('high demand')) {
+    return { isTransient: true, errorType: 'HTTP_503_UNAVAILABLE', statusCode: 503, message: cleanMsg }
+  }
+  if (statusCode === 502 || rawMsg.includes('502') || rawMsg.includes('Bad Gateway')) {
+    return { isTransient: true, errorType: 'HTTP_502_BAD_GATEWAY', statusCode: 502, message: cleanMsg }
+  }
+  if (statusCode === 504 || rawMsg.includes('504') || rawMsg.includes('Gateway Timeout')) {
+    return { isTransient: true, errorType: 'HTTP_504_GATEWAY_TIMEOUT', statusCode: 504, message: cleanMsg }
+  }
+  if (statusCode === 500 || rawMsg.includes('500') || rawMsg.includes('Internal Server Error')) {
+    return { isTransient: true, errorType: 'HTTP_500_INTERNAL_SERVER_ERROR', statusCode: 500, message: cleanMsg }
+  }
+
+  const isNetworkOrTimeout =
+    err?.name === 'TimeoutError' ||
+    err?.name === 'AbortError' ||
+    rawMsg.includes('timed out') ||
+    rawMsg.includes('timeout') ||
+    rawMsg.includes('ETIMEDOUT') ||
+    rawMsg.includes('ECONNRESET') ||
+    rawMsg.includes('ECONNREFUSED') ||
+    rawMsg.includes('ENOTFOUND') ||
+    rawMsg.includes('fetch failed') ||
+    rawMsg.includes('UND_ERR_SOCKET')
+
+  if (isNetworkOrTimeout) {
+    return { isTransient: true, errorType: 'NETWORK_TIMEOUT_OR_CONNECTION_ERROR', statusCode: 504, message: cleanMsg }
+  }
+
+  return { isTransient: true, errorType: 'UNKNOWN_TRANSIENT_ERROR', statusCode: 500, message: cleanMsg }
+}
+
+async function callGeminiWithTimeout(
+  ai: GoogleGenAI,
+  params: Parameters<GoogleGenAI['models']['generateContent']>[0],
+  timeoutMs: number = TIMEOUT_CONFIG.SERVER_GEMINI_CALL_TIMEOUT_MS
+) {
+  let timer: NodeJS.Timeout | null = null
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      const err = new Error(`Gemini API call timed out after ${Math.round(timeoutMs / 1000)}s`)
+      ;(err as any).name = 'TimeoutError'
+      ;(err as any).status = 504
+      reject(err)
+    }, timeoutMs)
+  })
+
+  try {
+    return await Promise.race([
+      ai.models.generateContent(params),
+      timeoutPromise
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
+export interface TransientRetryOptions {
+  phase: 'initial' | 'repair'
+  attemptLogs: AttemptLog[]
+  getRemainingBudgetMs: () => number
+  simulateTransient503?: boolean
+  simulatePermanent503?: boolean
+}
+
+export async function generateContentWithTransientRetry(
+  ai: GoogleGenAI,
+  params: Parameters<GoogleGenAI['models']['generateContent']>[0],
+  options: TransientRetryOptions
+) {
+  const maxRetries = TIMEOUT_CONFIG.SERVER_MAX_TRANSIENT_RETRIES // 2 retries = 3 attempts max
+  let lastError: any = null
+
+  for (let attemptIdx = 0; attemptIdx <= maxRetries; attemptIdx++) {
+    const attemptNum = options.attemptLogs.length + 1
+    const callStart = Date.now()
+
+    const remainingBudget = options.getRemainingBudgetMs()
+    if (remainingBudget < 3000) {
+      const budgetErr = new Error(`Overall request budget exceeded (${TIMEOUT_CONFIG.SERVER_OVERALL_BUDGET_MS / 1000}s)`)
+      ;(budgetErr as any).code = 'GENERATION_TIMEOUT'
+      ;(budgetErr as any).status = 504
+      throw budgetErr
+    }
+
+    const perCallTimeout = Math.min(TIMEOUT_CONFIG.SERVER_GEMINI_CALL_TIMEOUT_MS, remainingBudget)
+
     try {
-      return await ai.models.generateContent(params)
+      if (options.simulatePermanent503) {
+        const simErr = new Error('Simulated permanent 503 service unavailable from Gemini API')
+        ;(simErr as any).status = 503
+        throw simErr
+      }
+      if (options.simulateTransient503 && attemptIdx === 0) {
+        const simErr = new Error('Simulated transient 503 service unavailable on attempt 1')
+        ;(simErr as any).status = 503
+        throw simErr
+      }
+
+      const response = await callGeminiWithTimeout(ai, params, perCallTimeout)
+      const callDuration = Date.now() - callStart
+      options.attemptLogs.push({
+        attempt: attemptNum,
+        startTimeMs: callStart,
+        durationMs: callDuration,
+        success: true,
+        phase: options.phase
+      })
+      return response
     } catch (err: any) {
       lastError = err
-      const msg = String(err?.message || err || '')
-      const isTransient = msg.includes('429') || msg.includes('503') || msg.includes('UNAVAILABLE') || msg.includes('high demand') || msg.includes('RESOURCE_EXHAUSTED')
-      if (!isTransient || attempt === maxRetries) {
+      const callDuration = Date.now() - callStart
+      const { isTransient, errorType, message } = isTransientGeminiError(err)
+
+      options.attemptLogs.push({
+        attempt: attemptNum,
+        startTimeMs: callStart,
+        durationMs: callDuration,
+        success: false,
+        errorType,
+        errorMessage: message,
+        phase: options.phase
+      })
+
+      if (!isTransient || attemptIdx >= maxRetries) {
         throw err
       }
-      const jitter = Math.floor(Math.random() * 400)
-      const delayMs = 900 * Math.pow(2, attempt) + jitter
+
+      const baseDelay = attemptIdx === 0 ? TIMEOUT_CONFIG.SERVER_BACKOFF_BASE_MS : TIMEOUT_CONFIG.SERVER_BACKOFF_STEP2_MS
+      const jitter = Math.floor(Math.random() * TIMEOUT_CONFIG.SERVER_BACKOFF_JITTER_MAX_MS)
+      const delayMs = baseDelay + jitter
+
+      if (options.getRemainingBudgetMs() <= delayMs + 2000) {
+        throw err
+      }
+
       await new Promise(resolve => setTimeout(resolve, delayMs))
     }
   }
+
   throw lastError
+}
+
+async function generateContentWithRetry(ai: GoogleGenAI, params: Parameters<GoogleGenAI['models']['generateContent']>[0], maxRetries = 2) {
+  const dummyLogs: AttemptLog[] = []
+  return await generateContentWithTransientRetry(ai, params, {
+    phase: 'initial',
+    attemptLogs: dummyLogs,
+    getRemainingBudgetMs: () => 110_000
+  })
 }
 
 // -------------------------------------------------------------
@@ -1182,21 +1357,39 @@ function isAllowedReferenceUrl(rawUrl: string, allowTailwind: boolean): boolean 
 }
 
 app.post('/api/llm/generate-module-content', async (req: Request, res: Response) => {
-  const startTime = Date.now()
+  const requestStartTime = Date.now()
+  const attemptLogs: AttemptLog[] = []
+  const getRemainingBudgetMs = () => Math.max(0, TIMEOUT_CONFIG.SERVER_OVERALL_BUDGET_MS - (Date.now() - requestStartTime))
+
+  const simulateTransient503 = req.headers['x-simulate-transient-503'] === 'true' || process.env.ASCENT_SIMULATE_TRANSIENT_503 === '1'
+  const simulatePermanent503 = req.headers['x-simulate-permanent-503'] === 'true' || process.env.ASCENT_SIMULATE_PERMANENT_503 === '1'
+
   try {
     const { spec, page, module, useTailwind, projectMemory, currentFiles, assets } = req.body
 
     if (!spec || !module || !module.title) {
-      return res.status(400).json({ success: false, error: 'Valid spec and module are required', retryable: false })
+      return res.status(400).json({
+        success: false,
+        code: 'CONFIG_ERROR',
+        message: 'Valid spec and module are required',
+        error: 'Valid spec and module are required',
+        retryable: false,
+        attempts: attemptLogs,
+        totalTimeMs: Date.now() - requestStartTime
+      })
     }
 
     const ai = getGeminiClient()
     if (!ai) {
       return res.status(503).json({
         success: false,
+        code: 'GEMINI_UNAVAILABLE',
+        message: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
         error: 'API key is not configured. Please set ASCENT_API_KEY or GEMINI_API_KEY in Settings > Secrets, then click Retry.',
         model: GEMINI_MODEL,
-        retryable: true
+        retryable: true,
+        attempts: attemptLogs,
+        totalTimeMs: Date.now() - requestStartTime
       })
     }
 
@@ -1292,12 +1485,12 @@ CRITICAL RULES FOR GENERATION:
 
     const promptText = `Generate module content for module "${module.title}" (${module.learningObjective}). Return structured JSON matching the ModuleContentSchema.`
 
-    const generateContent = async (repairContext?: string) => {
+    const generateContent = async (phase: 'initial' | 'repair' = 'initial', repairContext?: string) => {
       const contents = repairContext
         ? `${promptText}\n\nIMPORTANT REPAIR REQUEST:\nThe previous attempt failed automated test harness verification:\n${repairContext}\nPlease adjust checks and solutionFiles so that checks FAIL on starterFiles and ALL PASS on solutionFiles.`
         : promptText
 
-      const response = await generateContentWithRetry(ai, {
+      const response = await generateContentWithTransientRetry(ai, {
         model: GEMINI_MODEL,
         contents,
         config: {
@@ -1381,6 +1574,12 @@ CRITICAL RULES FOR GENERATION:
             required: ['lesson', 'task', 'requirements', 'expectedResult', 'references', 'starterFiles', 'solutionFiles', 'checks', 'hints']
           }
         }
+      }, {
+        phase,
+        attemptLogs,
+        getRemainingBudgetMs,
+        simulateTransient503: phase === 'initial' ? simulateTransient503 : false,
+        simulatePermanent503
       })
       return response
     }
@@ -1393,7 +1592,7 @@ CRITICAL RULES FOR GENERATION:
       }
     }
 
-    let response = await generateContent()
+    let response = await generateContent('initial')
     let rawText = response.text || ''
     let parsedResult = cleanAndParseJSON(rawText)
     // Authoritative starterFiles must match learner's actual current files
@@ -1417,7 +1616,7 @@ CRITICAL RULES FOR GENERATION:
     const needsRepair = !zodCheck.success || !solutionHarness.allPassed || starterHarness.allPassed
     let repairAttempted = false
 
-    if (needsRepair) {
+    if (needsRepair && getRemainingBudgetMs() >= 8000) {
       repairAttempted = true
       const repairReasons: string[] = []
       if (!zodCheck.success) {
@@ -1432,7 +1631,7 @@ CRITICAL RULES FOR GENERATION:
 
       try {
         telemetry.geminiCalls++
-        response = await generateContent(repairReasons.join('\n'))
+        response = await generateContent('repair', repairReasons.join('\n'))
         rawText = response.text || ''
         parsedResult = cleanAndParseJSON(rawText)
         parsedResult.starterFiles = baselineFiles
@@ -1447,6 +1646,8 @@ CRITICAL RULES FOR GENERATION:
         // Keep initial state so gate below returns explicit retryable error
       }
     }
+
+    const succeededAttempt = attemptLogs.find(a => a.success)?.attempt || 1
 
     if (!zodCheck.success || !solutionHarness.allPassed || starterHarness.allPassed) {
       const failureDetails: string[] = []
@@ -1464,9 +1665,15 @@ CRITICAL RULES FOR GENERATION:
 
       return res.status(422).json({
         success: false,
+        code: 'VALIDATION_FAILED',
         error: `Module generation failed automated JSDOM verification after ${repairAttempted ? 'repair attempt' : 'generation'}: ${failureDetails.join(' ')}`,
+        message: `Generated module failed automated test harness verification: ${failureDetails.join(' ')}`,
         retryable: true,
         model: GEMINI_MODEL,
+        attempts: attemptLogs,
+        attemptCount: attemptLogs.length,
+        succeededAttempt,
+        totalTimeMs: Date.now() - requestStartTime,
         verification: {
           starterHarness,
           solutionHarness,
@@ -1485,17 +1692,39 @@ CRITICAL RULES FOR GENERATION:
         initialHarness,
         repairAttempted
       },
-      latencyMs: Date.now() - startTime,
+      latencyMs: Date.now() - requestStartTime,
       model: GEMINI_MODEL,
-      tokensUsed: response.usageMetadata?.totalTokenCount || 'N/A'
+      tokensUsed: response.usageMetadata?.totalTokenCount || 'N/A',
+      attempts: attemptLogs,
+      attemptCount: attemptLogs.length,
+      succeededAttempt,
+      totalTimeMs: Date.now() - requestStartTime
     })
   } catch (err: any) {
-    const cleanError = extractGeminiErrorMessage(err)
-    return res.status(500).json({
+    const { errorType, statusCode, message } = isTransientGeminiError(err)
+    let errorCode = 'INTERNAL_ERROR'
+    if (statusCode === 503 || errorType === 'HTTP_503_UNAVAILABLE') {
+      errorCode = 'GEMINI_UNAVAILABLE'
+    } else if (err?.name === 'TimeoutError' || errorType.includes('TIMEOUT') || (err as any).code === 'GENERATION_TIMEOUT') {
+      errorCode = 'GENERATION_TIMEOUT'
+    } else if (statusCode === 400 || statusCode === 401 || statusCode === 403) {
+      errorCode = 'CONFIG_ERROR'
+    } else if (errorType === 'SAFETY_POLICY_BLOCK') {
+      errorCode = 'SAFETY_POLICY_BLOCK'
+    }
+
+    const isRetryable = statusCode !== 400 && statusCode !== 401 && statusCode !== 403 && errorCode !== 'SAFETY_POLICY_BLOCK'
+
+    return res.status(statusCode >= 400 && statusCode < 600 ? statusCode : 500).json({
       success: false,
-      error: cleanError,
+      code: errorCode,
+      message: message || 'Failed to generate module lesson & tasks.',
+      error: message || 'Failed to generate module lesson & tasks.',
+      retryable: isRetryable,
       model: GEMINI_MODEL,
-      retryable: true
+      attempts: attemptLogs,
+      attemptCount: attemptLogs.length,
+      totalTimeMs: Date.now() - requestStartTime
     })
   }
 })
@@ -1853,6 +2082,12 @@ async function startServer() {
       })
     })
 
+    // Set Express HTTP server timeouts (>= 130 seconds) to prevent premature socket aborts
+    server.timeout = TIMEOUT_CONFIG.SERVER_REQUEST_TIMEOUT_MS
+    server.requestTimeout = TIMEOUT_CONFIG.SERVER_REQUEST_TIMEOUT_MS
+    server.headersTimeout = TIMEOUT_CONFIG.SERVER_REQUEST_TIMEOUT_MS + 5_000
+    server.keepAliveTimeout = 65_000
+
     server.on('error', (err) => {
       console.error('[Server] Fatal listen error:', err)
     })
@@ -1861,4 +2096,15 @@ async function startServer() {
   }
 }
 
-startServer()
+export { app }
+
+const isDirectExecution = Boolean(
+  process.argv[1] &&
+  (fileURLToPath(import.meta.url) === path.resolve(process.argv[1]) ||
+    process.argv[1].endsWith('server.ts') ||
+    process.argv[1].endsWith('server.js'))
+)
+
+if (isDirectExecution && !process.env.NODE_TEST_CONTEXT) {
+  startServer()
+}

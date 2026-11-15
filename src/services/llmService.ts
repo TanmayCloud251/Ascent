@@ -15,6 +15,25 @@ import {
   ReviewSubmissionResponseSchema,
   Check
 } from '../schemas/course'
+import { TIMEOUT_CONFIG } from '../config/timeouts'
+
+export interface LLMCallAttempt {
+  attempt: number
+  startTimeMs?: number
+  durationMs: number
+  success: boolean
+  errorType?: string
+  errorMessage?: string
+  phase?: 'initial' | 'repair'
+}
+
+export interface ModuleGenerationError extends Error {
+  code?: string
+  retryable?: boolean
+  attempts?: LLMCallAttempt[]
+  trace?: LLMTraceEvent
+  verification?: any
+}
 
 export interface LLMTraceEvent {
   id: string
@@ -32,6 +51,11 @@ export interface LLMTraceEvent {
   isCurated?: boolean
   error?: string | null
   harnessResults?: { starterHarness?: any; solutionHarness?: any }
+  attempts?: LLMCallAttempt[]
+  attemptCount?: number
+  succeededAttempt?: number
+  totalTimeMs?: number
+  isPrefetch?: boolean
 }
 
 export interface GenerateModuleContentOptions {
@@ -42,6 +66,7 @@ export interface GenerateModuleContentOptions {
   projectMemory?: ProjectMemory | null
   currentFiles?: { path: string; content: string }[]
   forceRefresh?: boolean
+  isPrefetch?: boolean
 }
 
 export interface GenerateModuleContentResult {
@@ -129,6 +154,29 @@ function broadcastTrace(trace: LLMTraceEvent) {
 
 export const getLatestLLMTrace = (): LLMTraceEvent | null => currentLatestTrace
 
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => {
+    controller.abort()
+  }, timeoutMs)
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    })
+  } catch (err: any) {
+    if (err?.name === 'AbortError') {
+      const abortError = new Error(`Request to ${url} timed out after ${Math.round(timeoutMs / 1000)} seconds.`)
+      ;(abortError as any).name = 'TimeoutError'
+      throw abortError
+    }
+    throw err
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
 /**
  * Client-Side LLM Service Proxy
  * Enforces:
@@ -213,13 +261,13 @@ export const llmService = {
     let payload: any = {}
 
     try {
-      response = await fetch('/api/llm/generate-spec', {
+      response = await fetchWithTimeout('/api/llm/generate-spec', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestPayload)
-      })
+      }, TIMEOUT_CONFIG.CLIENT_SPEC_TIMEOUT_MS)
 
       responseText = await response.text()
       try {
@@ -393,11 +441,11 @@ export const llmService = {
     let payload: any = {}
 
     try {
-      response = await fetch('/api/llm/generate-page', {
+      response = await fetchWithTimeout('/api/llm/generate-page', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestPayload)
-      })
+      }, TIMEOUT_CONFIG.CLIENT_FETCH_TIMEOUT_MS)
       responseText = await response.text()
       try {
         payload = JSON.parse(responseText)
@@ -598,22 +646,66 @@ export const llmService = {
     }
 
     const startTime = Date.now()
-    const res = await fetch('/api/llm/generate-module-content', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestPayload)
-    })
+    let res: Response
+    let payload: any = {}
 
-    const payload = await res.json()
-    const latencyMs = Date.now() - startTime
+    try {
+      res = await fetchWithTimeout('/api/llm/generate-module-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestPayload)
+      }, TIMEOUT_CONFIG.CLIENT_FETCH_TIMEOUT_MS)
+      payload = await res.json()
+    } catch (fetchErr: any) {
+      const latencyMs = Date.now() - startTime
+      const isTimeout = fetchErr?.name === 'TimeoutError' || String(fetchErr?.message || '').includes('timed out')
+      const errorMsg = isTimeout
+        ? 'Module generation timed out after 120 seconds. Please check your network and click Retry.'
+        : (fetchErr?.message || 'Network fetch failed.')
 
-    if (!res.ok || !payload.success) {
-      const errorMsg = payload.error || 'Failed to generate module lesson & tasks.'
       const trace: LLMTraceEvent = {
         id: `tr_${Date.now()}_err`,
         timestamp: new Date().toISOString(),
         endpoint: 'POST /api/llm/generate-module-content',
-        model: payload.model || 'LLM',
+        model: 'gemini-3.8-flash',
+        requestPayload,
+        rawResponseText: fetchErr?.message || 'Network timeout or fetch failure',
+        parsedResult: null,
+        validationSuccess: false,
+        validationError: errorMsg,
+        latencyMs,
+        isCached: false,
+        error: errorMsg,
+        attempts: [{
+          attempt: 1,
+          durationMs: latencyMs,
+          success: false,
+          errorType: isTimeout ? 'CLIENT_TIMEOUT' : 'CLIENT_NETWORK_ERROR',
+          errorMessage: errorMsg
+        }],
+        attemptCount: 1,
+        totalTimeMs: latencyMs,
+        isPrefetch: options.isPrefetch
+      }
+      broadcastTrace(trace)
+
+      const modErr = new Error(errorMsg) as ModuleGenerationError
+      modErr.code = isTimeout ? 'GENERATION_TIMEOUT' : 'NETWORK_ERROR'
+      modErr.retryable = true
+      modErr.attempts = trace.attempts
+      modErr.trace = trace
+      throw modErr
+    }
+
+    const latencyMs = Date.now() - startTime
+
+    if (!res.ok || !payload.success) {
+      const errorMsg = payload.message || payload.error || 'Failed to generate module lesson & tasks.'
+      const trace: LLMTraceEvent = {
+        id: `tr_${Date.now()}_err`,
+        timestamp: new Date().toISOString(),
+        endpoint: 'POST /api/llm/generate-module-content',
+        model: payload.model || 'gemini-3.8-flash',
         requestPayload,
         rawResponseText: JSON.stringify(payload, null, 2),
         parsedResult: null,
@@ -622,10 +714,21 @@ export const llmService = {
         latencyMs,
         isCached: false,
         harnessResults: payload.verification,
-        error: errorMsg
+        error: errorMsg,
+        attempts: payload.attempts || [],
+        attemptCount: payload.attemptCount || payload.attempts?.length || 1,
+        totalTimeMs: payload.totalTimeMs || latencyMs,
+        isPrefetch: options.isPrefetch
       }
       broadcastTrace(trace)
-      throw new Error(errorMsg)
+
+      const modErr = new Error(errorMsg) as ModuleGenerationError
+      modErr.code = payload.code || (res.status === 503 ? 'GEMINI_UNAVAILABLE' : 'GENERATION_FAILED')
+      modErr.retryable = payload.retryable !== false
+      modErr.attempts = payload.attempts || []
+      modErr.verification = payload.verification
+      modErr.trace = trace
+      throw modErr
     }
 
     const validation = ModuleContentSchema.safeParse(payload.moduleContent)
@@ -635,7 +738,7 @@ export const llmService = {
         id: `tr_${Date.now()}_val_err`,
         timestamp: new Date().toISOString(),
         endpoint: 'POST /api/llm/generate-module-content',
-        model: payload.model || 'LLM',
+        model: payload.model || 'gemini-3.8-flash',
         requestPayload,
         rawResponseText: JSON.stringify(payload.moduleContent, null, 2),
         parsedResult: null,
@@ -644,10 +747,20 @@ export const llmService = {
         latencyMs,
         isCached: false,
         harnessResults: payload.verification,
-        error: errorMsg
+        error: errorMsg,
+        attempts: payload.attempts || [],
+        attemptCount: payload.attemptCount || payload.attempts?.length || 1,
+        totalTimeMs: payload.totalTimeMs || latencyMs,
+        isPrefetch: options.isPrefetch
       }
       broadcastTrace(trace)
-      throw new Error(errorMsg)
+
+      const modErr = new Error(errorMsg) as ModuleGenerationError
+      modErr.code = 'VALIDATION_FAILED'
+      modErr.retryable = true
+      modErr.attempts = payload.attempts || []
+      modErr.trace = trace
+      throw modErr
     }
 
     const moduleContent = validation.data
@@ -657,7 +770,7 @@ export const llmService = {
       id: `tr_${Date.now()}_ok`,
       timestamp: new Date().toISOString(),
       endpoint: 'POST /api/llm/generate-module-content',
-      model: payload.model || 'LLM',
+      model: payload.model || 'gemini-3.8-flash',
       requestPayload,
       rawResponseText: JSON.stringify(moduleContent, null, 2),
       parsedResult: moduleContent,
@@ -665,7 +778,12 @@ export const llmService = {
       latencyMs,
       tokensUsed: payload.tokensUsed || 'Calculated at runtime',
       isCached: false,
-      harnessResults: payload.verification
+      harnessResults: payload.verification,
+      attempts: payload.attempts || [],
+      attemptCount: payload.attemptCount || payload.attempts?.length || 1,
+      succeededAttempt: payload.succeededAttempt || 1,
+      totalTimeMs: payload.totalTimeMs || latencyMs,
+      isPrefetch: options.isPrefetch
     }
     broadcastTrace(trace)
 
@@ -687,11 +805,11 @@ export const llmService = {
     }
 
     const startTime = Date.now()
-    const res = await fetch('/api/llm/review-submission', {
+    const res = await fetchWithTimeout('/api/llm/review-submission', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestPayload)
-    })
+    }, TIMEOUT_CONFIG.CLIENT_FETCH_TIMEOUT_MS)
 
     const payload = await res.json()
     const latencyMs = Date.now() - startTime

@@ -16,6 +16,13 @@ export interface StoredAssetRecord {
   blob: Blob
 }
 
+export interface PrefetchedModuleRecord {
+  moduleId: string
+  content: ModuleContent
+  starterHash: string
+  timestamp: number
+}
+
 export interface StorageService {
   // User Profile & Session
   getCurrentUser(): UserProfile
@@ -57,6 +64,11 @@ export interface StorageService {
   // Stored Module Content
   getModuleContent(moduleId: string): ModuleContent | null
   saveModuleContent(moduleId: string, content: ModuleContent): void
+
+  // Prefetched Module Content
+  getPrefetchedModule(moduleId: string): PrefetchedModuleRecord | null
+  savePrefetchedModule(moduleId: string, content: ModuleContent, starterHash: string): void
+  deletePrefetchedModule(moduleId: string): void
 
   // LLM Response Caching (Only caches REAL verified Gemini outputs)
   getCachedLLMResponse<T>(cacheKey: string): T | null
@@ -142,6 +154,43 @@ export class LocalStorageAdapter implements StorageService {
   private foldersPrefix = `${STORAGE_PREFIX}:folders:`
   private progressPrefix = `${STORAGE_PREFIX}:progress:`
   private contentPrefix = `${STORAGE_PREFIX}:mod_content:`
+  private prefetchPrefix = `${STORAGE_PREFIX}:prefetch:`
+  private fallbackMemory = new Map<string, string>()
+
+  private getStorageItem(key: string): string | null {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        return localStorage.getItem(key)
+      }
+    } catch {
+      // fallback to memory
+    }
+    return this.fallbackMemory.get(key) || null
+  }
+
+  private setStorageItem(key: string, value: string): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(key, value)
+        return
+      }
+    } catch {
+      // fallback to memory
+    }
+    this.fallbackMemory.set(key, value)
+  }
+
+  private removeStorageItem(key: string): void {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(key)
+        return
+      }
+    } catch {
+      // fallback to memory
+    }
+    this.fallbackMemory.delete(key)
+  }
 
   getCurrentUser(): UserProfile {
     try {
@@ -231,6 +280,7 @@ export class LocalStorageAdapter implements StorageService {
           key.startsWith(`${this.userFilesPrefix}${projectId}:`) ||
           key.startsWith(`${this.projectFilesPrefix}${projectId}:`) ||
           key.startsWith(`${this.contentPrefix}${projectId}__`) ||
+          key.startsWith(`${this.prefetchPrefix}${projectId}__`) ||
           (key.startsWith(this.progressPrefix) && key.includes(`:${projectId}__`))
         ) {
           keysToRemove.push(key)
@@ -504,6 +554,37 @@ export class LocalStorageAdapter implements StorageService {
       localStorage.setItem(`${this.contentPrefix}${moduleId}`, JSON.stringify(content))
     } catch (e) {
       console.error('Failed to save module content:', e)
+    }
+  }
+
+  getPrefetchedModule(moduleId: string): PrefetchedModuleRecord | null {
+    try {
+      const raw = this.getStorageItem(`${this.prefetchPrefix}${moduleId}`)
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  }
+
+  savePrefetchedModule(moduleId: string, content: ModuleContent, starterHash: string): void {
+    try {
+      const record: PrefetchedModuleRecord = {
+        moduleId,
+        content,
+        starterHash,
+        timestamp: Date.now()
+      }
+      this.setStorageItem(`${this.prefetchPrefix}${moduleId}`, JSON.stringify(record))
+    } catch (e) {
+      console.warn('Failed to save prefetched module:', e)
+    }
+  }
+
+  deletePrefetchedModule(moduleId: string): void {
+    try {
+      this.removeStorageItem(`${this.prefetchPrefix}${moduleId}`)
+    } catch {
+      // ignore
     }
   }
 

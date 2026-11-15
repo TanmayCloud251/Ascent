@@ -102,6 +102,10 @@ export const Screen4Workspace: React.FC = () => {
     activeModuleContent,
     isLoadingModuleContent,
     moduleContentError,
+    moduleLoadingStage,
+    moduleLoadingElapsed,
+    moduleLoadingIsSlow,
+    structuredModuleError,
     userFiles,
     projectFiles,
     projectFolders,
@@ -989,45 +993,176 @@ export const Screen4Workspace: React.FC = () => {
   // VIEW 2: LAZY MODULE CONTENT LOADING OR ERROR STATE (Requirement B)
   // ===========================================================================
   if (isLoadingModuleContent) {
+    const isStageDone = (stage: 'preparing' | 'writing' | 'verifying') => {
+      if (stage === 'preparing') return moduleLoadingStage === 'writing' || moduleLoadingStage === 'verifying'
+      if (stage === 'writing') return moduleLoadingStage === 'verifying'
+      return false
+    }
+
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#0A0A0F]">
-        <div className="max-w-md w-full cyber-card p-6 bg-[#0E0E17] border-[#00F0FF]/40 rounded-xl space-y-4 font-mono">
-          <div className="flex items-center gap-3 text-[#00F0FF]">
-            <Sparkles className="w-5 h-5 animate-pulse" />
-            <span className="text-xs font-bold uppercase tracking-wider">Generating Module Content</span>
+        <div className="max-w-lg w-full cyber-card p-6 bg-[#0E0E17] border-[#00F0FF]/40 rounded-xl space-y-5 font-mono shadow-2xl">
+          <div className="flex items-center justify-between border-b border-white/10 pb-3">
+            <div className="flex items-center gap-3 text-[#00F0FF]">
+              <Sparkles className="w-5 h-5 animate-pulse" />
+              <span className="text-xs font-bold uppercase tracking-wider">Generating Lesson &amp; Sandbox</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-amber-300 font-bold bg-amber-500/10 px-2.5 py-0.5 rounded border border-amber-500/20">
+              <Clock className="w-3.5 h-3.5 animate-spin" />
+              <span>{moduleLoadingElapsed}s</span>
+            </div>
           </div>
-          <h2 className="text-base font-bold text-white font-display">
-            {activeModuleItem?.title || `Module ${activeModuleIndex + 1}`}
-          </h2>
-          <p className="text-xs text-slate-300 font-sans leading-relaxed">
-            Synthesizing lesson, task, progressive hints, and DOM verification checks from your current project files, then validating in JSDOM...
-          </p>
+
+          <div>
+            <h2 className="text-base font-bold text-white font-display">
+              {activeModuleItem?.title || `Module ${activeModuleIndex + 1}`}
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Objective: {activeModuleItem?.learningObjective || 'Front-end web development concept'}
+            </p>
+          </div>
+
+          {/* Staged Progress Indicator: Preparing lesson -> Writing your task -> Verifying checks */}
+          <div className="space-y-2 pt-1">
+            <div className="flex items-center justify-between text-[11px] text-slate-400 font-bold">
+              <span>PROGRESSION STAGE</span>
+              <span className="text-[#00F0FF] uppercase">
+                {moduleLoadingStage === 'preparing'
+                  ? 'Stage 1 of 3'
+                  : moduleLoadingStage === 'writing'
+                  ? 'Stage 2 of 3'
+                  : 'Stage 3 of 3'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className={`p-2.5 rounded-lg border flex flex-col gap-1 transition-all ${
+                moduleLoadingStage === 'preparing'
+                  ? 'bg-[#00F0FF]/15 border-[#00F0FF] text-white shadow-lg shadow-[#00F0FF]/10'
+                  : isStageDone('preparing')
+                  ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                  : 'bg-black/40 border-white/5 text-slate-500'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold">STEP 1</span>
+                  {isStageDone('preparing') ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : moduleLoadingStage === 'preparing' ? (
+                    <RefreshCw className="w-3 h-3 animate-spin text-[#00F0FF]" />
+                  ) : null}
+                </div>
+                <span className="font-semibold text-[11px]">Preparing lesson</span>
+              </div>
+
+              <div className={`p-2.5 rounded-lg border flex flex-col gap-1 transition-all ${
+                moduleLoadingStage === 'writing'
+                  ? 'bg-[#00F0FF]/15 border-[#00F0FF] text-white shadow-lg shadow-[#00F0FF]/10'
+                  : isStageDone('writing')
+                  ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-300'
+                  : 'bg-black/40 border-white/5 text-slate-500'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold">STEP 2</span>
+                  {isStageDone('writing') ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                  ) : moduleLoadingStage === 'writing' ? (
+                    <RefreshCw className="w-3 h-3 animate-spin text-[#00F0FF]" />
+                  ) : null}
+                </div>
+                <span className="font-semibold text-[11px]">Writing your task</span>
+              </div>
+
+              <div className={`p-2.5 rounded-lg border flex flex-col gap-1 transition-all ${
+                moduleLoadingStage === 'verifying'
+                  ? 'bg-[#00F0FF]/15 border-[#00F0FF] text-white shadow-lg shadow-[#00F0FF]/10'
+                  : 'bg-black/40 border-white/5 text-slate-500'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold">STEP 3</span>
+                  {moduleLoadingStage === 'verifying' ? (
+                    <RefreshCw className="w-3 h-3 animate-spin text-[#00F0FF]" />
+                  ) : null}
+                </div>
+                <span className="font-semibold text-[11px]">Verifying checks</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Animated progress bar */}
           <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-            <div className="h-full w-2/3 bg-[#00F0FF] animate-pulse rounded-full" />
+            <div
+              className="h-full bg-gradient-to-r from-[#00F0FF] to-cyan-400 transition-all duration-500 rounded-full"
+              style={{
+                width: moduleLoadingStage === 'preparing' ? '33%' : moduleLoadingStage === 'writing' ? '66%' : '90%'
+              }}
+            />
           </div>
+
+          {/* Slow request advisory after 20 seconds */}
+          {moduleLoadingIsSlow ? (
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-1">
+              <div className="flex items-center gap-2 font-bold text-amber-300">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Still working, this one is taking longer than usual</span>
+              </div>
+              <p className="text-[11px] text-amber-200/80 leading-relaxed font-sans pl-6">
+                Ascent is synthesizing custom code, assertions, and validating starter vs. solution files in automated JSDOM. Please hang tight!
+              </p>
+            </div>
+          ) : (
+            <p className="text-[11px] text-slate-400 font-sans leading-relaxed">
+              Synthesizing interactive lesson, progressive hints, and declarative DOM verification assertions tested against your current codebase.
+            </p>
+          )}
         </div>
       </div>
     )
   }
 
   if (moduleContentError) {
+    const errorCode = structuredModuleError?.code || 'GENERATION_FAILED'
+    const attemptCount = structuredModuleError?.attempts?.length || 1
+
     return (
       <div className="flex-1 flex flex-col items-center justify-center p-8 bg-[#0A0A0F]">
         <div className="max-w-lg w-full cyber-card p-6 bg-[#160B0F] border-rose-500/50 rounded-xl space-y-4">
-          <div className="flex items-center gap-3 text-rose-400">
-            <AlertTriangle className="w-6 h-6 shrink-0" />
-            <div>
-              <h2 className="text-base font-bold text-white font-display">Module Generation Failed</h2>
-              <p className="text-[11px] font-mono text-rose-300/80">JSDOM_VERIFICATION_OR_LLM_ERROR</p>
+          <div className="flex items-center justify-between border-b border-rose-500/20 pb-3">
+            <div className="flex items-center gap-3 text-rose-400">
+              <AlertTriangle className="w-6 h-6 shrink-0" />
+              <div>
+                <h2 className="text-base font-bold text-white font-display">Module Generation Failed</h2>
+                <p className="text-[11px] font-mono text-rose-300/80">{errorCode}</p>
+              </div>
             </div>
+            {attemptCount > 1 && (
+              <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-mono">
+                {attemptCount} attempts
+              </span>
+            )}
           </div>
-          <div className="p-3 rounded-lg bg-black/60 border border-rose-500/20 text-xs text-rose-200 font-mono leading-relaxed">
-            {moduleContentError}
+
+          <div className="p-3.5 rounded-lg bg-black/60 border border-rose-500/20 text-xs text-rose-200 font-mono leading-relaxed space-y-2">
+            <div className="font-semibold text-rose-100">
+              {errorCode === 'GEMINI_UNAVAILABLE'
+                ? 'Gemini is busy on Google servers (503 Service Unavailable).'
+                : errorCode === 'GENERATION_TIMEOUT'
+                ? 'The request timed out while generating lesson content.'
+                : errorCode === 'VALIDATION_FAILED'
+                ? 'Response failed automated JSDOM verification.'
+                : 'Generation was interrupted.'}
+            </div>
+            <p className="text-slate-300 text-[11px] font-sans">
+              {moduleContentError}
+            </p>
+            <p className="text-slate-400 text-[10px] font-mono pt-1">
+              Your progress is preserved. The module remains safely in its previous state.
+            </p>
           </div>
+
           <div className="flex items-center justify-between pt-2">
             <button
               onClick={() => setScreen(3)}
-              className="cyber-btn-secondary px-4 py-2 text-xs flex items-center gap-1.5 cursor-pointer"
+              className="cyber-btn-secondary px-4 py-2 text-xs flex items-center gap-1.5 cursor-pointer font-bold"
             >
               <ArrowLeft className="w-3.5 h-3.5" /> Back to overview
             </button>

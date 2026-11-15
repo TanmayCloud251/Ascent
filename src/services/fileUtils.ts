@@ -149,3 +149,26 @@ export function projectFilesToTextMap(files: ProjectFile[]): Record<string, stri
   return map
 }
 
+export function computeStarterFilesHash(
+  files: Record<string, string> | Array<{ path: string; content?: string }> | ProjectFile[]
+): string {
+  let entries: Array<[string, string]> = []
+  if (Array.isArray(files)) {
+    for (const f of files) {
+      if ('kind' in f && f.kind !== 'text') continue
+      entries.push([f.path, f.content || ''])
+    }
+  } else if (files && typeof files === 'object') {
+    entries = Object.entries(files)
+  }
+  entries.sort((a, b) => a[0].localeCompare(b[0]))
+  const serialized = entries.map(([p, c]) => `${p}::${c}`).join('||')
+  let hash = 5381
+  for (let i = 0; i < serialized.length; i++) {
+    hash = ((hash << 5) + hash) + serialized.charCodeAt(i)
+    hash |= 0
+  }
+  return Math.abs(hash).toString(16).padStart(8, '0')
+}
+
+
