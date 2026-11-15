@@ -110,3 +110,4 @@ Once deployed, verify the installation:
 3. **Curated & BYOK Execution**:
    - Curated courses (Currency Converter, Rock Paper Scissors, Tic Tac Toe, Login Greeting) work immediately without an API key.
    - Adding a user Gemini key via **BYOK Key** modal activates real-time custom course synthesis.
+

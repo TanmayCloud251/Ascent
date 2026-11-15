@@ -218,3 +218,4 @@ export const PublicProfileView: React.FC<PublicProfileViewProps> = ({ username }
     </div>
   )
 }
+

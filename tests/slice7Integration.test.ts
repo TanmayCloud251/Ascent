@@ -215,3 +215,4 @@ test('Slice 7 - Public Profile: Private vs Public toggle & retrieval', async () 
   assert.equal(publicProfile?.user.username, username)
   assert.equal(publicProfile?.shareSettings.theme, 'magenta')
 })
+

@@ -1,4 +1,4 @@
-import { ENV, redactSecrets } from '../config/env.js'
+import { ENV, redactSecrets, isGitHubConfigured } from '../config/env.js'
 import { decryptToken } from './cryptoService.js'
 import { getProjectById, saveProject, findUserById } from './mongoService.js'
 
@@ -12,6 +12,9 @@ export interface GitHubUserResponse {
 }
 
 export function getGitHubAuthUrl(state: string): string {
+  if (!isGitHubConfigured()) {
+    throw new Error('GITHUB_NOT_CONFIGURED: GITHUB_CLIENT_ID or GITHUB_CLIENT_SECRET is missing or empty in .env')
+  }
   const params = new URLSearchParams({
     client_id: ENV.GITHUB_CLIENT_ID,
     redirect_uri: `${ENV.APP_URL}/api/auth/github/callback`,
@@ -513,3 +516,4 @@ export function triggerBackgroundModuleSync(job: SyncJob): void {
 
   syncQueues.set(job.projectId, nextQueue)
 }
+

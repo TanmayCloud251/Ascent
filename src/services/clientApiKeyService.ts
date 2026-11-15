@@ -43,3 +43,4 @@ export const clientApiKeyService = {
     return Boolean(key && key.length > 5)
   }
 }
+

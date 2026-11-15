@@ -139,3 +139,4 @@ For complete deployment guides on **Railway**, **Render**, or **Fly.io**, see [D
 
 ## Health Check Endpoint
 - `GET /api/health`: Returns service status, MongoDB connectivity, and uptime.
+

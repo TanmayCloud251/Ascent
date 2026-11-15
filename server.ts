@@ -11,7 +11,7 @@ import { GoogleGenAI, Type } from '@google/genai'
 import { runChecksOnFiles } from './src/services/checkRunner.js'
 import { ModuleContentSchema, ReviewSubmissionResponseSchema } from './src/schemas/course.js'
 import { TIMEOUT_CONFIG } from './src/config/timeouts.js'
-import { ENV, redactSecrets } from './src/config/env.js'
+import { ENV, redactSecrets, reloadEnv, isGitHubConfigured } from './src/config/env.js'
 import { encryptToken, decryptToken, generateRandomToken } from './src/services/cryptoService.js'
 import {
   connectToMongo,
@@ -166,9 +166,13 @@ export const llmLimiter = rateLimit({
 })
 
 // Session authentication middlewares
+export function getSessionIdFromRequest(req: Request): string | undefined {
+  return req.signedCookies?.['ascent_session'] || req.cookies?.['ascent_session']
+}
+
 export async function authenticateUser(req: Request, res: Response, next: NextFunction) {
   try {
-    const sessionId = req.cookies?.['ascent_session']
+    const sessionId = getSessionIdFromRequest(req)
     if (!sessionId) {
       return res.status(401).json({ success: false, error: 'Unauthorized: login required', code: 'UNAUTHORIZED' })
     }
@@ -192,7 +196,7 @@ export async function authenticateUser(req: Request, res: Response, next: NextFu
 
 export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
   try {
-    const sessionId = req.cookies?.['ascent_session']
+    const sessionId = getSessionIdFromRequest(req)
     if (sessionId) {
       const session = await findSession(sessionId)
       if (session) {
@@ -724,6 +728,27 @@ app.get('/api/health', (_req: Request, res: Response) => {
 // GitHub OAuth & Account Endpoints
 // -------------------------------------------------------------
 app.get('/api/auth/github/url', authLimiter, (_req: Request, res: Response) => {
+  reloadEnv()
+  if (!isGitHubConfigured()) {
+    return res.status(400).json({
+      success: false,
+      code: 'GITHUB_NOT_CONFIGURED',
+      message: 'GitHub OAuth is not configured. GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET are required in your .env file.',
+      instructions: {
+        callbackUrl: `${ENV.APP_URL}/api/auth/github/callback`,
+        appUrl: ENV.APP_URL,
+        steps: [
+          'Go to GitHub -> Settings -> Developer settings -> OAuth Apps -> New OAuth App',
+          `Set "Application name" to: Ascent AI Coding Academy`,
+          `Set "Homepage URL" to: ${ENV.APP_URL}`,
+          `Set "Authorization callback URL" to: ${ENV.APP_URL}/api/auth/github/callback`,
+          'Register application and generate a Client Secret',
+          'Add GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET to your .env file'
+        ]
+      }
+    })
+  }
+
   const state = generateRandomToken()
   res.cookie('ascent_oauth_state', state, {
     httpOnly: true,
@@ -731,9 +756,77 @@ app.get('/api/auth/github/url', authLimiter, (_req: Request, res: Response) => {
     secure: process.env.NODE_ENV === 'production',
     maxAge: 10 * 60 * 1000 // 10 minutes
   })
-  const url = getGitHubAuthUrl(state)
-  return res.json({ success: true, url })
+  try {
+    const url = getGitHubAuthUrl(state)
+    return res.json({ success: true, url })
+  } catch (err: any) {
+    return res.status(400).json({
+      success: false,
+      code: 'GITHUB_NOT_CONFIGURED',
+      message: err.message
+    })
+  }
 })
+
+// Dev quick-login endpoint (enabled in development mode when GitHub OAuth is not yet configured)
+if (ENV.NODE_ENV !== 'production') {
+  app.post('/api/auth/dev-login', authLimiter, async (req: Request, res: Response) => {
+    try {
+      let devUser = await findUserByGithubId(99999999)
+      if (!devUser) {
+        devUser = {
+          id: crypto.randomUUID(),
+          githubId: 99999999,
+          username: 'demo-engineer',
+          avatarUrl: 'https://avatars.githubusercontent.com/u/9919?v=4',
+          displayName: 'Demo Engineer',
+          email: 'demo@ascent.local',
+          noreplyEmail: 'demo@users.noreply.github.com',
+          encryptedToken: encryptToken('gho_mock_dev_token_for_local_testing_only'),
+          plan: 'byok',
+          customProjectUsed: false,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+        await saveUser(devUser)
+      }
+
+      const sessionId = generateRandomToken()
+      const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000)
+      await createSession({
+        sessionId,
+        userId: devUser.id,
+        expiresAt,
+        createdAt: new Date(),
+        userAgent: req.headers['user-agent'] as string,
+        ip: req.ip
+      })
+
+      res.cookie('ascent_session', sessionId, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: false,
+        signed: true,
+        maxAge: 14 * 24 * 60 * 60 * 1000
+      })
+
+      return res.json({
+        success: true,
+        user: {
+          id: devUser.id,
+          githubId: devUser.githubId,
+          username: devUser.username,
+          avatarUrl: devUser.avatarUrl,
+          displayName: devUser.displayName,
+          plan: devUser.plan,
+          customProjectUsed: devUser.customProjectUsed
+        }
+      })
+    } catch (err: any) {
+      return res.status(500).json({ success: false, message: err?.message || 'Dev login failed' })
+    }
+  })
+}
 
 app.get('/api/auth/github/callback', authLimiter, async (req: Request, res: Response) => {
   try {
@@ -839,7 +932,7 @@ app.get('/api/auth/me', optionalAuth, async (req: Request, res: Response) => {
 })
 
 app.post('/api/auth/logout', async (req: Request, res: Response) => {
-  const sessionId = req.cookies?.['ascent_session']
+  const sessionId = getSessionIdFromRequest(req)
   if (sessionId) {
     await deleteSession(sessionId)
   }
@@ -861,7 +954,7 @@ app.post('/api/auth/disconnect', authenticateUser, async (req: Request, res: Res
     user.encryptedToken = ''
     await saveUser(user)
   }
-  const sessionId = req.cookies?.['ascent_session']
+  const sessionId = getSessionIdFromRequest(req)
   if (sessionId) {
     await deleteSession(sessionId)
   }
@@ -872,7 +965,7 @@ app.post('/api/auth/disconnect', authenticateUser, async (req: Request, res: Res
 app.delete('/api/auth/account', authenticateUser, async (req: Request, res: Response) => {
   const user = (req as any).user as MongoUser
   await deleteUserAndAllData(user.id)
-  const sessionId = req.cookies?.['ascent_session']
+  const sessionId = getSessionIdFromRequest(req)
   if (sessionId) {
     await deleteSession(sessionId)
   }

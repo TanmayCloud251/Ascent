@@ -79,3 +79,4 @@ export const SyncIndicator: React.FC<SyncIndicatorProps> = ({ projectId, repoUrl
     </div>
   )
 }
+

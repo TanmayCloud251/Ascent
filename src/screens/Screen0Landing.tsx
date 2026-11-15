@@ -8,27 +8,40 @@ import {
   Flame,
   ArrowRight,
   ShieldCheck,
-  Cpu
+  Cpu,
+  Zap
 } from 'lucide-react'
-import { ConsentExplainerModal } from '../components/ConsentExplainerModal'
+import { useApp } from '../context/AppContext'
+import { ConsentExplainerModal, GitHubConfigError } from '../components/ConsentExplainerModal'
 
 interface Screen0LandingProps {
   onStartCuratedDemo?: () => void
 }
 
 export const Screen0Landing: React.FC<Screen0LandingProps> = () => {
+  const { checkAuth } = useApp()
   const [showConsentModal, setShowConsentModal] = useState(false)
   const [isRedirecting, setIsRedirecting] = useState(false)
+  const [isDevLoading, setIsDevLoading] = useState(false)
+  const [configError, setConfigError] = useState<GitHubConfigError | null>(null)
 
   const handleStartLogin = async () => {
     setIsRedirecting(true)
     try {
       const resp = await fetch('/api/auth/github/url')
       const data = await resp.json()
-      if (data.url) {
+
+      if (resp.ok && data.url) {
         window.location.href = data.url
+      } else if (data.code === 'GITHUB_NOT_CONFIGURED') {
+        setConfigError({
+          message: data.message,
+          instructions: data.instructions
+        })
+        setShowConsentModal(true)
+        setIsRedirecting(false)
       } else {
-        alert('Could not start GitHub login flow.')
+        alert(`Could not start GitHub login: ${data.message || 'Unknown error'}`)
         setIsRedirecting(false)
       }
     } catch (err: any) {
@@ -36,6 +49,30 @@ export const Screen0Landing: React.FC<Screen0LandingProps> = () => {
       setIsRedirecting(false)
     }
   }
+
+  const handleDevLogin = async () => {
+    setIsDevLoading(true)
+    try {
+      const resp = await fetch('/api/auth/dev-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      })
+      const data = await resp.json()
+      if (resp.ok && data.success) {
+        setShowConsentModal(false)
+        await checkAuth()
+      } else {
+        alert(`Dev login failed: ${data.message || 'Unknown server response'}`)
+      }
+    } catch (err: any) {
+      alert(`Dev login request failed: ${err?.message || err}`)
+    } finally {
+      setIsDevLoading(false)
+    }
+  }
+
+  const isDevMode = process.env.NODE_ENV !== 'production'
 
   return (
     <div className="min-h-screen bg-[#07080C] text-slate-100 flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
@@ -56,16 +93,32 @@ export const Screen0Landing: React.FC<Screen0LandingProps> = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <a
             href="/terms-privacy"
-            className="text-xs text-slate-400 hover:text-white transition"
+            className="text-xs text-slate-400 hover:text-white transition hidden sm:inline-block"
           >
             Terms & Privacy
           </a>
+
+          {isDevMode && (
+            <button
+              onClick={handleDevLogin}
+              disabled={isDevLoading}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-300 transition"
+              title="Quick dev login without GitHub OAuth"
+            >
+              <Zap className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              <span>{isDevLoading ? 'Logging in...' : 'Dev Demo'}</span>
+            </button>
+          )}
+
           <button
-            onClick={() => setShowConsentModal(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 border border-slate-700 hover:border-cyan-400 hover:bg-slate-800 text-white transition shadow-sm"
+            onClick={() => {
+              setConfigError(null)
+              setShowConsentModal(true)
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 border border-slate-700 hover:border-cyan-400 hover:bg-slate-800 text-white transition shadow-sm cursor-pointer"
           >
             <GitBranch className="w-3.5 h-3.5 text-cyan-400" />
             <span>Sign in with GitHub</span>
@@ -93,13 +146,27 @@ export const Screen0Landing: React.FC<Screen0LandingProps> = () => {
 
         <div className="flex flex-col sm:flex-row items-center gap-4 mb-14">
           <button
-            onClick={() => setShowConsentModal(true)}
+            onClick={() => {
+              setConfigError(null)
+              setShowConsentModal(true)
+            }}
             className="flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-extrabold bg-gradient-to-r from-cyan-500 via-cyan-400 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 shadow-xl shadow-cyan-500/25 transition transform hover:-translate-y-0.5 cursor-pointer"
           >
             <GitBranch className="w-5 h-5 text-slate-950" />
             <span>Start Learning with GitHub</span>
             <ArrowRight className="w-4 h-4 ml-1" />
           </button>
+
+          {isDevMode && (
+            <button
+              onClick={handleDevLogin}
+              disabled={isDevLoading}
+              className="flex items-center gap-2 px-5 py-4 rounded-2xl text-sm font-bold bg-slate-900 border border-slate-700 hover:border-amber-400 text-slate-300 hover:text-white transition cursor-pointer"
+            >
+              <Zap className="w-4 h-4 text-amber-400 fill-amber-400" />
+              <span>Continue as Demo Engineer</span>
+            </button>
+          )}
         </div>
 
         {/* Feature Cards Grid */}
@@ -154,12 +221,18 @@ export const Screen0Landing: React.FC<Screen0LandingProps> = () => {
         </div>
       </footer>
 
-      {/* Consent Explainer Modal */}
+      {/* Consent Explainer / Setup Modal */}
       <ConsentExplainerModal
         isOpen={showConsentModal}
-        onClose={() => setShowConsentModal(false)}
+        onClose={() => {
+          setShowConsentModal(false)
+          setConfigError(null)
+        }}
         onConfirm={handleStartLogin}
         isLoading={isRedirecting}
+        error={configError}
+        onDevLogin={isDevMode ? handleDevLogin : undefined}
+        isDevLoading={isDevLoading}
       />
     </div>
   )

@@ -1,16 +1,90 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import crypto from 'node:crypto'
 
+export function loadEnvFile(override: boolean = false): void {
+  try {
+    const envPath = path.resolve(process.cwd(), '.env')
+    if (!fs.existsSync(envPath)) return
+    const content = fs.readFileSync(envPath, 'utf8')
+    for (const rawLine of content.split(/\r?\n/)) {
+      const line = rawLine.trim()
+      if (!line || line.startsWith('#')) continue
+      const eqIdx = line.indexOf('=')
+      if (eqIdx <= 0) continue
+      const key = line.slice(0, eqIdx).trim().replace(/^export\s+/, '')
+      let value = line.slice(eqIdx + 1).trim()
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1).trim()
+      }
+      if (override || process.env[key] === undefined || process.env[key] === '') {
+        process.env[key] = value
+      }
+    }
+  } catch {
+    // Ignore error reading .env
+  }
+}
+
+// Initial load on import
+loadEnvFile(false)
+
+export function reloadEnv(): void {
+  loadEnvFile(true)
+}
+
+const PLACEHOLDER_GITHUB_IDS = new Set([
+  '',
+  'undefined',
+  'null',
+  'your_github_oauth_client_id',
+  'your_github_oauth_client_secret'
+])
+
+export function isGitHubConfigured(): boolean {
+  reloadEnv()
+  const clientId = (process.env.GITHUB_CLIENT_ID || '').trim()
+  const clientSecret = (process.env.GITHUB_CLIENT_SECRET || '').trim()
+  return (
+    clientId.length > 0 &&
+    !PLACEHOLDER_GITHUB_IDS.has(clientId) &&
+    clientSecret.length > 0 &&
+    !PLACEHOLDER_GITHUB_IDS.has(clientSecret)
+  )
+}
+
 export const ENV = {
-  NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: Number(process.env.PORT || 3000),
-  APP_URL: (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, ''),
-  MONGODB_URI: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/ascent',
-  GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID || '',
-  GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET || '',
-  SESSION_SECRET: process.env.SESSION_SECRET || 'ascent_default_session_secret_dev_32b!',
-  TOKEN_ENCRYPTION_KEY: process.env.TOKEN_ENCRYPTION_KEY || '',
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY || process.env.ASCENT_API_KEY || ''
-} as const
+  get NODE_ENV(): string {
+    return process.env.NODE_ENV || 'development'
+  },
+  get PORT(): number {
+    return Number(process.env.PORT || 3000)
+  },
+  get APP_URL(): string {
+    return (process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '')
+  },
+  get MONGODB_URI(): string {
+    return process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/ascent'
+  },
+  get GITHUB_CLIENT_ID(): string {
+    return process.env.GITHUB_CLIENT_ID || ''
+  },
+  get GITHUB_CLIENT_SECRET(): string {
+    return process.env.GITHUB_CLIENT_SECRET || ''
+  },
+  get SESSION_SECRET(): string {
+    return process.env.SESSION_SECRET || 'ascent_default_session_secret_dev_32b!'
+  },
+  get TOKEN_ENCRYPTION_KEY(): string {
+    return process.env.TOKEN_ENCRYPTION_KEY || ''
+  },
+  get GEMINI_API_KEY(): string {
+    return process.env.GEMINI_API_KEY || process.env.ASCENT_API_KEY || ''
+  }
+}
 
 // Derive 32-byte AES-256 key from TOKEN_ENCRYPTION_KEY or SESSION_SECRET
 export function getEncryptionKey(): Buffer {
@@ -39,3 +113,4 @@ export function redactSecrets(text: string): string {
     // Redact MongoDB connection strings with credentials
     .replace(/mongodb(\+srv)?:\/\/[^:]+:[^@]+@/g, 'mongodb$1://[REDACTED_USER_PASSWORD]@')
 }
+

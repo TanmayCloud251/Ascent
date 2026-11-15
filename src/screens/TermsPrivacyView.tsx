@@ -81,3 +81,4 @@ export const TermsPrivacyView: React.FC = () => {
     </div>
   )
 }
+
