@@ -1,0 +1,23 @@
+[
+  {
+    "slug": "currency-converter",
+    "title": "Currency Converter",
+    "shortDescription": "Live exchange rate calculation with currency dropdowns and localStorage history.",
+    "difficulty": "beginner",
+    "estimatedHours": 3
+  },
+  {
+    "slug": "rock-paper-scissors",
+    "title": "Rock Paper Scissors",
+    "shortDescription": "Classic interactive game against computer AI with score tracking and animations.",
+    "difficulty": "beginner",
+    "estimatedHours": 2.5
+  },
+  {
+    "slug": "tic-tac-toe",
+    "title": "Tic Tac Toe",
+    "shortDescription": "2-player grid board with win-state detection, turn indicators, and match resets.",
+    "difficulty": "beginner",
+    "estimatedHours": 3
+  }
+]

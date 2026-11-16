@@ -229,20 +229,38 @@ Deliver a functioning, zero-mock, persistent onboarding and specification creati
 
 ---
 
-## 7. Verification & Acceptance Criteria for Slice 1
+## 7. Status & Implemented Architecture (Slice 1 & Slice 2 Revised)
 
-1. **Storage Persistence**:
-   - Creating a project on Screen 1 and navigating to Screen 2 persists the project in `StorageService`.
-   - Refreshing the browser on Screen 2 retains all generated spec fields, user selections, and profile state.
-2. **Gemini Live Integration**:
-   - Submitting an arbitrary custom prompt (e.g. *"A decentralized solar energy trading marketplace for microgrids"*) calls Gemini and produces a tailored, specific spec with relevant features and architecture highlights.
-   - No mock data fallbacks used; genuine error handling with a retry button on network issues.
-3. **Spec Clarifications**:
-   - Learners can toggle options for the clarifying questions, and confirming the spec locks the finalized spec into project state.
-4. **Code Quality & Build Health**:
-   - `compile_applet` and `lint_applet` pass with 0 TypeScript/ESLint errors.
-   - Strict CSS/Tailwind design tokens adherence.
+### Spec Review Overhaul (Screen 2)
+- Removed all clarifying questions from schemas, Gemini prompts, and UI.
+- One-page read-only document view with typography hierarchy (Google Docs style).
+- Rendered sections: Title, Tagline, Target Audience, Tech Stack badges, Summary, Primary Features ({name, description}), User Flows (steps), Data Entities & Storage Keys, Architecture Highlights, Assumptions (highlighted callout), and Out of Scope (highlighted boundary callout).
+- Sticky bottom footer with two buttons only: "Confirm Spec & Continue" and "Regenerate", plus "Back / Edit prompt".
+
+### Slice 2 Revised: Page + Component Syllabus
+- Backend route `POST /api/llm/generate-page`: Generates a single starting page and its 5-10 component modules in HTML document order (`document-head` → `body-layout` → `header` → `form` → `content-block` → `script-behavior` → `footer`).
+- `ProjectMemory`: Tracks cumulative files built, tech stack, and architectural decisions made.
+- Screen 3 UI (Project Overview):
+  - Displays current active page (`index.html`), purpose, and pages built so far.
+  - Displays component modules as cards with badges and status (first module active, subsequent modules locked).
+  - Progress summary ("X of Y modules completed on this page").
+- Verified with Gemini 3.1 Flash Lite with live test for `"a tracker for my pet axolotl's feeding schedule"`.
 
 ---
 
-*Awaiting your feedback and confirmation to proceed with the implementation of Slice 1.*
+## 8. Curated (Pre-Generated) Projects Architecture
+
+### Exception Policy
+- Three curated courses (`currency-converter`, `rock-paper-scissors`, `tic-tac-toe`) load from pre-built static JSON in `src/data/curated/`.
+- Strict Rule: Curated content is loaded **only** when explicitly clicking a curated project card.
+- Never used as a fallback for live prompts (typed prompts on Screen 1 always execute live Gemini calls; zero fuzzy matching).
+- `useTailwind` is strictly forced to `false` and locked for curated courses.
+
+### Shared Schemas & Pipeline
+- `src/schemas/course.ts`: `CheckTypeSchema`, `CheckSchema`, `FileEntrySchema`, `ProjectSpecSchema`, `ModuleSchema`, `ModuleContentSchema`, `FullModuleSchema`, `PageSchema`, `CuratedCourseSchema`.
+- Offline build script `scripts/build-curated-courses.ts` (`npm run build:curated`) with JSDOM assertion harness and Gemini prompt generation.
+- Static course files in `src/data/curated/<slug>.json` and `src/data/curated/index.json`.
+- Screen 1 "Start with a curated project" row of 3 cards.
+- Screen 2 displays `PRE-BUILT (CURATED)` badge; clicking "Confirm Spec & Continue" transitions directly to Screen 3 without an LLM call.
+- LLM Trace panel displays `PRE-BUILT` purple badge and logs that zero LLM API calls were executed.
+

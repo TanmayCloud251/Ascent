@@ -9,6 +9,7 @@ yarn-error.log*
 dist/
 dist-ssr/
 *.local
+*.bundle
 
 # Environment & Credentials
 .env

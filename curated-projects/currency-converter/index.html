@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Currency Converter</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="converter-card">
+    <header class="converter-header">
+      <h1 class="app-title">Currency Converter</h1>
+      <p class="app-subtitle">Real-time exchange rate calculations</p>
+    </header>
+
+    <main class="converter-body">
+      <div class="form-group">
+        <label for="amount-input">Amount</label>
+        <input type="number" id="amount-input" class="input-field" value="1" min="0" step="any">
+      </div>
+
+      <div class="currency-row">
+        <div class="form-group flex-1">
+          <label for="from-currency">From</label>
+          <select id="from-currency" class="select-field">
+            <option value="USD" selected>USD - US Dollar</option>
+            <option value="EUR">EUR - Euro</option>
+            <option value="GBP">GBP - British Pound</option>
+            <option value="JPY">JPY - Japanese Yen</option>
+            <option value="CAD">CAD - Canadian Dollar</option>
+          </select>
+        </div>
+
+        <button id="swap-btn" class="swap-button" title="Swap currencies">⇄</button>
+
+        <div class="form-group flex-1">
+          <label for="to-currency">To</label>
+          <select id="to-currency" class="select-field">
+            <option value="USD">USD - US Dollar</option>
+            <option value="EUR" selected>EUR - Euro</option>
+            <option value="GBP">GBP - British Pound</option>
+            <option value="JPY">JPY - Japanese Yen</option>
+            <option value="CAD">CAD - Canadian Dollar</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="result-container">
+        <div class="rate-info" id="rate-display">1 USD = 0.92 EUR</div>
+        <div class="converted-amount" id="result-display">0.92 EUR</div>
+      </div>
+    </main>
+
+    <footer class="converter-footer">
+      <p class="history-title">Recent Conversions</p>
+      <ul id="history-list" class="history-list"></ul>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

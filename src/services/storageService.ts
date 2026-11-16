@@ -1,4 +1,5 @@
 import { UserProfile, Project, ProjectMemory } from '../types/ascent'
+import { LearnerProgress, ModuleContent } from '../schemas/course'
 
 // ============================================================================
 // StorageService Abstraction Layer
@@ -23,6 +24,19 @@ export interface StorageService {
   // Long-Term Project Memory
   getProjectMemory(projectId: string): ProjectMemory | null
   saveProjectMemory(memory: ProjectMemory): void
+
+  // Learner Code Persistence per Module
+  getUserFiles(projectId: string, moduleId: string): Record<string, string> | null
+  saveUserFiles(projectId: string, moduleId: string, files: Record<string, string>): void
+
+  // Progress Tracking & Unlocks
+  getLearnerProgress(userId: string, moduleId: string): LearnerProgress | null
+  saveLearnerProgress(progress: LearnerProgress): void
+  getAllProgressForUser(userId: string): Record<string, LearnerProgress>
+
+  // Stored Module Content
+  getModuleContent(moduleId: string): ModuleContent | null
+  saveModuleContent(moduleId: string, content: ModuleContent): void
 
   // LLM Response Caching (Only caches REAL verified Gemini outputs)
   getCachedLLMResponse<T>(cacheKey: string): T | null
@@ -49,6 +63,9 @@ export class LocalStorageAdapter implements StorageService {
   private activeProjectKey = `${STORAGE_PREFIX}:active_project_id`
   private memoryPrefix = `${STORAGE_PREFIX}:memory:`
   private cachePrefix = `${STORAGE_PREFIX}:cache:`
+  private userFilesPrefix = `${STORAGE_PREFIX}:user_files:`
+  private progressPrefix = `${STORAGE_PREFIX}:progress:`
+  private contentPrefix = `${STORAGE_PREFIX}:mod_content:`
 
   getCurrentUser(): UserProfile {
     try {
@@ -163,6 +180,77 @@ export class LocalStorageAdapter implements StorageService {
       localStorage.setItem(`${this.memoryPrefix}${memory.projectId}`, JSON.stringify(memory))
     } catch (e) {
       console.error('Failed to save project memory:', e)
+    }
+  }
+
+  getUserFiles(projectId: string, moduleId: string): Record<string, string> | null {
+    try {
+      const raw = localStorage.getItem(`${this.userFilesPrefix}${projectId}:${moduleId}`)
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  }
+
+  saveUserFiles(projectId: string, moduleId: string, files: Record<string, string>): void {
+    try {
+      localStorage.setItem(`${this.userFilesPrefix}${projectId}:${moduleId}`, JSON.stringify(files))
+    } catch (e) {
+      console.error('Failed to save user files:', e)
+    }
+  }
+
+  getLearnerProgress(userId: string, moduleId: string): LearnerProgress | null {
+    try {
+      const raw = localStorage.getItem(`${this.progressPrefix}${userId}:${moduleId}`)
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  }
+
+  saveLearnerProgress(progress: LearnerProgress): void {
+    try {
+      localStorage.setItem(`${this.progressPrefix}${progress.userId}:${progress.moduleId}`, JSON.stringify(progress))
+    } catch (e) {
+      console.error('Failed to save learner progress:', e)
+    }
+  }
+
+  getAllProgressForUser(userId: string): Record<string, LearnerProgress> {
+    const result: Record<string, LearnerProgress> = {}
+    try {
+      const prefix = `${this.progressPrefix}${userId}:`
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith(prefix)) {
+          const raw = localStorage.getItem(key)
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            result[parsed.moduleId] = parsed
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to get all learner progress:', e)
+    }
+    return result
+  }
+
+  getModuleContent(moduleId: string): ModuleContent | null {
+    try {
+      const raw = localStorage.getItem(`${this.contentPrefix}${moduleId}`)
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  }
+
+  saveModuleContent(moduleId: string, content: ModuleContent): void {
+    try {
+      localStorage.setItem(`${this.contentPrefix}${moduleId}`, JSON.stringify(content))
+    } catch (e) {
+      console.error('Failed to save module content:', e)
     }
   }
 

@@ -9,45 +9,83 @@ import {
   Layers,
   Cpu,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Coins,
+  Gamepad2,
+  Grid3X3,
+  Palette,
+  BookOpen
 } from 'lucide-react'
 import { TechStackConfig } from '../types/ascent'
 
-const SUGGESTED_TEMPLATES = [
+const QUICK_STARTERS = [
   {
-    title: 'SaaS Analytics Dashboard',
-    prompt: 'real-time cloud telemetry and SaaS analytics dashboard with live metric KPI cards, event feed, and query filtering',
-    stack: { runtime: 'React 19' as const, styling: 'Tailwind CSS v4', stateManagement: 'React State / Hooks', backendSim: 'Browser In-Memory State' }
+    id: 'currency-converter',
+    title: 'Currency Converter',
+    description: 'Live exchange rate calculation with country currency dropdowns and localStorage history.',
+    badge: 'Vanilla JS · Plain CSS',
+    isDirectLaunch: true,
+    slug: 'currency-converter',
+    iconName: 'coins' as const
   },
   {
-    title: 'E-Commerce Storefront & Cart',
-    prompt: 'modern e-commerce storefront with product catalog, category filters, and optimistic slide-over cart drawer',
-    stack: { runtime: 'React 19' as const, styling: 'Tailwind CSS v4', stateManagement: 'Zustand', backendSim: 'Browser In-Memory State' }
+    id: 'rock-paper-scissors',
+    title: 'Rock Paper Scissors',
+    description: 'Classic interactive game against computer AI with animations and persistent score tracking.',
+    badge: 'Vanilla JS · Plain CSS',
+    isDirectLaunch: true,
+    slug: 'rock-paper-scissors',
+    iconName: 'gamepad' as const
   },
   {
-    title: 'Agile Kanban Sprint Board',
-    prompt: 'collaborative agile sprint kanban board with drag-and-drop lanes, task filtering, and priority tagging',
-    stack: { runtime: 'React 19' as const, styling: 'Tailwind CSS v4', stateManagement: 'React State / Hooks', backendSim: 'Browser In-Memory State' }
+    id: 'tic-tac-toe',
+    title: 'Tic Tac Toe',
+    description: '2-player turn-based grid board with win-state algorithms, turn alerts, and match resets.',
+    badge: 'Vanilla JS · Plain CSS',
+    isDirectLaunch: true,
+    slug: 'tic-tac-toe',
+    iconName: 'grid' as const
   },
   {
-    title: 'Developer Terminal Portfolio',
-    prompt: 'cyberpunk interactive developer terminal portfolio with command line prompt, project showcase, and system specs readout',
-    stack: { runtime: 'Vanilla DOM' as const, styling: 'Tailwind CSS v4', stateManagement: 'Vanilla Event Emitter', backendSim: 'Browser In-Memory State' }
+    id: 'background-changer',
+    title: 'Background Color Changer',
+    description: 'Interactive color explorer with hex code picker, random palette generator, and copy toast.',
+    badge: 'Vanilla HTML/CSS/JS',
+    isDirectLaunch: false,
+    prompt: 'interactive background color changer with hex code picker, random palette generator button, and copy-to-clipboard toast',
+    useTailwind: true,
+    iconName: 'palette' as const
+  },
+  {
+    id: 'blog-page',
+    title: 'Minimalist Blog Reader',
+    description: 'Clean personal blog reader with article list, reading time badges, tag filters, and dark mode reading view.',
+    badge: 'Vanilla HTML/CSS/JS',
+    isDirectLaunch: false,
+    prompt: 'clean personal blog reader with article list, reading time badges, tag filters, and dark mode reading view',
+    useTailwind: true,
+    iconName: 'book' as const
   }
 ]
 
 export const Screen1Prompt: React.FC = () => {
-  const { generateProjectSpec, specError, isGeneratingSpec, clearSpecError, activePrompt, setActivePrompt } = useApp()
+  const {
+    generateProjectSpec,
+    specError,
+    isGeneratingSpec,
+    clearSpecError,
+    activePrompt,
+    useTailwind,
+    setUseTailwind,
+    isTailwindLocked,
+    curatedCoursesList,
+    loadCuratedProject
+  } = useApp()
+
   const [promptInput, setPromptInput] = useState(
-    activePrompt || 'enterprise cloud telemetry dashboard with real-time query metrics, sparkline graphs, and cluster health status'
+    activePrompt || 'interactive background color changer with hex code display, random generator button, and saved favorite colors'
   )
   const [isWizardOpen, setIsWizardOpen] = useState(false)
-  const [techStackConfig, setTechStackConfig] = useState<TechStackConfig>({
-    runtime: 'React 19',
-    styling: 'Tailwind CSS v4',
-    stateManagement: 'React State / Hooks',
-    backendSim: 'Browser In-Memory State'
-  })
 
   // Keep input in sync if activePrompt changed via Header presets
   useEffect(() => {
@@ -56,20 +94,25 @@ export const Screen1Prompt: React.FC = () => {
     }
   }, [activePrompt])
 
-  const handleLaunch = async (overridePrompt?: string, overrideStack?: TechStackConfig) => {
+  const handleLaunch = async (overridePrompt?: string, overrideTailwind?: boolean) => {
     const finalPrompt = overridePrompt || promptInput
-    const finalStack = overrideStack || techStackConfig
     if (!finalPrompt.trim()) return
     clearSpecError()
-    setActivePrompt(finalPrompt)
-    await generateProjectSpec(finalPrompt, finalStack)
+    const targetTailwind = overrideTailwind !== undefined ? overrideTailwind : useTailwind
+    await generateProjectSpec(finalPrompt, {
+      runtime: 'HTML + CSS + JavaScript',
+      styling: targetTailwind ? 'Tailwind CSS' : 'Plain CSS',
+      stateManagement: 'Browser In-Memory State / DOM',
+      backendSim: 'In-Browser LocalStorage / IndexedDB',
+      useTailwind: targetTailwind
+    })
   }
 
-  const handleSelectTemplate = (tmpl: typeof SUGGESTED_TEMPLATES[0]) => {
-    setPromptInput(tmpl.prompt)
-    setActivePrompt(tmpl.prompt)
-    setTechStackConfig(tmpl.stack)
-    // Presets ONLY pre-fill the prompt text box; they never auto-launch
+  const handleSelectTemplate = (promptText: string, tmplUseTailwind: boolean = true) => {
+    setPromptInput(promptText)
+    if (!isTailwindLocked) {
+      setUseTailwind(tmplUseTailwind)
+    }
   }
 
   return (
@@ -84,7 +127,7 @@ export const Screen1Prompt: React.FC = () => {
             <span className="w-2 h-2 rounded-full bg-[#00F0FF] animate-ping" />
             <span className="text-slate-300">SOCRATIC CURRICULUM COMPILER</span>
             <span className="text-slate-600">·</span>
-            <span className="text-emerald-400 font-semibold">GEMINI 3.8 FLASH SPEC ENGINE</span>
+            <span className="text-emerald-400 font-semibold">LLM SPEC ENGINE</span>
           </div>
         </div>
 
@@ -93,7 +136,7 @@ export const Screen1Prompt: React.FC = () => {
           <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight leading-tight">
             Build what you imagine.<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#00F0FF] via-cyan-300 to-indigo-400">
-              Screen by screen, line by line.
+              From Idea to Implementation
             </span>
           </h1>
           <p className="text-slate-400 text-sm md:text-base max-w-2xl mx-auto">
@@ -165,26 +208,46 @@ export const Screen1Prompt: React.FC = () => {
             <div className="pt-4 border-t border-white/5 flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-[#00F0FF]" /> TARGET STACK:
+                  <Sparkles className="w-3.5 h-3.5 text-[#00F0FF]" /> FIXED STACK:
                 </span>
-                <span className="px-2.5 py-1 rounded bg-[#00F0FF]/10 border border-[#00F0FF]/30 text-[#00F0FF]">
-                  {techStackConfig.runtime}
+                <span className="px-2.5 py-1 rounded bg-[#00F0FF]/10 border border-[#00F0FF]/30 text-[#00F0FF] font-semibold">
+                  HTML + CSS + JavaScript
                 </span>
-                <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-slate-300">
-                  {techStackConfig.styling}
+                <span className={`px-2.5 py-1 rounded border text-xs flex items-center gap-1.5 ${
+                  useTailwind
+                    ? 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300'
+                    : 'bg-white/5 border-white/10 text-slate-300'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${useTailwind ? 'bg-[#00F0FF]' : 'bg-slate-500'}`} />
+                  {useTailwind ? 'Tailwind CSS Utilities' : 'Plain Semantic CSS'}
                 </span>
-                <span className="px-2.5 py-1 rounded bg-white/5 border border-white/10 text-slate-300">
-                  {techStackConfig.stateManagement}
+                <span className="px-2.5 py-1 rounded bg-black/40 border border-white/5 text-slate-400">
+                  In-Browser Storage
                 </span>
               </div>
 
-              <button
-                onClick={() => setIsWizardOpen(true)}
-                className="text-slate-400 hover:text-[#00F0FF] flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                <span>Customize Stack</span>
-              </button>
+              <div className="flex items-center gap-3">
+                {/* Single Tailwind CSS Toggle */}
+                <button
+                  type="button"
+                  disabled={isTailwindLocked}
+                  onClick={() => setUseTailwind(!useTailwind)}
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-mono flex items-center gap-2 transition-all cursor-pointer ${
+                    isTailwindLocked
+                      ? 'opacity-60 cursor-not-allowed bg-black/40 border-white/10 text-slate-500'
+                      : useTailwind
+                      ? 'border-[#00F0FF] bg-[#00F0FF]/15 text-[#00F0FF]'
+                      : 'border-white/20 bg-black/40 text-slate-400 hover:text-white hover:border-white/40'
+                  }`}
+                  title={isTailwindLocked ? 'Tailwind styling choice is locked after spec confirmation' : 'Toggle Tailwind CSS vs Plain CSS'}
+                >
+                  <Sliders className="w-3.5 h-3.5 text-[#00F0FF]" />
+                  <span>Use Tailwind CSS:</span>
+                  <span className={`font-bold ${useTailwind ? 'text-[#00F0FF]' : 'text-slate-400'}`}>
+                    {useTailwind ? 'ON' : 'OFF'}
+                  </span>
+                </button>
+              </div>
             </div>
 
             {/* Bottom Actions Bar */}
@@ -217,42 +280,79 @@ export const Screen1Prompt: React.FC = () => {
           </div>
         </div>
 
-        {/* Preset Cards for Quick Launch */}
+        {/* Quick Starter Architectures */}
         <div className="space-y-3">
           <div className="text-xs font-mono uppercase text-slate-500 tracking-wider flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
+            <span className="flex items-center gap-1.5 text-slate-300 font-semibold">
               <Layers className="w-3.5 h-3.5 text-[#00F0FF]" /> QUICK STARTER ARCHITECTURES
             </span>
             <div className="flex-1 h-px bg-white/10 mx-3" />
-            <span className="text-slate-600">CLICK TO LOAD</span>
+            <span className="text-slate-500 text-[10px] font-mono">CLICK TO LAUNCH OR LOAD</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {SUGGESTED_TEMPLATES.map((tmpl) => (
-              <button
-                key={tmpl.title}
-                onClick={() => handleSelectTemplate(tmpl)}
-                disabled={isGeneratingSpec}
-                className="cyber-card p-3.5 text-left flex items-start gap-3 hover:border-[#00F0FF]/50 hover:bg-[#141420] group transition-all disabled:opacity-50 cursor-pointer"
-              >
-                <div className="w-8 h-8 rounded bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-[#00F0FF]/50 group-hover:text-[#00F0FF] transition-colors">
-                  <Code2 className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors truncate">
-                      {tmpl.title}
-                    </h4>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400">
-                      {tmpl.stack.runtime}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {QUICK_STARTERS.map((item) => {
+              const renderIcon = () => {
+                switch (item.iconName) {
+                  case 'coins':
+                    return <Coins className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                  case 'gamepad':
+                    return <Gamepad2 className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                  case 'grid':
+                    return <Grid3X3 className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                  case 'palette':
+                    return <Palette className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                  case 'book':
+                    return <BookOpen className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                  default:
+                    return <Code2 className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                }
+              }
+
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    if (item.isDirectLaunch && item.slug) {
+                      loadCuratedProject(item.slug)
+                    } else if (item.prompt) {
+                      handleSelectTemplate(item.prompt, item.useTailwind)
+                    }
+                  }}
+                  disabled={isGeneratingSpec}
+                  className="cyber-card p-4 text-left flex flex-col justify-between hover:border-[#00F0FF]/50 hover:bg-[#141420] group transition-all duration-200 disabled:opacity-50 cursor-pointer rounded-xl bg-[#0C0C14] border-white/10"
+                >
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-[#00F0FF]/40 transition-colors">
+                        {renderIcon()}
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">
+                        {item.badge}
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
+                        {item.title}
+                      </h4>
+                      <p className="text-xs text-slate-400 line-clamp-2 mt-1 font-sans leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 mt-3 border-t border-white/5 flex items-center justify-between text-xs font-mono text-slate-500 group-hover:text-[#00F0FF] transition-colors">
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      {item.isDirectLaunch ? 'Instant Blueprint' : 'Interactive Idea'}
+                    </span>
+                    <span className="flex items-center gap-1 text-[11px] font-bold group-hover:translate-x-0.5 transition-transform">
+                      {item.isDirectLaunch ? 'Launch Blueprint' : 'Load Prompt'} <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 line-clamp-1 mt-0.5 font-mono">
-                    {tmpl.prompt}
-                  </p>
-                </div>
-              </button>
-            ))}
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -261,7 +361,7 @@ export const Screen1Prompt: React.FC = () => {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5 text-emerald-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              STORAGE LAYER: LOCALSTORAGE ABSTRACTION (ACTIVE)
+              STACK: VANILLA HTML + CSS + JS (RESTRICTED)
             </span>
             <span className="flex items-center gap-1.5 text-cyan-400">
               <span className="w-1.5 h-1.5 rounded-full bg-[#00F0FF]" />
@@ -271,15 +371,15 @@ export const Screen1Prompt: React.FC = () => {
 
           <div className="flex items-center gap-1.5 text-slate-400">
             <Cpu className="w-3.5 h-3.5 text-cyan-400" />
-            <span>ZERO MOCK DATA · DETERMINISTIC PERSISTENCE</span>
+            <span>ZERO MOCK DATA · IN-BROWSER PERSISTENCE</span>
           </div>
         </div>
       </div>
 
-      {/* Tech Stack Customization Modal */}
+      {/* Tech Stack Customization Modal (Scope-Restricted) */}
       {isWizardOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="cyber-card bg-[#101018] border border-white/20 p-6 max-w-lg w-full rounded-xl space-y-5">
+          <div className="cyber-card bg-[#101018] border border-white/20 p-6 max-w-md w-full rounded-xl space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <h3 className="text-lg font-bold text-white font-display flex items-center gap-2">
                 <Sliders className="w-4 h-4 text-[#00F0FF]" /> Tech Stack Specifications
@@ -293,82 +393,53 @@ export const Screen1Prompt: React.FC = () => {
             </div>
 
             <div className="space-y-4 text-xs font-mono">
-              <div>
-                <label className="text-slate-300 block mb-1.5 font-bold">1. Primary Runtime Paradigm</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: 'React 19 Component Mode', val: 'React 19' as const },
-                    { label: 'Vanilla HTML5 + JS DOM Mode', val: 'Vanilla DOM' as const }
-                  ].map(opt => {
-                    const isSelected = techStackConfig.runtime === opt.val
-                    return (
-                      <button
-                        key={opt.val}
-                        onClick={() => setTechStackConfig(prev => ({ ...prev, runtime: opt.val }))}
-                        className={`p-3 rounded-lg border text-left transition-all ${
-                          isSelected
-                            ? 'border-[#00F0FF] bg-[#00F0FF]/15 text-[#00F0FF] font-bold'
-                            : 'border-white/10 text-slate-400 hover:border-white/20'
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    )
-                  })}
-                </div>
+              <div className="p-3 rounded-lg bg-black/40 border border-white/10 space-y-1">
+                <span className="text-slate-400 text-[10px] uppercase tracking-wider block font-semibold">Fixed Course Stack</span>
+                <p className="text-white font-bold text-sm">HTML + CSS + JavaScript</p>
+                <p className="text-slate-400 text-[11px] font-sans">
+                  Ascent is dedicated to teaching foundational front-end mastery. Zero frameworks, zero bundlers, pure browser web APIs.
+                </p>
               </div>
 
-              <div>
-                <label className="text-slate-300 block mb-1.5 font-bold">2. Styling Framework</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['Tailwind CSS v4', 'CSS Grid & Modern CSS'].map(opt => (
-                    <button
-                      key={opt}
-                      onClick={() => setTechStackConfig(prev => ({ ...prev, styling: opt }))}
-                      className={`p-2.5 rounded-lg border text-left transition-all ${
-                        techStackConfig.styling === opt
-                          ? 'border-[#00F0FF] bg-[#00F0FF]/15 text-[#00F0FF] font-bold'
-                          : 'border-white/10 text-slate-400 hover:border-white/20'
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+              <div className="p-4 rounded-lg bg-[#00F0FF]/5 border border-[#00F0FF]/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-white font-bold block text-sm">Use Tailwind CSS</label>
+                    <span className="text-[11px] text-slate-400 font-sans block mt-0.5">
+                      {useTailwind
+                        ? 'Project uses HTML + Tailwind utility classes + vanilla JS DOM code.'
+                        : 'Project uses HTML + plain CSS (semantic classes, Flexbox/Grid) + vanilla JS.'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isTailwindLocked}
+                    onClick={() => setUseTailwind(!useTailwind)}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold transition-all ${
+                      isTailwindLocked
+                        ? 'opacity-60 cursor-not-allowed bg-black/40 border-white/10 text-slate-500'
+                        : useTailwind
+                        ? 'bg-[#00F0FF] text-black border-[#00F0FF]'
+                        : 'bg-black/60 border-white/20 text-slate-300 hover:border-white/40'
+                    }`}
+                  >
+                    {useTailwind ? 'ENABLED' : 'DISABLED'}
+                  </button>
                 </div>
-              </div>
-
-              <div>
-                <label className="text-slate-300 block mb-1.5 font-bold">3. State Management</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {['React State / Hooks', 'Zustand Store'].map(opt => (
-                    <button
-                      key={opt}
-                      onClick={() => setTechStackConfig(prev => ({ ...prev, stateManagement: opt }))}
-                      className={`p-2.5 rounded-lg border text-left transition-all ${
-                        techStackConfig.stateManagement === opt
-                          ? 'border-[#00F0FF] bg-[#00F0FF]/15 text-[#00F0FF] font-bold'
-                          : 'border-white/10 text-slate-400 hover:border-white/20'
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
+                {isTailwindLocked && (
+                  <p className="text-[10px] text-amber-400 font-sans">
+                    * The Tailwind choice is locked for this project because the specification has been confirmed.
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="pt-3 border-t border-white/10 flex justify-end gap-3">
-              <button
-                onClick={() => setIsWizardOpen(false)}
-                className="cyber-btn-secondary"
-              >
-                Close
-              </button>
+            <div className="pt-3 border-t border-white/10 flex justify-end">
               <button
                 onClick={() => setIsWizardOpen(false)}
                 className="cyber-btn-primary"
               >
-                Save Preferences
+                Done
               </button>
             </div>
           </div>

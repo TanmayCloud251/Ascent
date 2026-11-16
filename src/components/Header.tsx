@@ -137,7 +137,7 @@ export const Header: React.FC = () => {
                 }}
                 className="w-full text-left p-2 rounded hover:bg-[#00F0FF]/10 hover:text-[#00F0FF] transition-colors cursor-pointer"
               >
-                1. React 19: E-Commerce Storefront
+                1. Axolotl Care & Feeding Tracker
               </button>
               <button
                 onClick={() => {
@@ -146,7 +146,7 @@ export const Header: React.FC = () => {
                 }}
                 className="w-full text-left p-2 rounded hover:bg-[#00F0FF]/10 hover:text-[#00F0FF] transition-colors cursor-pointer"
               >
-                2. React 19: Cloud Telemetry Dashboard
+                2. HTML/JS: Telemetry Dashboard
               </button>
               <button
                 onClick={() => {
@@ -164,7 +164,7 @@ export const Header: React.FC = () => {
                 }}
                 className="w-full text-left p-2 rounded hover:bg-[#00F0FF]/10 hover:text-[#00F0FF] transition-colors cursor-pointer"
               >
-                4. Vanilla Web: Developer Terminal
+                4. Plain CSS: Developer Terminal
               </button>
             </div>
           )}
