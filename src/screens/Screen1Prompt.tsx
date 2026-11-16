@@ -15,16 +15,28 @@ import {
   Grid3X3,
   Palette,
   BookOpen,
-  FolderGit2
+  FolderGit2,
+  LogIn,
+  KeyRound,
+  CheckCircle2
 } from 'lucide-react'
 import { TechStackConfig } from '../types/ascent'
 
 const QUICK_STARTERS = [
   {
+    id: 'login-greeting',
+    title: 'Greeting Login Form',
+    description: 'Interactive username input with validation, real-time focus states, and dynamic DOM greeting.',
+    badge: 'Curated Track · Zero Key',
+    isDirectLaunch: true,
+    slug: 'login-greeting',
+    iconName: 'login' as const
+  },
+  {
     id: 'currency-converter',
     title: 'Currency Converter',
     description: 'Live exchange rate calculation with country currency dropdowns and localStorage history.',
-    badge: 'Vanilla JS · Plain CSS',
+    badge: 'Curated Track · Zero Key',
     isDirectLaunch: true,
     slug: 'currency-converter',
     iconName: 'coins' as const
@@ -33,7 +45,7 @@ const QUICK_STARTERS = [
     id: 'rock-paper-scissors',
     title: 'Rock Paper Scissors',
     description: 'Classic interactive game against computer AI with animations and persistent score tracking.',
-    badge: 'Vanilla JS · Plain CSS',
+    badge: 'Curated Track · Zero Key',
     isDirectLaunch: true,
     slug: 'rock-paper-scissors',
     iconName: 'gamepad' as const
@@ -42,7 +54,7 @@ const QUICK_STARTERS = [
     id: 'tic-tac-toe',
     title: 'Tic Tac Toe',
     description: '2-player turn-based grid board with win-state algorithms, turn alerts, and match resets.',
-    badge: 'Vanilla JS · Plain CSS',
+    badge: 'Curated Track · Zero Key',
     isDirectLaunch: true,
     slug: 'tic-tac-toe',
     iconName: 'grid' as const
@@ -51,7 +63,7 @@ const QUICK_STARTERS = [
     id: 'background-changer',
     title: 'Background Color Changer',
     description: 'Interactive color explorer with hex code picker, random palette generator, and copy toast.',
-    badge: 'Vanilla HTML/CSS/JS',
+    badge: 'Custom Spec · Tailwind',
     isDirectLaunch: false,
     prompt: 'interactive background color changer with hex code picker, random palette generator button, and copy-to-clipboard toast',
     useTailwind: true,
@@ -61,7 +73,7 @@ const QUICK_STARTERS = [
     id: 'blog-page',
     title: 'Minimalist Blog Reader',
     description: 'Clean personal blog reader with article list, reading time badges, tag filters, and dark mode reading view.',
-    badge: 'Vanilla HTML/CSS/JS',
+    badge: 'Custom Spec · Tailwind',
     isDirectLaunch: false,
     prompt: 'clean personal blog reader with article list, reading time badges, tag filters, and dark mode reading view',
     useTailwind: true,
@@ -179,22 +191,24 @@ export const Screen1Prompt: React.FC = () => {
         )}
 
         {/* Main Terminal Input Console */}
-        <div className="cyber-card-glow bg-[#0C0C14] border border-[#00F0FF]/40 rounded-xl overflow-hidden shadow-2xl">
+        <div className="rounded-2xl bg-[#0D101A]/95 border border-cyan-500/35 overflow-hidden shadow-[0_0_50px_-10px_rgba(6,182,212,0.25)] backdrop-blur-xl">
           {/* Console Header Bar */}
-          <div className="px-4 py-2.5 bg-[#08080E] border-b border-white/10 flex items-center justify-between text-xs font-mono text-slate-400">
+          <div className="px-5 py-3 bg-[#080A12] border-b border-white/10 flex items-center justify-between text-xs font-mono text-slate-400">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full bg-rose-500/80 inline-block" />
               <span className="w-3 h-3 rounded-full bg-amber-500/80 inline-block" />
               <span className="w-3 h-3 rounded-full bg-emerald-500/80 inline-block" />
-              <span className="ml-2 text-cyan-400 font-semibold flex items-center gap-1">
-                <Terminal className="w-3.5 h-3.5" /> student@ascent:~$ init project
+              <span className="ml-2 text-cyan-400 font-semibold flex items-center gap-1.5">
+                <Terminal className="w-3.5 h-3.5 text-cyan-400" /> student@ascent:~$ init project
               </span>
             </div>
-            <span className="text-slate-500">STRUCTURED JSON // SLICE 1</span>
+            <span className="text-[11px] font-mono text-slate-500 bg-white/5 px-2.5 py-0.5 rounded border border-white/5">
+              STRUCTURED JSON // SLICE 7
+            </span>
           </div>
 
           {/* Console Form Input */}
-          <div className="p-6 space-y-6">
+          <div className="p-6 md:p-8 space-y-6">
             {activeCustomProject && (
               <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 flex items-start gap-3.5 text-xs text-amber-200 backdrop-blur-sm shadow-[0_0_20px_-3px_rgba(245,158,11,0.2)]">
                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
@@ -231,8 +245,8 @@ export const Screen1Prompt: React.FC = () => {
               </div>
             )}
 
-            <div className="flex items-start gap-3">
-              <span className="text-[#00F0FF] font-mono text-lg font-bold select-none">&gt;</span>
+            <div className="flex items-start gap-3.5">
+              <span className="text-[#00F0FF] font-mono text-xl font-bold select-none pt-1">&gt;</span>
               <textarea
                 value={promptInput}
                 onChange={(e) => setPromptInput(e.target.value)}
@@ -252,7 +266,7 @@ export const Screen1Prompt: React.FC = () => {
             {/* Configured Stack Tags */}
             <div className="pt-4 border-t border-white/5 flex flex-wrap items-center justify-between gap-4 text-xs font-mono">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <span className="text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-[#00F0FF]" /> FIXED STACK:
                 </span>
                 <span className="px-2.5 py-1 rounded bg-[#00F0FF]/10 border border-[#00F0FF]/30 text-[#00F0FF] font-semibold">
@@ -327,31 +341,35 @@ export const Screen1Prompt: React.FC = () => {
         </div>
 
         {/* Quick Starter Architectures */}
-        <div className="space-y-3">
-          <div className="text-xs font-mono uppercase text-slate-500 tracking-wider flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-slate-300 font-semibold">
-              <Layers className="w-3.5 h-3.5 text-[#00F0FF]" /> QUICK STARTER ARCHITECTURES
+        <div className="space-y-4 pt-2">
+          <div className="text-xs font-mono uppercase text-slate-400 tracking-wider flex items-center justify-between">
+            <span className="flex items-center gap-2 text-slate-300 font-semibold">
+              <Layers className="w-4 h-4 text-cyan-400" />
+              <span>Quick Starter Tracks & Blueprints</span>
             </span>
-            <div className="flex-1 h-px bg-white/10 mx-3" />
-            <span className="text-slate-500 text-[10px] font-mono">CLICK TO LAUNCH OR LOAD</span>
+            <div className="flex-1 h-px bg-white/10 mx-4" />
+            <span className="text-slate-500 text-[11px] font-mono">CURATED & CUSTOM TEMPLATES</span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {QUICK_STARTERS.map((item) => {
+              const isCurated = item.isDirectLaunch
               const renderIcon = () => {
                 switch (item.iconName) {
+                  case 'login':
+                    return <LogIn className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
                   case 'coins':
-                    return <Coins className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                    return <Coins className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
                   case 'gamepad':
-                    return <Gamepad2 className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                    return <Gamepad2 className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
                   case 'grid':
-                    return <Grid3X3 className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                    return <Grid3X3 className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
                   case 'palette':
-                    return <Palette className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                    return <Palette className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
                   case 'book':
-                    return <BookOpen className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                    return <BookOpen className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
                   default:
-                    return <Code2 className="w-4 h-4 text-slate-400 group-hover:text-[#00F0FF]" />
+                    return <Code2 className="w-4 h-4 text-slate-400 group-hover:scale-110 transition-transform" />
                 }
               }
 
@@ -366,34 +384,58 @@ export const Screen1Prompt: React.FC = () => {
                     }
                   }}
                   disabled={isGeneratingSpec}
-                  className="cyber-card p-4 text-left flex flex-col justify-between hover:border-[#00F0FF]/50 hover:bg-[#141420] group transition-all duration-200 disabled:opacity-50 cursor-pointer rounded-xl bg-[#0C0C14] border-white/10"
+                  className={`p-5 rounded-2xl text-left flex flex-col justify-between transition-all duration-300 group disabled:opacity-50 cursor-pointer shadow-lg ${
+                    isCurated
+                      ? 'bg-gradient-to-b from-cyan-950/20 via-[#0C0F1A]/90 to-[#07080C] border border-cyan-500/25 hover:border-cyan-400/60 hover:shadow-[0_0_30px_-5px_rgba(6,182,212,0.25)]'
+                      : 'bg-gradient-to-b from-purple-950/20 via-[#120D1A]/90 to-[#07080C] border border-purple-500/25 hover:border-purple-400/60 hover:shadow-[0_0_30px_-5px_rgba(168,85,247,0.25)]'
+                  }`}
                 >
-                  <div className="space-y-2.5">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-[#00F0FF]/40 transition-colors">
+                      <div
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                          isCurated
+                            ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shadow-[0_0_15px_-3px_rgba(6,182,212,0.3)]'
+                            : 'bg-purple-500/10 border border-purple-500/30 text-purple-400 shadow-[0_0_15px_-3px_rgba(168,85,247,0.3)]'
+                        }`}
+                      >
                         {renderIcon()}
                       </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 border border-white/10 text-slate-400">
+                      <span
+                        className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full ${
+                          isCurated
+                            ? 'bg-cyan-500/10 border border-cyan-500/30 text-cyan-300'
+                            : 'bg-purple-500/10 border border-purple-500/30 text-purple-300'
+                        }`}
+                      >
                         {item.badge}
                       </span>
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors">
+                      <h4
+                        className={`text-sm font-bold tracking-tight text-white transition-colors ${
+                          isCurated ? 'group-hover:text-cyan-300' : 'group-hover:text-purple-300'
+                        }`}
+                      >
                         {item.title}
                       </h4>
-                      <p className="text-xs text-slate-400 line-clamp-2 mt-1 font-sans leading-relaxed">
+                      <p className="text-xs text-slate-400 line-clamp-2 mt-1.5 font-sans leading-relaxed">
                         {item.description}
                       </p>
                     </div>
                   </div>
 
-                  <div className="pt-3 mt-3 border-t border-white/5 flex items-center justify-between text-xs font-mono text-slate-500 group-hover:text-[#00F0FF] transition-colors">
-                    <span className="text-[11px] text-slate-500 font-mono">
+                  <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono">
+                    <span className="text-[11px] text-slate-500">
                       {item.isDirectLaunch ? 'Instant Blueprint' : 'Interactive Idea'}
                     </span>
-                    <span className="flex items-center gap-1 text-[11px] font-bold group-hover:translate-x-0.5 transition-transform">
-                      {item.isDirectLaunch ? 'Launch Blueprint' : 'Load Prompt'} <ArrowRight className="w-3 h-3" />
+                    <span
+                      className={`flex items-center gap-1 text-[11px] font-bold group-hover:translate-x-0.5 transition-transform ${
+                        isCurated ? 'text-cyan-400' : 'text-purple-400'
+                      }`}
+                    >
+                      {item.isDirectLaunch ? 'Launch Blueprint' : 'Load Prompt'} <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
                 </button>
