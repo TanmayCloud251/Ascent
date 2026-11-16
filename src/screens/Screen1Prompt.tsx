@@ -14,7 +14,8 @@ import {
   Gamepad2,
   Grid3X3,
   Palette,
-  BookOpen
+  BookOpen,
+  FolderGit2
 } from 'lucide-react'
 import { TechStackConfig } from '../types/ascent'
 
@@ -195,15 +196,18 @@ export const Screen1Prompt: React.FC = () => {
           {/* Console Form Input */}
           <div className="p-6 space-y-6">
             {activeCustomProject && (
-              <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/40 flex items-start gap-3 text-xs text-amber-200">
-                <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                <div className="flex-1 space-y-1">
-                  <div className="font-bold text-white text-sm">
-                    Custom Project Slot Occupied (1 Allowed)
+              <div className="p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 flex items-start gap-3.5 text-xs text-amber-200 backdrop-blur-sm shadow-[0_0_20px_-3px_rgba(245,158,11,0.2)]">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
+                  <FolderGit2 className="w-4 h-4" />
+                </div>
+                <div className="flex-1 space-y-1 font-mono">
+                  <div className="font-bold text-white text-sm tracking-tight flex items-center gap-2">
+                    <span>Custom Project Slot Occupied (1 Allowed)</span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px]">ACTIVE</span>
                   </div>
-                  <p className="text-amber-300/90 leading-relaxed font-sans">
-                    You already have an active custom AI project: <strong className="text-white">{activeCustomProject.spec?.appName || activeCustomProject.userPrompt}</strong>.
-                    You can continue learning on it or delete it from the Projects screen if zero modules have been completed. Curated tracks remain unlimited below!
+                  <p className="text-amber-300/90 leading-relaxed font-sans text-xs">
+                    You have an active custom AI project: <strong className="text-white font-mono">{activeCustomProject.spec?.appName || activeCustomProject.userPrompt}</strong>.
+                    You can continue learning on it or delete it from Projects if zero modules have been completed. Curated tracks remain unlimited!
                   </p>
                   <div className="pt-2 flex items-center gap-3">
                     <button
@@ -211,13 +215,14 @@ export const Screen1Prompt: React.FC = () => {
                         selectProject(activeCustomProject.id)
                         setScreen(4)
                       }}
-                      className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold transition cursor-pointer text-xs"
                     >
-                      Open Workspace →
+                      <span>Open Workspace</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setScreen(5)}
-                      className="text-amber-300 underline hover:text-white cursor-pointer"
+                      className="text-amber-300 hover:text-white underline cursor-pointer text-xs"
                     >
                       View in Projects
                     </button>

@@ -7,7 +7,7 @@ import {
   Sparkles,
   ChevronDown,
   Check,
-  Key,
+  KeyRound,
   Share2,
   LogOut
 } from 'lucide-react'
@@ -246,7 +246,7 @@ export const Header: React.FC = () => {
                   }}
                   className="p-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center gap-1.5 text-[11px] text-slate-300 hover:text-white transition cursor-pointer"
                 >
-                  <Key className="w-3.5 h-3.5 text-amber-400" />
+                  <KeyRound className="w-3.5 h-3.5 text-amber-400" />
                   <span>BYOK Key</span>
                 </button>
 

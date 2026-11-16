@@ -1280,30 +1280,42 @@ export const Screen4Workspace: React.FC = () => {
       </div>
 
       {/* Mobile Tab Switcher */}
-      <div className="lg:hidden flex items-center justify-around border-b border-white/10 bg-[#0B0B12] text-xs font-mono py-1.5 px-2">
+      <div className="lg:hidden flex items-center justify-around border-b border-white/10 bg-[#0B0B12] text-xs font-mono py-2 px-2 gap-1">
         <button
           onClick={() => setMobileTab('editor')}
-          className={`px-3 py-1 rounded-md transition ${mobileTab === 'editor' ? 'bg-[#00F0FF]/15 text-[#00F0FF] font-bold' : 'text-slate-400'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+            mobileTab === 'editor' ? 'bg-[#00F0FF]/15 border border-[#00F0FF]/30 text-[#00F0FF] font-bold shadow-sm' : 'text-slate-400 hover:text-white'
+          }`}
         >
-          Code
+          <Code2 className="w-3.5 h-3.5" />
+          <span>Code</span>
         </button>
         <button
           onClick={() => setMobileTab('preview')}
-          className={`px-3 py-1 rounded-md transition ${mobileTab === 'preview' ? 'bg-[#00F0FF]/15 text-[#00F0FF] font-bold' : 'text-slate-400'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+            mobileTab === 'preview' ? 'bg-[#00F0FF]/15 border border-[#00F0FF]/30 text-[#00F0FF] font-bold shadow-sm' : 'text-slate-400 hover:text-white'
+          }`}
         >
-          Preview
+          <Eye className="w-3.5 h-3.5" />
+          <span>Preview</span>
         </button>
         <button
           onClick={() => setMobileTab('lesson')}
-          className={`px-3 py-1 rounded-md transition ${mobileTab === 'lesson' ? 'bg-[#00F0FF]/15 text-[#00F0FF] font-bold' : 'text-slate-400'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+            mobileTab === 'lesson' ? 'bg-[#00F0FF]/15 border border-[#00F0FF]/30 text-[#00F0FF] font-bold shadow-sm' : 'text-slate-400 hover:text-white'
+          }`}
         >
-          Task / Checks
+          <ListChecks className="w-3.5 h-3.5" />
+          <span>Task / Checks</span>
         </button>
         <button
           onClick={() => setMobileTab('files')}
-          className={`px-3 py-1 rounded-md transition ${mobileTab === 'files' ? 'bg-[#00F0FF]/15 text-[#00F0FF] font-bold' : 'text-slate-400'}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition cursor-pointer ${
+            mobileTab === 'files' ? 'bg-[#00F0FF]/15 border border-[#00F0FF]/30 text-[#00F0FF] font-bold shadow-sm' : 'text-slate-400 hover:text-white'
+          }`}
         >
-          Files
+          <FileCode className="w-3.5 h-3.5" />
+          <span>Files</span>
         </button>
       </div>
 
